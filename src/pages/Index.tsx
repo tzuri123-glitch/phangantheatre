@@ -259,6 +259,23 @@ export default function Index() {
               return;
             }
             
+            // עדכון סטטוס התלמיד בהתאם לסטטוס הנוכחות
+            if (status === 'לא באי' || status === 'עזב') {
+              const newStatus = status === 'לא באי' ? 'בהקפאה' : 'בהמתנה';
+              
+              const { error: studentError } = await supabase
+                .from('students')
+                .update({ status: newStatus })
+                .eq('id', studentId)
+                .eq('user_id', user.id);
+              
+              if (!studentError) {
+                setStudents((prev) => prev.map(s => 
+                  s.id === studentId ? { ...s, status: newStatus } : s
+                ));
+              }
+            }
+            
             setSessions(prev => prev.map(s => 
               s.id === sessionId 
                 ? { ...s, students: s.students.map(st => st.studentId === studentId ? { ...st, status } : st) }
@@ -769,9 +786,9 @@ export default function Index() {
             <div className="space-y-2"><Label>חוג</Label><Select value={sessionForm.className} onValueChange={(v) => setSessionForm({ ...sessionForm, className: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CLASS_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>תאריך</Label><Input type="date" value={sessionForm.date} onChange={(e) => setSessionForm({ ...sessionForm, date: e.target.value })} /></div>
             <div className="space-y-2"><Label>ניסיון?</Label><Select value={sessionForm.trial ? 'true' : 'false'} onValueChange={(v) => setSessionForm({ ...sessionForm, trial: v === 'true' })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="false">לא</SelectItem><SelectItem value="true">כן</SelectItem></SelectContent></Select></div>
-            <div className="flex gap-3"><Button className="flex-1" onClick={() => setCurrentSession({ id: '', className: sessionForm.className, date: sessionForm.date, trial: sessionForm.trial, students: students.filter((s) => s.className === sessionForm.className).map((s) => ({ studentId: s.id, status: 'נוכח' })) })}>המשך</Button><Button variant="outline" className="flex-1" onClick={() => setShowSessionForm(false)}>ביטול</Button></div>
+            <div className="flex gap-3"><Button className="flex-1" onClick={() => setCurrentSession({ id: '', className: sessionForm.className, date: sessionForm.date, trial: sessionForm.trial, students: students.filter((s) => s.className === sessionForm.className && s.status === 'פעיל').map((s) => ({ studentId: s.id, status: 'נוכח' })) })}>המשך</Button><Button variant="outline" className="flex-1" onClick={() => setShowSessionForm(false)}>ביטול</Button></div>
           </div> : <div className="space-y-4">
-            {currentSession.students.map((rec, idx) => <div key={rec.studentId} className="flex gap-2 items-center"><span className="flex-1">{students.find((s) => s.id === rec.studentId)?.name}</span><Select value={rec.status} onValueChange={(v: typeof rec.status) => { const newStudents = [...currentSession.students]; newStudents[idx] = { ...rec, status: v }; setCurrentSession({ ...currentSession, students: newStudents }); }}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="נוכח">נוכח</SelectItem><SelectItem value="לא הגיע">לא הגיע</SelectItem><SelectItem value="לא באי">לא באי</SelectItem></SelectContent></Select></div>)}
+            {currentSession.students.map((rec, idx) => <div key={rec.studentId} className="flex gap-2 items-center"><span className="flex-1">{students.find((s) => s.id === rec.studentId)?.name}</span><Select value={rec.status} onValueChange={(v: typeof rec.status) => { const newStudents = [...currentSession.students]; newStudents[idx] = { ...rec, status: v }; setCurrentSession({ ...currentSession, students: newStudents }); }}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="נוכח">נוכח</SelectItem><SelectItem value="לא הגיע">לא הגיע</SelectItem><SelectItem value="לא באי">לא באי (הקפאה)</SelectItem><SelectItem value="עזב">עזב</SelectItem></SelectContent></Select></div>)}
             <div className="flex gap-3"><Button className="flex-1" onClick={async () => { 
               if (!user) return;
               

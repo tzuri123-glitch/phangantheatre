@@ -19,7 +19,7 @@ interface AttendanceProps {
   onCreateSession: () => void;
   onEditSession: (session: Session) => void;
   onDeleteSession: (sessionId: string) => void;
-  onUpdateAttendance: (sessionId: string, studentId: string, status: 'נוכח' | 'לא הגיע' | 'לא באי') => void;
+  onUpdateAttendance: (sessionId: string, studentId: string, status: 'נוכח' | 'לא הגיע' | 'לא באי' | 'עזב') => void;
   onRemoveStudentFromSession: (sessionId: string, studentId: string) => void;
 }
 
@@ -133,7 +133,8 @@ export default function Attendance({ sessions, students, onCreateSession, onEdit
                             <SelectContent>
                               <SelectItem value="נוכח">נוכח</SelectItem>
                               <SelectItem value="לא הגיע">לא הגיע</SelectItem>
-                              <SelectItem value="לא באי">לא באי</SelectItem>
+                              <SelectItem value="לא באי">לא באי (הקפאה)</SelectItem>
+                              <SelectItem value="עזב">עזב</SelectItem>
                             </SelectContent>
                           </Select>
                         </TableCell>

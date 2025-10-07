@@ -25,7 +25,7 @@ export interface Payment {
 
 export interface SessionStudent {
   studentId: string;
-  status: 'נוכח' | 'לא הגיע' | 'לא באי';
+  status: 'נוכח' | 'לא הגיע' | 'לא באי' | 'עזב';
 }
 
 export interface Session {
