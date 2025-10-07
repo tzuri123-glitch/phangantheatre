@@ -1,10 +1,11 @@
 import { Payment, Student, Session } from '@/types';
 
 export interface PaymentStatus {
-  canAttend: boolean; // האם יכול להיכנס לשיעור
+  canAttend: boolean;
   status: 'paid' | 'unpaid' | 'partial';
   message: string;
-  remainingEntries?: number; // כניסות שנותרו במנוי חודשי
+  balance: number; // יתרה חיובית = זכות, שלילית = חוב
+  hasMonthlySubscription: boolean; // האם יש מנוי חודשי פעיל
 }
 
 export function getPaymentStatusForDate(
@@ -16,123 +17,74 @@ export function getPaymentStatusForDate(
 ): PaymentStatus {
   const student = students.find(s => s.id === studentId);
   if (!student) {
-    return { canAttend: false, status: 'unpaid', message: 'תלמיד לא נמצא' };
+    return { canAttend: false, status: 'unpaid', message: 'תלמיד לא נמצא', balance: 0, hasMonthlySubscription: false };
   }
 
-  console.log('[getPaymentStatusForDate]', { studentId, targetDate, paymentsCount: payments.filter(p => p.studentId === studentId).length });
-
-  // מיון תשלומים לפי תאריך
-  const studentPayments = payments
-    .filter(p => p.studentId === studentId)
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-  if (studentPayments.length === 0) {
-    return { canAttend: false, status: 'unpaid', message: 'נדרש תשלום' };
-  }
-
-  const target = new Date(targetDate);
-
-  // מצא את התשלום הרלוונטי האחרון לפני או בתאריך היעד
-  const relevantPayments = studentPayments.filter(p => new Date(p.date) <= target);
-  
-  if (relevantPayments.length === 0) {
-    return { canAttend: false, status: 'unpaid', message: 'נדרש תשלום' };
-  }
-
-  const lastPayment = relevantPayments[relevantPayments.length - 1];
-
-  // טיפול בתשלומי ניסיון וחד פעמי
-  if (lastPayment.type === 'ניסיון' || lastPayment.type === 'חד פעמי') {
-    const paymentDate = new Date(lastPayment.date);
-
-    // האם התקיים שיעור בכיתה של התלמיד אחרי התשלום ועד התאריך המבוקש
-    const sessionsAfterPaymentForClass = sessions.filter((session) => {
-      const sessionDate = new Date(session.date);
-      return (
-        session.className === student.className &&
-        sessionDate > paymentDate &&
-        sessionDate <= target
-      );
-    });
-
-    // אם לא נרשמו שיעורים - נ fallback לחוק שבוע
-    const msInDay = 24 * 60 * 60 * 1000;
-    const daysSincePayment = Math.floor((target.getTime() - paymentDate.getTime()) / msInDay);
-    const usedEntry = sessionsAfterPaymentForClass.length > 0 || daysSincePayment >= 7;
-
-    if (usedEntry) {
-      return { canAttend: false, status: 'unpaid', message: 'נדרש תשלום' };
-    } else {
-      return { canAttend: true, status: 'paid', message: 'רשאי להשתתף', remainingEntries: 1 };
+  // ספירת תשלומים - כל תשלום = כמות שיעורים ששולמו
+  const studentPayments = payments.filter(p => p.studentId === studentId);
+  const totalPaidLessons = studentPayments.reduce((sum, payment) => {
+    if (payment.type === 'ניסיון' || payment.type === 'חד פעמי') {
+      return sum + 1;
+    } else if (payment.type === 'חודשי') {
+      return sum + 4;
     }
-  }
+    return sum;
+  }, 0);
 
-  // טיפול בתשלום חודשי
-  if (lastPayment.type === 'חודשי') {
-    const paymentDate = new Date(lastPayment.date);
+  // ספירת נוכחות - רק "נוכח" נספר
+  const attendedCount = sessions.reduce((count, session) => {
+    const studentRecord = session.students.find(st => st.studentId === studentId);
+    if (studentRecord && studentRecord.status === 'נוכח') {
+      return count + 1;
+    }
+    return count;
+  }, 0);
+
+  // חישוב יתרה: תשלומים - נוכחות
+  const balance = totalPaidLessons - attendedCount;
+
+  // בדיקה אם יש מנוי חודשי פעיל
+  const target = new Date(targetDate);
+  const targetMonth = target.getMonth();
+  const targetYear = target.getFullYear();
+  
+  const hasActiveMonthly = studentPayments.some(payment => {
+    if (payment.type !== 'חודשי') return false;
+    
+    const paymentDate = new Date(payment.date);
     const paymentMonth = paymentDate.getMonth();
     const paymentYear = paymentDate.getFullYear();
     
-    // בדוק אם התאריך היעד באותו חודש של התשלום
-    const targetMonth = target.getMonth();
-    const targetYear = target.getFullYear();
-    
-    let usedEntries = 0;
-    sessions.forEach(session => {
-      const sessionDate = new Date(session.date);
-      const sessionMonth = sessionDate.getMonth();
-      const sessionYear = sessionDate.getFullYear();
-      
-      // רק שיעורי הכיתה של התלמיד באותו חודש של התשלום, שהתקיימו אחרי התשלום ועד התאריך המבוקש
-      if (
-        session.className === student.className &&
-        sessionYear === paymentYear &&
-        sessionMonth === paymentMonth &&
-        sessionDate >= paymentDate &&
-        sessionDate <= target
-      ) {
-        usedEntries++;
-      }
-    });
+    // מנוי פעיל אם התשלום באותו חודש או יש יתרה מחודש קודם
+    return (paymentYear === targetYear && paymentMonth === targetMonth) ||
+           (paymentYear === targetYear && paymentMonth === targetMonth - 1 && balance > 0) ||
+           (paymentYear === targetYear - 1 && paymentMonth === 11 && targetMonth === 0 && balance > 0);
+  });
 
-    const remainingEntries = 4 - usedEntries;
+  // קביעת המסר והסטטוס
+  let message: string;
+  let canAttend: boolean;
+  let status: 'paid' | 'unpaid' | 'partial';
 
-    // אם באותו חודש של התשלום
-    if (targetYear === paymentYear && targetMonth === paymentMonth) {
-      if (remainingEntries > 0) {
-        return { 
-          canAttend: true, 
-          status: 'paid', 
-          message: 'רשאי להשתתף', 
-          remainingEntries 
-        };
-      } else {
-        return { 
-          canAttend: false, 
-          status: 'unpaid', 
-          message: 'נדרש תשלום (נוצלו כל הכניסות)' 
-        };
-      }
-    }
-    
-    // אם בחודש שאחרי - בדוק אם יש כניסות שנותרו מהחודש הקודם
-    if (targetYear > paymentYear || (targetYear === paymentYear && targetMonth > paymentMonth)) {
-      if (remainingEntries > 0) {
-        return { 
-          canAttend: true, 
-          status: 'paid', 
-          message: `יתרה מחודש קודם (${remainingEntries} כניסות)`, 
-          remainingEntries 
-        };
-      } else {
-        return { 
-          canAttend: false, 
-          status: 'unpaid', 
-          message: 'נדרש תשלום' 
-        };
-      }
-    }
+  if (balance > 0) {
+    message = `יתרה: ${balance} ${balance === 1 ? 'שיעור' : 'שיעורים'}`;
+    canAttend = true;
+    status = 'paid';
+  } else if (balance === 0) {
+    message = 'מאוזן';
+    canAttend = true;
+    status = 'paid';
+  } else {
+    message = `חוב: ${Math.abs(balance)} ${Math.abs(balance) === 1 ? 'שיעור' : 'שיעורים'}`;
+    canAttend = false;
+    status = 'unpaid';
   }
 
-  return { canAttend: false, status: 'unpaid', message: 'נדרש תשלום' };
+  return {
+    canAttend,
+    status,
+    message,
+    balance,
+    hasMonthlySubscription: hasActiveMonthly
+  };
 }

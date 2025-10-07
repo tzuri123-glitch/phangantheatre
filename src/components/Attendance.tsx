@@ -128,13 +128,12 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-2">
                               {getStudentName(record.studentId)}
-                              {paymentStatus.canAttend ? (
+                              {paymentStatus.balance >= 0 ? (
                                 <Badge className="bg-green-500 text-white text-xs">
-                                  ✓
-                                  {paymentStatus.remainingEntries && ` ${paymentStatus.remainingEntries}`}
+                                  {paymentStatus.message}
                                 </Badge>
                               ) : (
-                                <Badge variant="destructive" className="text-xs">נדרש תשלום</Badge>
+                                <Badge variant="destructive" className="text-xs">{paymentStatus.message}</Badge>
                               )}
                             </div>
                           </TableCell>
@@ -149,7 +148,9 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
                               <SelectContent>
                                 <SelectItem value="נוכח">נוכח</SelectItem>
                                 <SelectItem value="לא הגיע">לא הגיע</SelectItem>
-                                <SelectItem value="לא באי">לא באי (הקפאה)</SelectItem>
+                                {paymentStatus.hasMonthlySubscription && (
+                                  <SelectItem value="לא באי">לא באי (הקפאה)</SelectItem>
+                                )}
                                 <SelectItem value="עזב">עזב</SelectItem>
                               </SelectContent>
                             </Select>

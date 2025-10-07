@@ -157,13 +157,14 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
                               <span className="text-xs text-muted-foreground">
                                 {studentPaymentsList.length} תשלומים
                               </span>
-                              {paymentStatus.canAttend ? (
-                                <Badge className="bg-green-500 text-white">
-                                  ✓ רשאי להשתתף
-                                  {paymentStatus.remainingEntries && ` (${paymentStatus.remainingEntries})`}
+                              {paymentStatus.balance >= 0 ? (
+                                <Badge className="bg-green-500 text-white text-xs">
+                                  {paymentStatus.message}
                                 </Badge>
                               ) : (
-                                <Badge variant="destructive">נדרש תשלום</Badge>
+                                <Badge variant="destructive" className="text-xs">
+                                  {paymentStatus.message}
+                                </Badge>
                               )}
                             </div>
                             <div className="flex items-center gap-3">
