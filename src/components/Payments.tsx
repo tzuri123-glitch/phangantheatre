@@ -12,7 +12,7 @@ import {
 import { Card } from '@/components/ui/card';
 import { useState } from 'react';
 import { formatILS } from '@/lib/utils';
-import { DollarSign } from 'lucide-react';
+
 
 interface PaymentsProps {
   payments: Payment[];
@@ -120,10 +120,6 @@ export default function Payments({ payments, students, onAddPayment, onEditPayme
                 className="p-6 bg-accent cursor-pointer hover:bg-accent/80 transition-colors"
                 onClick={() => toggleClass(className)}
               >
-                <div className="flex items-center justify-between mb-2">
-                  <DollarSign className="text-primary" size={32} />
-                  <span className="text-2xl font-bold text-primary">{formatILS(totalClassIncome)}</span>
-                </div>
                 <h3 className="font-semibold text-lg text-foreground mb-1">{className}</h3>
                 <p className="text-sm text-muted-foreground">
                   {studentCount === 0 ? 'אין תשלומים' : `${studentCount} תלמידים`}
