@@ -28,20 +28,26 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
   }, {} as Record<string, number>);
 
   // חישוב הכנסות שבועיות
-  const getWeekKey = (dateStr: string) => {
+  const getWeekStart = (dateStr: string) => {
     const date = new Date(dateStr);
-    const year = date.getFullYear();
-    const oneJan = new Date(year, 0, 1);
-    const numberOfDays = Math.floor((date.getTime() - oneJan.getTime()) / (24 * 60 * 60 * 1000));
-    const weekNumber = Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7);
-    return `${year}-W${weekNumber.toString().padStart(2, '0')}`;
+    const day = date.getDay();
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+    const monday = new Date(date.setDate(diff));
+    return monday.toISOString().slice(0, 10);
   };
 
   const incomeByWeek = payments.reduce((acc, p) => {
-    const weekKey = getWeekKey(p.date);
-    acc[weekKey] = (acc[weekKey] || 0) + p.amount;
+    const weekStart = getWeekStart(p.date);
+    acc[weekStart] = (acc[weekStart] || 0) + p.amount;
     return acc;
   }, {} as Record<string, number>);
+
+  const formatWeekLabel = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    return `${day}/${month}`;
+  };
 
   const incomeByType = payments.reduce((acc, p) => {
     acc[p.type] = (acc[p.type] || 0) + p.amount;
@@ -90,12 +96,13 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
 
     // Weekly chart - weekly income
     const weeklyLabels = Object.keys(incomeByWeek).sort().slice(-8); // Last 8 weeks
+    const weeklyDisplayLabels = weeklyLabels.map(formatWeekLabel);
     const weeklyData = weeklyLabels.map((k) => incomeByWeek[k]);
 
     weeklyChartInstance.current = new Chart(weeklyChartRef.current, {
       type: 'line',
       data: {
-        labels: weeklyLabels,
+        labels: weeklyDisplayLabels,
         datasets: [
           {
             label: 'הכנסות שבועיות',
