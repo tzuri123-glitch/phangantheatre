@@ -82,11 +82,11 @@ export default function Payments({ payments, students, onAddPayment }: PaymentsP
               <div className="flex items-center gap-4">
                 <div className="text-left">
                   <div className="font-bold text-primary text-lg">
-                    {totalPaid.toLocaleString()} ₪
+                    ₪{totalPaid.toLocaleString('he-IL')}
                   </div>
                   {balance !== 0 && (
                     <div className={`text-sm font-medium ${balance < 0 ? 'text-red-500' : 'text-yellow-500'}`}>
-                      {balance < 0 ? `חוב: ${Math.abs(balance).toLocaleString()} ₪` : `יתרה: ${balance.toLocaleString()} ₪`}
+                      {balance < 0 ? `חוב: ₪${Math.abs(balance).toLocaleString('he-IL')}` : `יתרה: ₪${balance.toLocaleString('he-IL')}`}
                     </div>
                   )}
                 </div>
@@ -116,7 +116,7 @@ export default function Payments({ payments, students, onAddPayment }: PaymentsP
                       </TableCell>
                       <TableCell>{payment.method}</TableCell>
                       <TableCell className="font-bold text-primary">
-                        {payment.amount.toLocaleString()} ₪
+                        ₪{payment.amount.toLocaleString('he-IL')}
                       </TableCell>
                       <TableCell className="text-muted-foreground">{payment.note}</TableCell>
                     </TableRow>

@@ -114,7 +114,7 @@ export default function Dashboard({ students, payments }: DashboardProps) {
         
         <Card className="p-6 bg-gradient-to-br from-accent to-accent/50 border-primary/20">
           <h3 className="text-lg font-semibold text-muted-foreground mb-2">סה"כ הכנסות</h3>
-          <p className="text-4xl font-bold text-primary">{totalIncome.toLocaleString()} ₪</p>
+          <p className="text-4xl font-bold text-primary">₪{totalIncome.toLocaleString('he-IL')}</p>
         </Card>
       </div>
 
