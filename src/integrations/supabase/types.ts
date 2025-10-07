@@ -195,6 +195,7 @@ export type Database = {
           parent_name: string | null
           parent_phone: string | null
           phone: string | null
+          sibling_id: string | null
           status: string | null
           user_id: string
         }
@@ -209,6 +210,7 @@ export type Database = {
           parent_name?: string | null
           parent_phone?: string | null
           phone?: string | null
+          sibling_id?: string | null
           status?: string | null
           user_id: string
         }
@@ -223,10 +225,18 @@ export type Database = {
           parent_name?: string | null
           parent_phone?: string | null
           phone?: string | null
+          sibling_id?: string | null
           status?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "students_sibling_id_fkey"
+            columns: ["sibling_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "students_user_id_fkey"
             columns: ["user_id"]

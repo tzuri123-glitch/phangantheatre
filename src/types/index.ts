@@ -7,6 +7,7 @@ export interface Student {
   parentName: string;
   parentPhone: string;
   isSibling: boolean;
+  siblingId?: string;
   className: string;
   status: 'חדש' | 'פעיל' | 'בהקפאה' | 'בהמתנה';
 }

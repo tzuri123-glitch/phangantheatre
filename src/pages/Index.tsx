@@ -63,6 +63,7 @@ export default function Index() {
           parentName: s.parent_name || '',
           parentPhone: s.parent_phone || '',
           isSibling: s.is_sibling || false,
+          siblingId: s.sibling_id || undefined,
           className: s.class_name,
           status: s.status as Student['status']
         })));
@@ -116,7 +117,7 @@ export default function Index() {
       <TabNavigation activeTab={tab} onTabChange={setTab} />
       <main>
         {tab === 'dashboard' && <Dashboard students={students} payments={payments} />}
-        {tab === 'students' && <Students students={students} onAddStudent={() => { studentFormRef.current = { id: '', name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, className: CLASS_OPTIONS[0], status: 'חדש' }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} onEditStudent={(s) => { studentFormRef.current = { ...s }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} />}
+        {tab === 'students' && <Students students={students} onAddStudent={() => { studentFormRef.current = { id: '', name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, siblingId: undefined, className: CLASS_OPTIONS[0], status: 'חדש' }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} onEditStudent={(s) => { studentFormRef.current = { ...s }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} />}
         {tab === 'payments' && <Payments 
           payments={payments} 
           students={students} 
@@ -152,7 +153,38 @@ export default function Index() {
             <div className="space-y-2"><Label>תאריך לידה</Label><Input type="date" value={editingStudent.birthDate} onChange={(e) => setEditingStudent({ ...editingStudent, birthDate: e.target.value })} /></div>
             <div className="space-y-2"><Label>שם הורה</Label><Input value={editingStudent.parentName} onChange={(e) => setEditingStudent({ ...editingStudent, parentName: e.target.value })} /></div>
             <div className="space-y-2"><Label>טלפון הורה</Label><Input value={editingStudent.parentPhone} onChange={(e) => setEditingStudent({ ...editingStudent, parentPhone: e.target.value })} /></div>
-            <div className="space-y-2"><Label>אחים בחוג?</Label><Select value={editingStudent.isSibling ? 'true' : 'false'} onValueChange={(v) => setEditingStudent({ ...editingStudent, isSibling: v === 'true' })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="false">לא</SelectItem><SelectItem value="true">כן</SelectItem></SelectContent></Select></div>
+            <div className="space-y-2"><Label>אחים בחוג?</Label><Select value={editingStudent.isSibling ? 'true' : 'false'} onValueChange={(v) => setEditingStudent({ ...editingStudent, isSibling: v === 'true', siblingId: v === 'true' ? editingStudent.siblingId : undefined })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="false">לא</SelectItem><SelectItem value="true">כן</SelectItem></SelectContent></Select></div>
+            {editingStudent.isSibling && (
+              <div className="space-y-2">
+                <Label>בחר אח/אחות</Label>
+                <Select 
+                  value={editingStudent.siblingId || ''} 
+                  onValueChange={(v) => {
+                    const sibling = students.find(s => s.id === v);
+                    if (sibling) {
+                      setEditingStudent({ 
+                        ...editingStudent, 
+                        siblingId: v,
+                        parentName: sibling.parentName,
+                        lastName: sibling.lastName,
+                        parentPhone: sibling.parentPhone
+                      });
+                    }
+                  }}
+                >
+                  <SelectTrigger><SelectValue placeholder="בחר תלמיד" /></SelectTrigger>
+                  <SelectContent>
+                    {students
+                      .filter(s => s.id !== editingStudent.id)
+                      .map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name} {s.lastName}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2"><Label>שיוך חוג</Label><Select value={editingStudent.className} onValueChange={(v) => setEditingStudent({ ...editingStudent, className: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CLASS_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>סטטוס</Label><Select value={editingStudent.status} onValueChange={(v: Student['status']) => setEditingStudent({ ...editingStudent, status: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="חדש">חדש</SelectItem><SelectItem value="פעיל">פעיל</SelectItem><SelectItem value="בהקפאה">בהקפאה</SelectItem><SelectItem value="בהמתנה">בהמתנה</SelectItem></SelectContent></Select></div>
             <div className="flex gap-3">
@@ -176,6 +208,7 @@ export default function Index() {
                       parent_name: editingStudent.parentName || null,
                       parent_phone: editingStudent.parentPhone || null,
                       is_sibling: editingStudent.isSibling,
+                      sibling_id: editingStudent.siblingId || null,
                       class_name: editingStudent.className,
                       status: editingStudent.status
                     })
@@ -205,6 +238,7 @@ export default function Index() {
                         parent_name: editingStudent.parentName || null,
                         parent_phone: editingStudent.parentPhone || null,
                         is_sibling: editingStudent.isSibling,
+                        sibling_id: editingStudent.siblingId || null,
                         class_name: editingStudent.className,
                         status: editingStudent.status
                       })
@@ -258,6 +292,7 @@ export default function Index() {
                         parent_name: editingStudent.parentName || null,
                         parent_phone: editingStudent.parentPhone || null,
                         is_sibling: editingStudent.isSibling,
+                        sibling_id: editingStudent.siblingId || null,
                         class_name: editingStudent.className,
                         status: editingStudent.status
                       })
@@ -286,6 +321,7 @@ export default function Index() {
                         parent_name: editingStudent.parentName || null,
                         parent_phone: editingStudent.parentPhone || null,
                         is_sibling: editingStudent.isSibling,
+                        sibling_id: editingStudent.siblingId || null,
                         class_name: editingStudent.className,
                         status: editingStudent.status
                       })
