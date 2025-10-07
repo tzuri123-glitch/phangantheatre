@@ -9,7 +9,7 @@ export interface Student {
   isSibling: boolean;
   siblingId?: string;
   className: string;
-  status: 'חדש' | 'פעיל' | 'בהקפאה' | 'בהמתנה';
+  status: 'חדש' | 'פעיל' | 'בהקפאה' | 'בהמתנה' | 'עזב';
 }
 
 export interface Payment {
