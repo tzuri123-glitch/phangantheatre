@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { formatILS } from '@/lib/utils';
+import { calculatePaymentStatus, getStatusColor, getStatusIcon } from '@/lib/paymentStatus';
 export default function Index() {
   const { user } = useAuth();
   const [tab, setTab] = useState('dashboard');
@@ -215,8 +216,9 @@ export default function Index() {
         {tab === 'dashboard' && <Dashboard students={students} payments={payments} onAddStudent={() => { studentFormRef.current = { id: '', name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, siblingId: undefined, className: CLASS_OPTIONS[0], status: 'חדש' }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} />}
         {tab === 'students' && <Students 
           students={students} 
-          payments={payments.map(p => ({ studentId: p.studentId, amount: p.amount }))}
-          onAddStudent={() => { 
+          payments={payments}
+          sessions={sessions}
+          onAddStudent={() => {
             studentFormRef.current = { id: '', name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, siblingId: undefined, className: CLASS_OPTIONS[0], status: 'חדש' }; 
             setEditingStudent(studentFormRef.current); 
             setShowStudentModal(true); 
@@ -243,8 +245,9 @@ export default function Index() {
         />}
         {tab === 'payments' && <Payments 
           payments={payments} 
-          students={students} 
-          onAddPayment={() => { 
+          students={students}
+          sessions={sessions}
+          onAddPayment={() => {
             setEditingPayment(null);
             setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0 }); 
             setShowPaymentModal(true); 
@@ -265,7 +268,8 @@ export default function Index() {
         />}
         {tab === 'attendance' && <Attendance 
           sessions={sessions} 
-          students={students} 
+          students={students}
+          payments={payments}
           onCreateSession={() => setShowSessionForm(true)}
           onEditSession={(session) => {
             setCurrentSession(session);
@@ -708,8 +712,22 @@ export default function Index() {
                   </Command>
                 </PopoverContent>
               </Popover>
+              
+              {paymentForm.studentId && (() => {
+                const student = students.find(s => s.id === paymentForm.studentId);
+                if (!student) return null;
+                const paymentStatus = calculatePaymentStatus(student, payments, sessions);
+                return (
+                  <div className={`mt-2 flex items-center gap-2 p-2 rounded-md border-2 ${getStatusColor(paymentStatus.status)}`}>
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full font-bold text-sm">
+                      {getStatusIcon(paymentStatus.status)}
+                    </div>
+                    <span className="text-sm font-medium">{paymentStatus.message}</span>
+                  </div>
+                );
+              })()}
             </div>
-            <div className="space-y-2"><Label>סוג תשלום</Label><Select value={paymentForm.type} onValueChange={(v) => { 
+            <div className="space-y-2"><Label>סוג תשלום</Label><Select value={paymentForm.type} onValueChange={(v) => {
               setPaymentForm({ ...paymentForm, type: v }); 
               if (paymentForm.studentId) {
                 const calc = calcPayment(paymentForm.studentId, v, paymentForm.date);

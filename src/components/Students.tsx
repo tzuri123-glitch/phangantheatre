@@ -1,4 +1,4 @@
-import { Student, CLASS_OPTIONS } from '@/types';
+import { Student, CLASS_OPTIONS, Payment, Session } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -13,16 +13,18 @@ import { Card } from '@/components/ui/card';
 import { useState } from 'react';
 import { Users } from 'lucide-react';
 import { toast } from 'sonner';
+import { calculatePaymentStatus, getStatusColor, getStatusIcon } from '@/lib/paymentStatus';
 
 interface StudentsProps {
   students: Student[];
-  payments: { studentId: string; amount: number }[];
+  payments: Payment[];
+  sessions: Session[];
   onAddStudent: () => void;
   onEditStudent: (student: Student) => void;
   onDeleteStudent: (studentId: string) => void;
 }
 
-export default function Students({ students, payments, onAddStudent, onEditStudent, onDeleteStudent }: StudentsProps) {
+export default function Students({ students, payments, sessions, onAddStudent, onEditStudent, onDeleteStudent }: StudentsProps) {
   const [expandedClasses, setExpandedClasses] = useState<Record<string, boolean>>({});
   const [classSearchQueries, setClassSearchQueries] = useState<Record<string, string>>({});
 
@@ -91,11 +93,12 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                   
                   <div className="overflow-x-auto px-4 pb-4">
                     <Table className="min-w-full">
-                    <TableHeader className="sticky top-0 bg-background z-10">
+                     <TableHeader className="sticky top-0 bg-background z-10">
                       <TableRow>
                         <TableHead className="text-right">שם פרטי</TableHead>
                         <TableHead className="text-right">שם משפחה</TableHead>
                         <TableHead className="text-right">סטטוס</TableHead>
+                        <TableHead className="text-right">סטטוס תשלום</TableHead>
                         <TableHead className="text-right">תשלומים</TableHead>
                         <TableHead className="text-right">פעולות</TableHead>
                       </TableRow>
@@ -103,6 +106,7 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                     <TableBody>
                       {filterStudents(className, classStudents).map((student) => {
                         const studentPaymentCount = payments.filter(p => p.studentId === student.id).length;
+                        const paymentStatus = calculatePaymentStatus(student, payments, sessions);
                         
                         return (
                           <TableRow key={student.id}>
@@ -122,6 +126,14 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                               >
                                 {student.status}
                               </span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <div className={`flex items-center justify-center w-6 h-6 rounded-full border-2 font-bold text-xs ${getStatusColor(paymentStatus.status)}`}>
+                                  {getStatusIcon(paymentStatus.status)}
+                                </div>
+                                <span className="text-xs text-muted-foreground">{paymentStatus.message}</span>
+                              </div>
                             </TableCell>
                             <TableCell>
                               <span className="text-sm text-muted-foreground">
