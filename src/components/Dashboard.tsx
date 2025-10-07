@@ -13,8 +13,10 @@ interface DashboardProps {
 
 export default function Dashboard({ students, payments, onAddStudent }: DashboardProps) {
   const barChartRef = useRef<HTMLCanvasElement>(null);
+  const weeklyChartRef = useRef<HTMLCanvasElement>(null);
   const pieChartRef = useRef<HTMLCanvasElement>(null);
   const barChartInstance = useRef<Chart | null>(null);
+  const weeklyChartInstance = useRef<Chart | null>(null);
   const pieChartInstance = useRef<Chart | null>(null);
 
   const totalIncome = payments.reduce((sum, p) => sum + p.amount, 0);
@@ -25,17 +27,36 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
     return acc;
   }, {} as Record<string, number>);
 
+  // חישוב הכנסות שבועיות
+  const getWeekKey = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const year = date.getFullYear();
+    const oneJan = new Date(year, 0, 1);
+    const numberOfDays = Math.floor((date.getTime() - oneJan.getTime()) / (24 * 60 * 60 * 1000));
+    const weekNumber = Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7);
+    return `${year}-W${weekNumber.toString().padStart(2, '0')}`;
+  };
+
+  const incomeByWeek = payments.reduce((acc, p) => {
+    const weekKey = getWeekKey(p.date);
+    acc[weekKey] = (acc[weekKey] || 0) + p.amount;
+    return acc;
+  }, {} as Record<string, number>);
+
   const incomeByType = payments.reduce((acc, p) => {
     acc[p.type] = (acc[p.type] || 0) + p.amount;
     return acc;
   }, {} as Record<string, number>);
 
   useEffect(() => {
-    if (!barChartRef.current || !pieChartRef.current) return;
+    if (!barChartRef.current || !weeklyChartRef.current || !pieChartRef.current) return;
 
     // Destroy previous charts
     if (barChartInstance.current) {
       barChartInstance.current.destroy();
+    }
+    if (weeklyChartInstance.current) {
+      weeklyChartInstance.current.destroy();
     }
     if (pieChartInstance.current) {
       pieChartInstance.current.destroy();
@@ -55,6 +76,35 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
             data: barData,
             backgroundColor: 'hsl(188 91% 36%)',
             borderRadius: 8,
+          },
+        ],
+      },
+      options: {
+        plugins: {
+          legend: { display: false },
+        },
+        responsive: true,
+        maintainAspectRatio: true,
+      },
+    });
+
+    // Weekly chart - weekly income
+    const weeklyLabels = Object.keys(incomeByWeek).sort().slice(-8); // Last 8 weeks
+    const weeklyData = weeklyLabels.map((k) => incomeByWeek[k]);
+
+    weeklyChartInstance.current = new Chart(weeklyChartRef.current, {
+      type: 'line',
+      data: {
+        labels: weeklyLabels,
+        datasets: [
+          {
+            label: 'הכנסות שבועיות',
+            data: weeklyData,
+            backgroundColor: 'hsl(142 71% 45% / 0.2)',
+            borderColor: 'hsl(142 71% 45%)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
           },
         ],
       },
@@ -99,6 +149,9 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
       if (barChartInstance.current) {
         barChartInstance.current.destroy();
       }
+      if (weeklyChartInstance.current) {
+        weeklyChartInstance.current.destroy();
+      }
       if (pieChartInstance.current) {
         pieChartInstance.current.destroy();
       }
@@ -126,10 +179,15 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4 text-foreground">הכנסות חודשיות</h3>
           <canvas ref={barChartRef}></canvas>
+        </Card>
+
+        <Card className="p-6">
+          <h3 className="text-xl font-semibold mb-4 text-foreground">הכנסות שבועיות</h3>
+          <canvas ref={weeklyChartRef}></canvas>
         </Card>
 
         <Card className="p-6">
