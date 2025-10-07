@@ -18,7 +18,6 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { formatILS } from '@/lib/utils';
-import { getPaymentStatusForDate } from '@/lib/paymentStatus';
 export default function Index() {
   const { user } = useAuth();
   const [tab, setTab] = useState('dashboard');
@@ -863,23 +862,10 @@ export default function Index() {
               const student = students.find((s) => s.id === rec.studentId);
               if (!student) return null;
               
-              const paymentStatus = getPaymentStatusForDate(rec.studentId, currentSession.date, students, payments, sessions);
-              
-              // קביעת צבע רקע לפי סטטוס
-              let bgColor = '';
-              if (paymentStatus.balance < 0) {
-                bgColor = 'bg-red-100'; // חוב - אדום
-              } else if (paymentStatus.balance === 0) {
-                bgColor = 'bg-green-100'; // מאוזן - ירוק
-              } else if (paymentStatus.balance > 0) {
-                bgColor = 'bg-yellow-100'; // יתרה - צהוב
-              }
-              
               return (
-                <div key={rec.studentId} className={`flex gap-2 items-center p-2 rounded ${bgColor}`}>
+                <div key={rec.studentId} className="flex gap-2 items-center p-2">
                   <span className="flex-1 font-medium">{student.name} {student.lastName}</span>
-                  <span className="text-xs text-muted-foreground">{paymentStatus.message}</span>
-                  <Select value={rec.status || undefined} onValueChange={(v) => { 
+                  <Select value={rec.status || undefined} onValueChange={(v) => {
                     if (v && v !== '') {
                       const newStudents = [...currentSession.students]; 
                       newStudents[idx] = { ...rec, status: v as 'נוכח' | 'לא הגיע' | 'לא באי' | 'עזב' }; 
@@ -892,9 +878,7 @@ export default function Index() {
                     <SelectContent>
                       <SelectItem value="נוכח">נוכח</SelectItem>
                       <SelectItem value="לא הגיע">לא הגיע</SelectItem>
-                      {paymentStatus.hasMonthlySubscription && (
-                        <SelectItem value="לא באי">לא באי (הקפאה)</SelectItem>
-                      )}
+                      <SelectItem value="לא באי">לא באי (הקפאה)</SelectItem>
                       <SelectItem value="עזב">עזב</SelectItem>
                     </SelectContent>
                   </Select>
