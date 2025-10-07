@@ -14,7 +14,267 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      attendance: {
+        Row: {
+          created_at: string | null
+          id: string
+          session_id: string
+          status: string
+          student_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          session_id: string
+          status: string
+          student_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          session_id?: string
+          status?: string
+          student_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          note: string | null
+          payment_date: string
+          payment_method: string
+          payment_type: string
+          student_id: string
+          subscription_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          note?: string | null
+          payment_date: string
+          payment_method: string
+          payment_type: string
+          student_id: string
+          subscription_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          note?: string | null
+          payment_date?: string
+          payment_method?: string
+          payment_type?: string
+          student_id?: string
+          subscription_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      sessions: {
+        Row: {
+          class_name: string
+          created_at: string | null
+          id: string
+          is_trial: boolean | null
+          session_date: string
+          user_id: string
+        }
+        Insert: {
+          class_name: string
+          created_at?: string | null
+          id?: string
+          is_trial?: boolean | null
+          session_date: string
+          user_id: string
+        }
+        Update: {
+          class_name?: string
+          created_at?: string | null
+          id?: string
+          is_trial?: boolean | null
+          session_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          birth_date: string | null
+          class_name: string
+          created_at: string | null
+          id: string
+          is_sibling: boolean | null
+          name: string
+          parent_name: string | null
+          parent_phone: string | null
+          phone: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          birth_date?: string | null
+          class_name: string
+          created_at?: string | null
+          id?: string
+          is_sibling?: boolean | null
+          name: string
+          parent_name?: string | null
+          parent_phone?: string | null
+          phone?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          birth_date?: string | null
+          class_name?: string
+          created_at?: string | null
+          id?: string
+          is_sibling?: boolean | null
+          name?: string
+          parent_name?: string | null
+          parent_phone?: string | null
+          phone?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "students_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          created_at: string | null
+          entries_remaining: number | null
+          id: string
+          month_year: string
+          student_id: string
+          total_entries: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          entries_remaining?: number | null
+          id?: string
+          month_year: string
+          student_id: string
+          total_entries?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          entries_remaining?: number | null
+          id?: string
+          month_year?: string
+          student_id?: string
+          total_entries?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
