@@ -16,9 +16,10 @@ interface PaymentsProps {
   payments: Payment[];
   students: Student[];
   onAddPayment: () => void;
+  onEditPayment: (payment: Payment) => void;
 }
 
-export default function Payments({ payments, students, onAddPayment }: PaymentsProps) {
+export default function Payments({ payments, students, onAddPayment, onEditPayment }: PaymentsProps) {
   const [expandedStudents, setExpandedStudents] = useState<Record<string, boolean>>({});
 
   const toggleStudent = (studentId: string) => {
@@ -104,6 +105,7 @@ export default function Payments({ payments, students, onAddPayment }: PaymentsP
                     <TableHead className="text-right">אמצעי</TableHead>
                     <TableHead className="text-right">סכום</TableHead>
                     <TableHead className="text-right">הערה</TableHead>
+                    <TableHead className="text-right">פעולות</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -120,6 +122,15 @@ export default function Payments({ payments, students, onAddPayment }: PaymentsP
                         {formatILS(payment.amount)}
                       </TableCell>
                       <TableCell className="text-muted-foreground">{payment.note}</TableCell>
+                      <TableCell>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => onEditPayment(payment)}
+                        >
+                          ✏️ ערוך
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

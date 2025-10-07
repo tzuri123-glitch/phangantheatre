@@ -26,6 +26,7 @@ export default function Index() {
   const studentFormRef = useRef<Student | null>(null);
   
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [paymentForm, setPaymentForm] = useState<{ studentId: string; type: string; method: 'מזומן' | 'סקאן'; date: string; amount: number; note: string }>({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '' });
   
   const [showSessionForm, setShowSessionForm] = useState(false);
@@ -115,7 +116,27 @@ export default function Index() {
       <main>
         {tab === 'dashboard' && <Dashboard students={students} payments={payments} />}
         {tab === 'students' && <Students students={students} onAddStudent={() => { studentFormRef.current = { id: '', name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, className: CLASS_OPTIONS[0], status: 'חדש' }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} onEditStudent={(s) => { studentFormRef.current = { ...s }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} />}
-        {tab === 'payments' && <Payments payments={payments} students={students} onAddPayment={() => setShowPaymentModal(true)} />}
+        {tab === 'payments' && <Payments 
+          payments={payments} 
+          students={students} 
+          onAddPayment={() => { 
+            setEditingPayment(null);
+            setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '' }); 
+            setShowPaymentModal(true); 
+          }}
+          onEditPayment={(payment) => {
+            setEditingPayment(payment);
+            setPaymentForm({
+              studentId: payment.studentId,
+              type: payment.type,
+              method: payment.method,
+              date: payment.date,
+              amount: payment.amount,
+              note: payment.note
+            });
+            setShowPaymentModal(true);
+          }}
+        />}
         {tab === 'attendance' && <Attendance sessions={sessions} students={students} onCreateSession={() => setShowSessionForm(true)} />}
       </main>
 
@@ -297,8 +318,8 @@ export default function Index() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showPaymentModal} onOpenChange={(open) => { if (!open) setShowPaymentModal(false); }}>
-        <DialogContent className="max-w-md"><DialogHeader><DialogTitle>הוספת תשלום</DialogTitle></DialogHeader>
+      <Dialog open={showPaymentModal} onOpenChange={(open) => { if (!open) { setShowPaymentModal(false); setEditingPayment(null); } }}>
+        <DialogContent className="max-w-md"><DialogHeader><DialogTitle>{editingPayment ? 'עריכת תשלום' : 'הוספת תשלום'}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2"><Label>תלמיד</Label><Select value={paymentForm.studentId} onValueChange={(v) => { 
               setPaymentForm({ ...paymentForm, studentId: v }); 
@@ -330,60 +351,91 @@ export default function Index() {
                 return; 
               } 
               
-              const { data, error } = await supabase
-                .from('payments')
-                .insert({
-                  user_id: user.id,
-                  student_id: paymentForm.studentId,
-                  payment_type: paymentForm.type,
-                  payment_method: paymentForm.method,
-                  payment_date: paymentForm.date,
-                  amount: paymentForm.amount,
-                  note: paymentForm.note
-                })
-                .select()
-                .single();
-              
-              if (error) {
-                toast.error('שגיאה בשמירת תשלום');
-                return;
-              }
-              
-              const newPayment = { 
-                id: data.id, 
-                studentId: paymentForm.studentId, 
-                type: paymentForm.type as Payment['type'], 
-                method: paymentForm.method, 
-                date: paymentForm.date, 
-                amount: paymentForm.amount, 
-                note: paymentForm.note 
-              };
-              
-              setPayments((prev) => [...prev, newPayment]);
-              
-              // בדיקה אם זה התשלום השני והפיכת התלמיד לפעיל
-              const studentPayments = payments.filter(p => p.studentId === paymentForm.studentId);
-              if (studentPayments.length >= 1) { // התשלום הנוכחי + תשלום אחד קיים = 2 תשלומים
-                const student = students.find(s => s.id === paymentForm.studentId);
-                if (student && student.status !== 'פעיל') {
-                  const { error: updateError } = await supabase
-                    .from('students')
-                    .update({ status: 'פעיל' })
-                    .eq('id', paymentForm.studentId)
-                    .eq('user_id', user.id);
-                  
-                  if (!updateError) {
-                    setStudents((prev) => prev.map(s => 
-                      s.id === paymentForm.studentId ? { ...s, status: 'פעיל' } : s
-                    ));
+              if (editingPayment) {
+                // עדכון תשלום קיים
+                const { error } = await supabase
+                  .from('payments')
+                  .update({
+                    payment_type: paymentForm.type,
+                    payment_method: paymentForm.method,
+                    payment_date: paymentForm.date,
+                    amount: paymentForm.amount,
+                    note: paymentForm.note
+                  })
+                  .eq('id', editingPayment.id)
+                  .eq('user_id', user.id);
+                
+                if (error) {
+                  toast.error('שגיאה בעדכון תשלום');
+                  return;
+                }
+                
+                setPayments((prev) => prev.map(p => 
+                  p.id === editingPayment.id 
+                    ? { ...p, type: paymentForm.type as Payment['type'], method: paymentForm.method, date: paymentForm.date, amount: paymentForm.amount, note: paymentForm.note }
+                    : p
+                ));
+                
+                toast.success('תשלום עודכן!');
+              } else {
+                // הוספת תשלום חדש
+                const { data, error } = await supabase
+                  .from('payments')
+                  .insert({
+                    user_id: user.id,
+                    student_id: paymentForm.studentId,
+                    payment_type: paymentForm.type,
+                    payment_method: paymentForm.method,
+                    payment_date: paymentForm.date,
+                    amount: paymentForm.amount,
+                    note: paymentForm.note
+                  })
+                  .select()
+                  .single();
+                
+                if (error) {
+                  toast.error('שגיאה בשמירת תשלום');
+                  return;
+                }
+                
+                const newPayment = { 
+                  id: data.id, 
+                  studentId: paymentForm.studentId, 
+                  type: paymentForm.type as Payment['type'], 
+                  method: paymentForm.method, 
+                  date: paymentForm.date, 
+                  amount: paymentForm.amount, 
+                  note: paymentForm.note 
+                };
+                
+                setPayments((prev) => [...prev, newPayment]);
+                
+                // בדיקה אם זה התשלום השני והפיכת התלמיד לפעיל
+                const studentPayments = payments.filter(p => p.studentId === paymentForm.studentId);
+                if (studentPayments.length >= 1) { // התשלום הנוכחי + תשלום אחד קיים = 2 תשלומים
+                  const student = students.find(s => s.id === paymentForm.studentId);
+                  if (student && student.status !== 'פעיל') {
+                    const { error: updateError } = await supabase
+                      .from('students')
+                      .update({ status: 'פעיל' })
+                      .eq('id', paymentForm.studentId)
+                      .eq('user_id', user.id);
+                    
+                    if (!updateError) {
+                      setStudents((prev) => prev.map(s => 
+                        s.id === paymentForm.studentId ? { ...s, status: 'פעיל' } : s
+                      ));
+                    }
                   }
                 }
+                
+                toast.success('תשלום נוסף!');
               }
               
               setShowPaymentModal(false); 
+              setEditingPayment(null);
               setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '' }); 
-              toast.success('תשלום נוסף!');
-            }}>אישור</Button><Button variant="outline" className="flex-1" onClick={() => setShowPaymentModal(false)}>ביטול</Button></div>
+            }}>אישור</Button><Button variant="outline" className="flex-1" onClick={() => { setShowPaymentModal(false); setEditingPayment(null); }}>ביטול</Button></div>
           </div>
         </DialogContent>
       </Dialog>
