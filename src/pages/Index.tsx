@@ -116,17 +116,51 @@ export default function Index() {
   function calcPayment(studentId: string, type: string, date: string) {
     const student = students.find((s) => s.id === studentId);
     if (!student) return { amount: 0, note: '' };
-    if (type === 'ניסיון') return { amount: TRIAL_PRICE, note: '' };
-    if (type === 'חד פעמי') return { amount: SINGLE_PRICE, note: '' };
-    if (type === 'חודשי') {
+    
+    // חישוב יתרת התלמיד (זכות/חוב) מכל התשלומים הקודמים
+    const studentPayments = payments.filter((p) => p.studentId === studentId && p.date < date);
+    let balance = 0;
+    
+    studentPayments.forEach((payment) => {
+      const expectedAmount = 
+        payment.type === 'ניסיון' ? TRIAL_PRICE :
+        payment.type === 'חד פעמי' ? SINGLE_PRICE :
+        student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+      
+      // יתרה = סכום ששולם - סכום צפוי
+      // אם חיובי = זכות, אם שלילי = חוב
+      balance += payment.amount - expectedAmount;
+    });
+    
+    // חישוב סכום התשלום הנוכחי
+    let baseAmount = 0;
+    let note = '';
+    
+    if (type === 'ניסיון') {
+      baseAmount = TRIAL_PRICE;
+    } else if (type === 'חד פעמי') {
+      baseAmount = SINGLE_PRICE;
+    } else if (type === 'חודשי') {
       const monthKey = date.slice(0, 7);
       const singles = payments.filter((p) => p.studentId === studentId && p.date.slice(0, 7) === monthKey && (p.type === 'ניסיון' || p.type === 'חד פעמי'));
       const sumSingles = singles.reduce((sum, p) => sum + p.amount, 0);
       const base = student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
-      const final = Math.max(base - sumSingles, 0);
-      return { amount: final, note: sumSingles > 0 ? `כולל קיזוז ${formatILS(sumSingles)}` : '' };
+      baseAmount = Math.max(base - sumSingles, 0);
+      if (sumSingles > 0) {
+        note = `כולל קיזוז ${formatILS(sumSingles)} מתשלומים בחודש`;
+      }
     }
-    return { amount: 0, note: '' };
+    
+    // קיזוז יתרה
+    const finalAmount = Math.max(baseAmount - balance, 0);
+    
+    if (balance > 0) {
+      note = note ? `${note} | זכות: ${formatILS(balance)}` : `זכות: ${formatILS(balance)}`;
+    } else if (balance < 0) {
+      note = note ? `${note} | חוב: ${formatILS(Math.abs(balance))}` : `חוב: ${formatILS(Math.abs(balance))}`;
+    }
+    
+    return { amount: finalAmount, note };
   }
 
   return (
