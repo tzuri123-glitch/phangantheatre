@@ -263,6 +263,20 @@ export default function Index() {
             });
             setShowPaymentModal(true);
           }}
+          onDeletePayment={async (paymentId) => {
+            if (!user) return;
+            if (!confirm('האם אתה בטוח שברצונך למחוק תשלום זה?')) return;
+            
+            const { error } = await supabase.from('payments').delete().eq('id', paymentId).eq('user_id', user.id);
+            
+            if (error) {
+              toast.error('שגיאה במחיקת תשלום');
+              return;
+            }
+            
+            setPayments(prev => prev.filter(p => p.id !== paymentId));
+            toast.success('תשלום נמחק!');
+          }}
         />}
         {tab === 'attendance' && <Attendance 
           sessions={sessions} 

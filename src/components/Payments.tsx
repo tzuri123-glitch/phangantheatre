@@ -22,9 +22,10 @@ interface PaymentsProps {
   sessions: Session[];
   onAddPayment: () => void;
   onEditPayment: (payment: Payment) => void;
+  onDeletePayment: (paymentId: string) => void;
 }
 
-export default function Payments({ payments, students, sessions, onAddPayment, onEditPayment }: PaymentsProps) {
+export default function Payments({ payments, students, sessions, onAddPayment, onEditPayment, onDeletePayment }: PaymentsProps) {
   const [expandedClasses, setExpandedClasses] = useState<Record<string, boolean>>({});
   const [expandedStudents, setExpandedStudents] = useState<Record<string, boolean>>({});
   const [classSearchQueries, setClassSearchQueries] = useState<Record<string, string>>({});
@@ -217,13 +218,23 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
                                   </TableCell>
                                   <TableCell className="text-muted-foreground text-sm">{payment.note}</TableCell>
                                   <TableCell>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm"
-                                      onClick={() => onEditPayment(payment)}
-                                    >
-                                      ✏️
-                                    </Button>
+                                    <div className="flex gap-2">
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm"
+                                        onClick={() => onEditPayment(payment)}
+                                      >
+                                        ✏️
+                                      </Button>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm"
+                                        onClick={() => onDeletePayment(payment.id)}
+                                        className="text-destructive hover:text-destructive"
+                                      >
+                                        🗑️
+                                      </Button>
+                                    </div>
                                   </TableCell>
                                 </TableRow>
                               ))}
