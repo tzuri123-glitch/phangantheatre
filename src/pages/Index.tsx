@@ -83,7 +83,73 @@ export default function Index() {
             <div className="space-y-2"><Label>אחים בחוג?</Label><Select value={editingStudent.isSibling ? 'true' : 'false'} onValueChange={(v) => setEditingStudent({ ...editingStudent, isSibling: v === 'true' })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="false">לא</SelectItem><SelectItem value="true">כן</SelectItem></SelectContent></Select></div>
             <div className="space-y-2"><Label>שיוך חוג</Label><Select value={editingStudent.className} onValueChange={(v) => setEditingStudent({ ...editingStudent, className: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CLASS_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>סטטוס</Label><Select value={editingStudent.status} onValueChange={(v: Student['status']) => setEditingStudent({ ...editingStudent, status: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="חדש">חדש</SelectItem><SelectItem value="פעיל">פעיל</SelectItem><SelectItem value="בהקפאה">בהקפאה</SelectItem><SelectItem value="בהמתנה">בהמתנה</SelectItem></SelectContent></Select></div>
-            <div className="flex gap-3"><Button className="flex-1" onClick={() => { if (!editingStudent.name) { toast.error('נא למלא שם'); return; } if (!editingStudent.id) { const newStudent = { ...editingStudent, id: genId() }; setStudents((prev) => [...prev, newStudent]); toast.success('תלמיד נוסף!'); } else { setStudents((prev) => prev.map((s) => s.id === editingStudent.id ? editingStudent : s)); toast.success('תלמיד עודכן!'); } setShowStudentModal(false); setEditingStudent(null); }}>אישור</Button><Button variant="outline" className="flex-1" onClick={() => { setShowStudentModal(false); setEditingStudent(null); }}>ביטול</Button></div>
+            <div className="flex gap-3">
+              <Button 
+                className="flex-1" 
+                onClick={() => { 
+                  if (!editingStudent.name) { 
+                    toast.error('נא למלא שם'); 
+                    return; 
+                  } 
+                  let savedStudentId: number;
+                  if (!editingStudent.id) { 
+                    const newStudent = { ...editingStudent, id: genId() }; 
+                    savedStudentId = newStudent.id;
+                    setStudents((prev) => [...prev, newStudent]); 
+                    toast.success('תלמיד נוסף!'); 
+                  } else { 
+                    savedStudentId = editingStudent.id;
+                    setStudents((prev) => prev.map((s) => s.id === editingStudent.id ? editingStudent : s)); 
+                    toast.success('תלמיד עודכן!'); 
+                  } 
+                  setShowStudentModal(false); 
+                  setEditingStudent(null);
+                  // מעבר לעמוד תשלומים והוספת תשלום
+                  setTab('payments');
+                  setPaymentForm({ 
+                    studentId: savedStudentId.toString(), 
+                    type: '', 
+                    method: 'מזומן', 
+                    date: new Date().toISOString().slice(0, 10) 
+                  });
+                  setShowPaymentModal(true);
+                }}
+              >
+                אישור ומעבר לתשלום
+              </Button>
+              <Button 
+                variant="outline" 
+                className="flex-1" 
+                onClick={() => { 
+                  if (!editingStudent.name) { 
+                    toast.error('נא למלא שם'); 
+                    return; 
+                  } 
+                  if (!editingStudent.id) { 
+                    const newStudent = { ...editingStudent, id: genId() }; 
+                    setStudents((prev) => [...prev, newStudent]); 
+                    toast.success('תלמיד נוסף!'); 
+                  } else { 
+                    setStudents((prev) => prev.map((s) => s.id === editingStudent.id ? editingStudent : s)); 
+                    toast.success('תלמיד עודכן!'); 
+                  } 
+                  setShowStudentModal(false); 
+                  setEditingStudent(null); 
+                }}
+              >
+                אישור
+              </Button>
+              <Button 
+                variant="secondary" 
+                className="flex-1" 
+                onClick={() => { 
+                  setShowStudentModal(false); 
+                  setEditingStudent(null); 
+                }}
+              >
+                ביטול
+              </Button>
+            </div>
           </div>}
         </DialogContent>
       </Dialog>
