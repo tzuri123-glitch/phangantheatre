@@ -22,50 +22,45 @@ export function getPaymentStatusForDate(
 
   // ספירת תשלומים - כל תשלום = כמות שיעורים ששולמו
   const studentPayments = payments.filter(p => p.studentId === studentId);
-  const totalPaidLessons = studentPayments.reduce((sum, payment) => {
+  
+  let totalCredit = 0; // זכות מתשלומים
+  let totalDebt = 0;   // חוב משיעורים
+
+  // חישוב זכות מתשלומים
+  studentPayments.forEach(payment => {
     if (payment.type === 'ניסיון' || payment.type === 'חד פעמי') {
-      return sum + 1;
+      totalCredit += 1;
     } else if (payment.type === 'חודשי') {
-      return sum + 4;
+      totalCredit += 4;
     }
-    return sum;
-  }, 0);
+  });
 
-  // ספירת נוכחות - רק "נוכח" נספר
-  const attendedCount = sessions.reduce((count, session) => {
-    const studentRecord = session.students.find(st => st.studentId === studentId);
-    if (studentRecord && studentRecord.status === 'נוכח') {
-      return count + 1;
-    }
-    return count;
-  }, 0);
+  // חישוב חוב - ספירת שיעורים שנוצרו בכיתה של התלמיד
+  const classSessionsCount = sessions.filter(session => 
+    session.className === student.className
+  ).length;
+  
+  totalDebt = classSessionsCount;
 
-  // חישוב יתרה: תשלומים - נוכחות
-  const balance = totalPaidLessons - attendedCount;
+  // חישוב יתרה: זכות - חוב
+  const balance = totalCredit - totalDebt;
 
-  // בדיקה אם יש מנוי חודשי פעיל - תשלום חודשי שעדיין יש לו יתרה
+  // בדיקה אם יש מנוי חודשי פעיל
   let hasActiveMonthly = false;
   
-  // עבור על כל התשלומים החודשיים
   studentPayments.forEach(payment => {
     if (payment.type === 'חודשי') {
       const paymentDate = new Date(payment.date);
       
-      // ספור כמה פעמים היה נוכח אחרי התשלום החודשי הזה
-      const attendedAfterPayment = sessions.reduce((count, session) => {
+      // ספור כמה שיעורים של הכיתה נוצרו אחרי התשלום החודשי הזה
+      const sessionsAfterPayment = sessions.filter(session => {
         const sessionDate = new Date(session.date);
-        const studentRecord = session.students.find(st => st.studentId === studentId);
-        
-        if (studentRecord && 
-            studentRecord.status === 'נוכח' && 
-            sessionDate >= paymentDate) {
-          return count + 1;
-        }
-        return count;
-      }, 0);
+        return session.className === student.className && 
+               sessionDate >= paymentDate;
+      }).length;
       
-      // אם נוכח פחות מ-4 פעמים מאז התשלום, המנוי עדיין פעיל
-      if (attendedAfterPayment < 4) {
+      // אם נוצרו פחות מ-4 שיעורים מאז התשלום, המנוי עדיין פעיל
+      if (sessionsAfterPayment < 4) {
         hasActiveMonthly = true;
       }
     }
