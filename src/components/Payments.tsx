@@ -110,7 +110,7 @@ export default function Payments({ payments, students, onAddPayment, onEditPayme
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {CLASS_OPTIONS.map((className) => {
           const { studentPayments, totalClassIncome, studentCount } = getClassData(className);
           
