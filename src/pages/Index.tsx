@@ -349,7 +349,7 @@ export default function Index() {
                 return;
               }
               
-              setPayments((prev) => [...prev, { 
+              const newPayment = { 
                 id: data.id, 
                 studentId: paymentForm.studentId, 
                 type: paymentForm.type as Payment['type'], 
@@ -357,10 +357,32 @@ export default function Index() {
                 date: paymentForm.date, 
                 amount: paymentForm.amount, 
                 note: paymentForm.note 
-              }]);
+              };
+              
+              setPayments((prev) => [...prev, newPayment]);
+              
+              // בדיקה אם זה התשלום השני והפיכת התלמיד לפעיל
+              const studentPayments = payments.filter(p => p.studentId === paymentForm.studentId);
+              if (studentPayments.length >= 1) { // התשלום הנוכחי + תשלום אחד קיים = 2 תשלומים
+                const student = students.find(s => s.id === paymentForm.studentId);
+                if (student && student.status !== 'פעיל') {
+                  const { error: updateError } = await supabase
+                    .from('students')
+                    .update({ status: 'פעיל' })
+                    .eq('id', paymentForm.studentId)
+                    .eq('user_id', user.id);
+                  
+                  if (!updateError) {
+                    setStudents((prev) => prev.map(s => 
+                      s.id === paymentForm.studentId ? { ...s, status: 'פעיל' } : s
+                    ));
+                  }
+                }
+              }
+              
               setShowPaymentModal(false); 
               setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '' }); 
-              toast.success('תשלום נוסף!'); 
+              toast.success('תשלום נוסף!');
             }}>אישור</Button><Button variant="outline" className="flex-1" onClick={() => setShowPaymentModal(false)}>ביטול</Button></div>
           </div>
         </DialogContent>

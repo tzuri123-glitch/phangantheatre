@@ -30,12 +30,28 @@ export default function Payments({ payments, students, onAddPayment }: PaymentsP
   // קיבוץ תשלומים לפי תלמיד
   const studentPayments = students.map((student) => {
     const studentPaymentsList = payments.filter((p) => p.studentId === student.id);
-    const totalAmount = studentPaymentsList.reduce((sum, p) => sum + p.amount, 0);
+    const totalPaid = studentPaymentsList.reduce((sum, p) => sum + p.amount, 0);
+    
+    // חישוב מה התלמיד אמור לשלם
+    const monthlyPayments = studentPaymentsList.filter(p => p.type === 'חודשי');
+    const monthlyPrice = student.isSibling ? 2400 : 2800;
+    const expectedMonthlyAmount = monthlyPayments.length * monthlyPrice;
+    
+    const singlePayments = studentPaymentsList.filter(p => p.type === 'חד פעמי');
+    const expectedSingleAmount = singlePayments.length * 800;
+    
+    const trialPayments = studentPaymentsList.filter(p => p.type === 'ניסיון');
+    const expectedTrialAmount = trialPayments.length * 700;
+    
+    const totalExpected = expectedMonthlyAmount + expectedSingleAmount + expectedTrialAmount;
+    const balance = totalPaid - totalExpected; // חיובי = יתרה, שלילי = חוב
     
     return {
       student,
       payments: studentPaymentsList,
-      totalAmount,
+      totalPaid,
+      totalExpected,
+      balance,
     };
   }).filter(sp => sp.payments.length > 0); // רק תלמידים עם תשלומים
 
@@ -49,7 +65,7 @@ export default function Payments({ payments, students, onAddPayment }: PaymentsP
       </div>
 
       <div className="space-y-4">
-        {studentPayments.map(({ student, payments: studentPaymentsList, totalAmount }) => (
+        {studentPayments.map(({ student, payments: studentPaymentsList, totalPaid, totalExpected, balance }) => (
           <Card key={student.id} className="overflow-hidden">
             <div
               className="p-4 bg-accent cursor-pointer hover:bg-accent/80 transition-colors flex justify-between items-center"
@@ -64,9 +80,16 @@ export default function Payments({ payments, students, onAddPayment }: PaymentsP
                 </span>
               </div>
               <div className="flex items-center gap-4">
-                <span className="font-bold text-primary text-lg">
-                  {totalAmount.toLocaleString()} ₪
-                </span>
+                <div className="text-left">
+                  <div className="font-bold text-primary text-lg">
+                    {totalPaid.toLocaleString()} ₪
+                  </div>
+                  {balance !== 0 && (
+                    <div className={`text-sm font-medium ${balance < 0 ? 'text-red-500' : 'text-yellow-500'}`}>
+                      {balance < 0 ? `חוב: ${Math.abs(balance).toLocaleString()} ₪` : `יתרה: ${balance.toLocaleString()} ₪`}
+                    </div>
+                  )}
+                </div>
                 <span className="text-2xl">{expandedStudents[student.id] ? '▴' : '▾'}</span>
               </div>
             </div>
