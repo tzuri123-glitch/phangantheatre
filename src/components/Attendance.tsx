@@ -10,17 +10,21 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState } from 'react';
 
 interface AttendanceProps {
   sessions: Session[];
   students: Student[];
   onCreateSession: () => void;
+  onEditSession: (session: Session) => void;
+  onDeleteSession: (sessionId: string) => void;
+  onUpdateAttendance: (sessionId: string, studentId: string, status: 'נוכח' | 'לא הגיע' | 'לא באי') => void;
 }
 
-export default function Attendance({ sessions, students, onCreateSession }: AttendanceProps) {
+export default function Attendance({ sessions, students, onCreateSession, onEditSession, onDeleteSession, onUpdateAttendance }: AttendanceProps) {
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({});
-  const [searchQuery, setSearchQuery] = useState('');
+  const [sessionSearchQueries, setSessionSearchQueries] = useState<Record<string, string>>({});
 
   const toggleSession = (sessionId: string) => {
     setExpandedSessions((prev) => ({
@@ -30,10 +34,12 @@ export default function Attendance({ sessions, students, onCreateSession }: Atte
   };
 
   const getStudentName = (studentId: string) => {
-    return students.find((s) => s.id === studentId)?.name || '';
+    const student = students.find((s) => s.id === studentId);
+    return student ? `${student.name} ${student.lastName}` : '';
   };
 
-  const filterStudentRecords = (sessionStudents: typeof sessions[0]['students']) => {
+  const filterStudentRecords = (sessionId: string, sessionStudents: typeof sessions[0]['students']) => {
+    const searchQuery = sessionSearchQueries[sessionId] || '';
     if (searchQuery.length < 3) return sessionStudents;
     const query = searchQuery.toLowerCase();
     return sessionStudents.filter((record) => {
@@ -48,16 +54,8 @@ export default function Attendance({ sessions, students, onCreateSession }: Atte
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex justify-between items-center gap-4">
+      <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold text-foreground">נוכחות</h2>
-        <div className="flex gap-4 items-center flex-1 max-w-md">
-          <Input
-            placeholder="חיפוש לפי שם תלמיד..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1"
-          />
-        </div>
         <Button onClick={onCreateSession} className="bg-primary hover:bg-primary-hover">
           ➕ יצירת שיעור
         </Button>
@@ -74,40 +72,74 @@ export default function Attendance({ sessions, students, onCreateSession }: Atte
                 {session.date} – {session.className}
                 {session.trial && ' (שיעור ניסיון)'}
               </span>
-              <span className="text-2xl">{expandedSessions[session.id] ? '▴' : '▾'}</span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditSession(session);
+                  }}
+                >
+                  ✏️
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteSession(session.id);
+                  }}
+                  className="text-destructive hover:text-destructive"
+                >
+                  🗑️
+                </Button>
+                <span className="text-2xl">{expandedSessions[session.id] ? '▴' : '▾'}</span>
+              </div>
             </div>
 
             {expandedSessions[session.id] && (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right">תלמיד</TableHead>
-                    <TableHead className="text-right">סטטוס</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filterStudentRecords(session.students).map((record) => (
-                    <TableRow key={record.studentId}>
-                      <TableCell className="font-medium">
-                        {getStudentName(record.studentId)}
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-block px-3 py-1 rounded-full text-sm ${
-                            record.status === 'נוכח'
-                              ? 'bg-green-100 text-green-800'
-                              : record.status === 'לא הגיע'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}
-                        >
-                          {record.status}
-                        </span>
-                      </TableCell>
+              <div className="p-4">
+                <div className="mb-4">
+                  <Input
+                    placeholder="חיפוש תלמיד..."
+                    value={sessionSearchQueries[session.id] || ''}
+                    onChange={(e) => setSessionSearchQueries(prev => ({ ...prev, [session.id]: e.target.value }))}
+                  />
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-right">תלמיד</TableHead>
+                      <TableHead className="text-right">סטטוס</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filterStudentRecords(session.id, session.students).map((record) => (
+                      <TableRow key={record.studentId}>
+                        <TableCell className="font-medium">
+                          {getStudentName(record.studentId)}
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={record.status}
+                            onValueChange={(v: typeof record.status) => onUpdateAttendance(session.id, record.studentId, v)}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="נוכח">נוכח</SelectItem>
+                              <SelectItem value="לא הגיע">לא הגיע</SelectItem>
+                              <SelectItem value="לא באי">לא באי</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </Card>
         ))}

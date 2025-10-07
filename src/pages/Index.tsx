@@ -53,6 +53,11 @@ export default function Index() {
         .select('*')
         .eq('user_id', user.id);
       
+      const { data: attendanceData } = await supabase
+        .from('attendance')
+        .select('*')
+        .eq('user_id', user.id);
+      
       if (studentsData) {
         setStudents(studentsData.map(s => ({
           id: s.id,
@@ -83,13 +88,19 @@ export default function Index() {
       }
       
       if (sessionsData) {
-        setSessions(sessionsData.map(s => ({
-          id: s.id,
-          className: s.class_name,
-          date: s.session_date,
-          trial: s.is_trial || false,
-          students: []
-        })));
+        setSessions(sessionsData.map(s => {
+          const sessionAttendance = attendanceData?.filter(a => a.session_id === s.id) || [];
+          return {
+            id: s.id,
+            className: s.class_name,
+            date: s.session_date,
+            trial: s.is_trial || false,
+            students: sessionAttendance.map(a => ({
+              studentId: a.student_id,
+              status: a.status as 'נוכח' | 'לא הגיע' | 'לא באי'
+            }))
+          };
+        }));
       }
     };
     
@@ -140,7 +151,55 @@ export default function Index() {
             setShowPaymentModal(true);
           }}
         />}
-        {tab === 'attendance' && <Attendance sessions={sessions} students={students} onCreateSession={() => setShowSessionForm(true)} />}
+        {tab === 'attendance' && <Attendance 
+          sessions={sessions} 
+          students={students} 
+          onCreateSession={() => setShowSessionForm(true)}
+          onEditSession={(session) => {
+            setCurrentSession(session);
+            setShowSessionForm(true);
+          }}
+          onDeleteSession={async (sessionId) => {
+            if (!user) return;
+            if (!confirm('האם אתה בטוח שברצונך למחוק שיעור זה?')) return;
+            
+            // מחיקת נוכחות
+            await supabase.from('attendance').delete().eq('session_id', sessionId).eq('user_id', user.id);
+            
+            // מחיקת שיעור
+            const { error } = await supabase.from('sessions').delete().eq('id', sessionId).eq('user_id', user.id);
+            
+            if (error) {
+              toast.error('שגיאה במחיקת שיעור');
+              return;
+            }
+            
+            setSessions(prev => prev.filter(s => s.id !== sessionId));
+            toast.success('שיעור נמחק!');
+          }}
+          onUpdateAttendance={async (sessionId, studentId, status) => {
+            if (!user) return;
+            
+            const { error } = await supabase
+              .from('attendance')
+              .update({ status })
+              .eq('session_id', sessionId)
+              .eq('student_id', studentId)
+              .eq('user_id', user.id);
+            
+            if (error) {
+              toast.error('שגיאה בעדכון נוכחות');
+              return;
+            }
+            
+            setSessions(prev => prev.map(s => 
+              s.id === sessionId 
+                ? { ...s, students: s.students.map(st => st.studentId === studentId ? { ...st, status } : st) }
+                : s
+            ));
+            toast.success('נוכחות עודכנה!');
+          }}
+        />}
       </main>
 
       <Dialog open={showStudentModal} onOpenChange={(open) => { if (!open) { setShowStudentModal(false); setEditingStudent(null); } }}>
@@ -484,7 +543,7 @@ export default function Index() {
       </Dialog>
 
       <Dialog open={showSessionForm} onOpenChange={(open) => { if (!open) { setShowSessionForm(false); setCurrentSession(null); } }}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>{currentSession ? `נוכחות ${currentSession.date}` : 'יצירת שיעור'}</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>{currentSession?.id ? `עריכת נוכחות ${currentSession.date}` : currentSession ? `נוכחות ${currentSession.date}` : 'יצירת שיעור'}</DialogTitle></DialogHeader>
           {!currentSession ? <div className="space-y-4">
             <div className="space-y-2"><Label>חוג</Label><Select value={sessionForm.className} onValueChange={(v) => setSessionForm({ ...sessionForm, className: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CLASS_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>תאריך</Label><Input type="date" value={sessionForm.date} onChange={(e) => setSessionForm({ ...sessionForm, date: e.target.value })} /></div>
@@ -495,59 +554,91 @@ export default function Index() {
             <div className="flex gap-3"><Button className="flex-1" onClick={async () => { 
               if (!user) return;
               
-              // שמירת השיעור
-              const { data: sessionData, error: sessionError } = await supabase
-                .from('sessions')
-                .insert({
-                  user_id: user.id,
-                  class_name: currentSession.className,
-                  session_date: currentSession.date,
-                  is_trial: currentSession.trial
-                })
-                .select()
-                .single();
-              
-              if (sessionError) {
-                toast.error('שגיאה בשמירת שיעור');
-                return;
-              }
-              
-              // שמירת נוכחות
-              for (const { studentId, status } of currentSession.students) {
-                await supabase
-                  .from('attendance')
+              if (currentSession.id) {
+                // עדכון שיעור קיים
+                const { error: sessionError } = await supabase
+                  .from('sessions')
+                  .update({
+                    class_name: currentSession.className,
+                    session_date: currentSession.date,
+                    is_trial: currentSession.trial
+                  })
+                  .eq('id', currentSession.id)
+                  .eq('user_id', user.id);
+                
+                if (sessionError) {
+                  toast.error('שגיאה בעדכון שיעור');
+                  return;
+                }
+                
+                // עדכון נוכחות
+                for (const { studentId, status } of currentSession.students) {
+                  await supabase
+                    .from('attendance')
+                    .update({ status })
+                    .eq('session_id', currentSession.id)
+                    .eq('student_id', studentId)
+                    .eq('user_id', user.id);
+                }
+                
+                setSessions((prev) => prev.map(s => s.id === currentSession.id ? currentSession : s));
+                toast.success('שיעור עודכן!');
+              } else {
+                // שמירת שיעור חדש
+                const { data: sessionData, error: sessionError } = await supabase
+                  .from('sessions')
                   .insert({
                     user_id: user.id,
-                    session_id: sessionData.id,
-                    student_id: studentId,
-                    status: status
-                  });
+                    class_name: currentSession.className,
+                    session_date: currentSession.date,
+                    is_trial: currentSession.trial
+                  })
+                  .select()
+                  .single();
                 
-                // אם זה ניסיון והתלמיד נוכח, צור תשלום
-                if (currentSession.trial && status === 'נוכח' && !payments.some((p) => p.studentId === studentId && p.type === 'ניסיון' && p.date === currentSession.date)) {
-                  const { amount, note } = calcPayment(studentId, 'ניסיון', currentSession.date);
+                if (sessionError) {
+                  toast.error('שגיאה בשמירת שיעור');
+                  return;
+                }
+                
+                // שמירת נוכחות
+                for (const { studentId, status } of currentSession.students) {
                   await supabase
-                    .from('payments')
+                    .from('attendance')
                     .insert({
                       user_id: user.id,
+                      session_id: sessionData.id,
                       student_id: studentId,
-                      payment_type: 'ניסיון',
-                      payment_method: 'מזומן',
-                      payment_date: currentSession.date,
-                      amount,
-                      note,
-                      discount: 0
+                      status: status
                     });
                   
-                  setPayments((prev) => [...prev, { id: crypto.randomUUID(), studentId, type: 'ניסיון', method: 'מזומן', date: currentSession.date, amount, note, discount: 0 }]);
+                  // אם זה ניסיון והתלמיד נוכח, צור תשלום
+                  if (currentSession.trial && status === 'נוכח' && !payments.some((p) => p.studentId === studentId && p.type === 'ניסיון' && p.date === currentSession.date)) {
+                    const { amount, note } = calcPayment(studentId, 'ניסיון', currentSession.date);
+                    await supabase
+                      .from('payments')
+                      .insert({
+                        user_id: user.id,
+                        student_id: studentId,
+                        payment_type: 'ניסיון',
+                        payment_method: 'מזומן',
+                        payment_date: currentSession.date,
+                        amount,
+                        note,
+                        discount: 0
+                      });
+                    
+                    setPayments((prev) => [...prev, { id: crypto.randomUUID(), studentId, type: 'ניסיון', method: 'מזומן', date: currentSession.date, amount, note, discount: 0 }]);
+                  }
                 }
+                
+                setSessions((prev) => [...prev, { ...currentSession, id: sessionData.id }]);
+                toast.success('שיעור נשמר!');
               }
               
-              setSessions((prev) => [...prev, { ...currentSession, id: sessionData.id }]);
               setCurrentSession(null); 
               setShowSessionForm(false); 
               setSessionForm({ className: CLASS_OPTIONS[0], date: new Date().toISOString().slice(0, 10), trial: false }); 
-              toast.success('שיעור נשמר!'); 
             }}>אישור</Button><Button variant="outline" className="flex-1" onClick={() => { setCurrentSession(null); setShowSessionForm(false); }}>ביטול</Button></div>
           </div>}
         </DialogContent>
