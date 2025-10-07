@@ -10,6 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -28,6 +32,8 @@ export default function Index() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [paymentForm, setPaymentForm] = useState<{ studentId: string; type: string; method: 'מזומן' | 'סקאן'; date: string; amount: number; note: string; discount: number }>({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0 });
+  const [openStudentCombobox, setOpenStudentCombobox] = useState(false);
+  const [studentSearchValue, setStudentSearchValue] = useState('');
   
   const [showSessionForm, setShowSessionForm] = useState(false);
   const [sessionForm, setSessionForm] = useState<{ className: string; date: string; trial: boolean }>({ className: CLASS_OPTIONS[0], date: new Date().toISOString().slice(0, 10), trial: false });
@@ -416,16 +422,77 @@ export default function Index() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showPaymentModal} onOpenChange={(open) => { if (!open) { setShowPaymentModal(false); setEditingPayment(null); } }}>
+      <Dialog open={showPaymentModal} onOpenChange={(open) => { if (!open) { setShowPaymentModal(false); setEditingPayment(null); setStudentSearchValue(''); } }}>
         <DialogContent className="max-w-md"><DialogHeader><DialogTitle>{editingPayment ? 'עריכת תשלום' : 'הוספת תשלום'}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2"><Label>תלמיד</Label><Select value={paymentForm.studentId} onValueChange={(v) => { 
-              setPaymentForm({ ...paymentForm, studentId: v }); 
-              if (v && paymentForm.type) {
-                const calc = calcPayment(v, paymentForm.type, paymentForm.date);
-                setPaymentForm(prev => ({ ...prev, studentId: v, amount: calc.amount, note: calc.note }));
-              }
-            }}><SelectTrigger><SelectValue placeholder="בחר תלמיד" /></SelectTrigger><SelectContent>{students.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2">
+              <Label>תלמיד</Label>
+              <Popover open={openStudentCombobox} onOpenChange={setOpenStudentCombobox}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openStudentCombobox}
+                    className="w-full justify-between"
+                  >
+                    {paymentForm.studentId
+                      ? (() => {
+                          const student = students.find((s) => s.id === paymentForm.studentId);
+                          return student ? `${student.name}${student.lastName ? ' ' + student.lastName : ''}` : 'בחר תלמיד';
+                        })()
+                      : 'בחר תלמיד'}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command>
+                    <CommandInput 
+                      placeholder="חפש תלמיד..." 
+                      value={studentSearchValue}
+                      onValueChange={setStudentSearchValue}
+                    />
+                    <CommandList>
+                      <CommandEmpty>לא נמצאו תלמידים</CommandEmpty>
+                      <CommandGroup>
+                        {students
+                          .filter((s) => {
+                            const searchLower = studentSearchValue.toLowerCase();
+                            if (searchLower.length < 3) return true;
+                            const fullName = `${s.name} ${s.lastName}`.toLowerCase();
+                            return fullName.includes(searchLower);
+                          })
+                          .map((student) => (
+                            <CommandItem
+                              key={student.id}
+                              value={student.id}
+                              onSelect={(currentValue) => {
+                                const selectedStudent = students.find((s) => s.id === currentValue);
+                                if (selectedStudent) {
+                                  setPaymentForm({ ...paymentForm, studentId: selectedStudent.id });
+                                  if (paymentForm.type) {
+                                    const calc = calcPayment(selectedStudent.id, paymentForm.type, paymentForm.date);
+                                    setPaymentForm(prev => ({ ...prev, studentId: selectedStudent.id, amount: calc.amount, note: calc.note }));
+                                  }
+                                }
+                                setOpenStudentCombobox(false);
+                                setStudentSearchValue('');
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  paymentForm.studentId === student.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {student.name}{student.lastName ? ` ${student.lastName}` : ''}
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
             <div className="space-y-2"><Label>סוג תשלום</Label><Select value={paymentForm.type} onValueChange={(v) => { 
               setPaymentForm({ ...paymentForm, type: v }); 
               if (paymentForm.studentId) {
