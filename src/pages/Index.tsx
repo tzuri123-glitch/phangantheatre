@@ -724,8 +724,18 @@ export default function Index() {
                 setPaymentForm(prev => ({ ...prev, date: e.target.value, amount: calc.amount, note: calc.note }));
               }
             }} /></div>
+            <div className="space-y-2"><Label>הנחה (%)</Label><Input type="number" min="0" max="100" value={paymentForm.discount} onChange={(e) => { 
+              const newDiscount = Number(e.target.value);
+              setPaymentForm(prev => ({ ...prev, discount: newDiscount }));
+              
+              // חישוב מחדש של הסכום עם ההנחה
+              if (paymentForm.studentId && paymentForm.type) {
+                const calc = calcPayment(paymentForm.studentId, paymentForm.type, paymentForm.date);
+                const amountWithDiscount = calc.amount * (1 - newDiscount / 100);
+                setPaymentForm(prev => ({ ...prev, discount: newDiscount, amount: Math.round(amountWithDiscount) }));
+              }
+            }} /></div>
             <div className="space-y-2"><Label>סכום שהתקבל</Label><Input type="number" value={paymentForm.amount} onChange={(e) => setPaymentForm({ ...paymentForm, amount: Number(e.target.value) })} /></div>
-            <div className="space-y-2"><Label>הנחה (%)</Label><Input type="number" min="0" max="100" value={paymentForm.discount} onChange={(e) => setPaymentForm({ ...paymentForm, discount: Number(e.target.value) })} /></div>
             {paymentForm.note && <div className="text-sm text-muted-foreground">{paymentForm.note}</div>}
             <div className="flex gap-3"><Button className="flex-1" onClick={async () => { 
               if (!paymentForm.studentId || !paymentForm.type || !user) { 
