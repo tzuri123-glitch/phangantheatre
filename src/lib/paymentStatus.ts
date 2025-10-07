@@ -43,19 +43,13 @@ export function getPaymentStatusForDate(
 
   // טיפול בתשלומי ניסיון וחד פעמי
   if (lastPayment.type === 'ניסיון' || lastPayment.type === 'חד פעמי') {
-    // בדוק אם כבר השתמש בכניסה
+    // בדוק אם כבר עבר שיעור אחד מאז התשלום (לא משנה אם היה נוכח)
+    const paymentDate = new Date(lastPayment.date);
     const usedEntry = sessions.some(session => {
       const sessionDate = new Date(session.date);
-      const paymentDate = new Date(lastPayment.date);
-      
-      // בדוק אם יש attendance record "נוכח" אחרי התשלום
-      const attended = session.students.some(
-        st => st.studentId === studentId && 
-              st.status === 'נוכח' && 
-              sessionDate > paymentDate
-      );
-      
-      return attended;
+      // בדוק אם יש שיעור שהתקיים אחרי התשלום
+      return sessionDate > paymentDate && 
+             session.students.some(st => st.studentId === studentId);
     });
 
     if (usedEntry) {
@@ -80,25 +74,19 @@ export function getPaymentStatusForDate(
     const targetMonth = target.getMonth();
     const targetYear = target.getFullYear();
     
-    // ספור כניסות שנוצלו מהמנוי הזה
+    // ספור שיעורים שהתקיימו באותו חודש (לא משנה אם התלמיד היה נוכח)
     let usedEntries = 0;
     sessions.forEach(session => {
       const sessionDate = new Date(session.date);
       const sessionMonth = sessionDate.getMonth();
       const sessionYear = sessionDate.getFullYear();
       
-      // רק כניסות באותו חודש של התשלום, אחרי תאריך התשלום
+      // רק שיעורים באותו חודש של התשלום, שהתקיימו אחרי תאריך התשלום
       if (sessionYear === paymentYear && 
           sessionMonth === paymentMonth && 
-          sessionDate >= paymentDate) {
-        
-        const attended = session.students.some(
-          st => st.studentId === studentId && st.status === 'נוכח'
-        );
-        
-        if (attended) {
-          usedEntries++;
-        }
+          sessionDate >= paymentDate &&
+          session.students.some(st => st.studentId === studentId)) {
+        usedEntries++;
       }
     });
 
