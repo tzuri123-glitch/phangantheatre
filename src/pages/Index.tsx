@@ -243,7 +243,8 @@ export default function Index() {
         />}
         {tab === 'payments' && <Payments 
           payments={payments} 
-          students={students} 
+          students={students}
+          sessions={sessions}
           onAddPayment={() => {
             setEditingPayment(null);
             setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0 }); 
@@ -265,7 +266,8 @@ export default function Index() {
         />}
         {tab === 'attendance' && <Attendance 
           sessions={sessions} 
-          students={students} 
+          students={students}
+          payments={payments}
           onCreateSession={() => setShowSessionForm(true)}
           onEditSession={(session) => {
             setCurrentSession(session);

@@ -1,4 +1,4 @@
-import { Payment, Student, CLASS_OPTIONS } from '@/types';
+import { Payment, Student, CLASS_OPTIONS, Session } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -10,18 +10,21 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
 import { formatILS } from '@/lib/utils';
+import { getPaymentStatusForDate } from '@/lib/paymentStatus';
 
 
 interface PaymentsProps {
   payments: Payment[];
   students: Student[];
+  sessions: Session[];
   onAddPayment: () => void;
   onEditPayment: (payment: Payment) => void;
 }
 
-export default function Payments({ payments, students, onAddPayment, onEditPayment }: PaymentsProps) {
+export default function Payments({ payments, students, sessions, onAddPayment, onEditPayment }: PaymentsProps) {
   const [expandedClasses, setExpandedClasses] = useState<Record<string, boolean>>({});
   const [expandedStudents, setExpandedStudents] = useState<Record<string, boolean>>({});
   const [classSearchQueries, setClassSearchQueries] = useState<Record<string, string>>({});
@@ -137,34 +140,46 @@ export default function Payments({ payments, students, onAddPayment, onEditPayme
                   </div>
                   
                   <div className="space-y-2">
-                    {filterStudentPayments(className, studentPayments).map(({ student, payments: studentPaymentsList, totalPaid, totalExpected, balance }) => (
-                      <Card key={student.id} className="overflow-hidden">
-                        <div
-                          className="p-3 bg-muted cursor-pointer hover:bg-muted/80 transition-colors flex justify-between items-center"
-                          onClick={() => toggleStudent(student.id)}
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="font-semibold text-sm text-foreground">
-                              {student.name} {student.lastName}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {studentPaymentsList.length} תשלומים
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div className="text-left">
-                              <div className="font-bold text-primary text-sm">
-                                {formatILS(totalPaid)}
-                              </div>
-                              {balance !== 0 && (
-                                <div className={`text-xs font-medium ${balance < 0 ? 'text-red-500' : 'text-yellow-500'}`}>
-                                  {balance < 0 ? `חוב: ${formatILS(Math.abs(balance))}` : `יתרה: ${formatILS(balance)}`}
-                                </div>
+                    {filterStudentPayments(className, studentPayments).map(({ student, payments: studentPaymentsList, totalPaid, totalExpected, balance }) => {
+                      const today = new Date().toISOString().slice(0, 10);
+                      const paymentStatus = getPaymentStatusForDate(student.id, today, students, payments, sessions);
+                      
+                      return (
+                        <Card key={student.id} className="overflow-hidden">
+                          <div
+                            className="p-3 bg-muted cursor-pointer hover:bg-muted/80 transition-colors flex justify-between items-center"
+                            onClick={() => toggleStudent(student.id)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="font-semibold text-sm text-foreground">
+                                {student.name} {student.lastName}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {studentPaymentsList.length} תשלומים
+                              </span>
+                              {paymentStatus.canAttend ? (
+                                <Badge className="bg-green-500 text-white">
+                                  ✓ יכול להיכנס
+                                  {paymentStatus.remainingEntries && ` (${paymentStatus.remainingEntries})`}
+                                </Badge>
+                              ) : (
+                                <Badge variant="destructive">צריך לשלם</Badge>
                               )}
                             </div>
-                            <span className="text-xl">{expandedStudents[student.id] ? '▴' : '▾'}</span>
+                            <div className="flex items-center gap-3">
+                              <div className="text-left">
+                                <div className="font-bold text-primary text-sm">
+                                  {formatILS(totalPaid)}
+                                </div>
+                                {balance !== 0 && (
+                                  <div className={`text-xs font-medium ${balance < 0 ? 'text-red-500' : 'text-yellow-500'}`}>
+                                    {balance < 0 ? `חוב: ${formatILS(Math.abs(balance))}` : `יתרה: ${formatILS(balance)}`}
+                                  </div>
+                                )}
+                              </div>
+                              <span className="text-xl">{expandedStudents[student.id] ? '▴' : '▾'}</span>
+                            </div>
                           </div>
-                        </div>
 
                         {expandedStudents[student.id] && (
                           <Table>
@@ -214,8 +229,9 @@ export default function Payments({ payments, students, onAddPayment, onEditPayme
                             </TableBody>
                           </Table>
                         )}
-                      </Card>
-                    ))}
+                        </Card>
+                      );
+                    })}
                   </div>
                 </div>
               )}

@@ -1,7 +1,8 @@
-import { Session, Student } from '@/types';
+import { Session, Student, Payment } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -12,10 +13,12 @@ import {
 } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState } from 'react';
+import { getPaymentStatusForDate } from '@/lib/paymentStatus';
 
 interface AttendanceProps {
   sessions: Session[];
   students: Student[];
+  payments: Payment[];
   onCreateSession: () => void;
   onEditSession: (session: Session) => void;
   onDeleteSession: (sessionId: string) => void;
@@ -23,7 +26,7 @@ interface AttendanceProps {
   onRemoveStudentFromSession: (sessionId: string, studentId: string) => void;
 }
 
-export default function Attendance({ sessions, students, onCreateSession, onEditSession, onDeleteSession, onUpdateAttendance, onRemoveStudentFromSession }: AttendanceProps) {
+export default function Attendance({ sessions, students, payments, onCreateSession, onEditSession, onDeleteSession, onUpdateAttendance, onRemoveStudentFromSession }: AttendanceProps) {
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({});
   const [sessionSearchQueries, setSessionSearchQueries] = useState<Record<string, string>>({});
 
@@ -117,38 +120,52 @@ export default function Attendance({ sessions, students, onCreateSession, onEdit
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filterStudentRecords(session.id, session.students).map((record) => (
-                      <TableRow key={record.studentId}>
-                        <TableCell className="font-medium">
-                          {getStudentName(record.studentId)}
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={record.status}
-                            onValueChange={(v: typeof record.status) => onUpdateAttendance(session.id, record.studentId, v)}
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="נוכח">נוכח</SelectItem>
-                              <SelectItem value="לא הגיע">לא הגיע</SelectItem>
-                              <SelectItem value="לא באי">לא באי (הקפאה)</SelectItem>
-                              <SelectItem value="עזב">עזב</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => onRemoveStudentFromSession(session.id, record.studentId)}
-                          >
-                            🗑️
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {filterStudentRecords(session.id, session.students).map((record) => {
+                      const paymentStatus = getPaymentStatusForDate(record.studentId, session.date, students, payments, sessions);
+                      
+                      return (
+                        <TableRow key={record.studentId}>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              {getStudentName(record.studentId)}
+                              {paymentStatus.canAttend ? (
+                                <Badge className="bg-green-500 text-white text-xs">
+                                  ✓
+                                  {paymentStatus.remainingEntries && ` ${paymentStatus.remainingEntries}`}
+                                </Badge>
+                              ) : (
+                                <Badge variant="destructive" className="text-xs">לא שילם</Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              value={record.status}
+                              onValueChange={(v: typeof record.status) => onUpdateAttendance(session.id, record.studentId, v)}
+                            >
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="נוכח">נוכח</SelectItem>
+                                <SelectItem value="לא הגיע">לא הגיע</SelectItem>
+                                <SelectItem value="לא באי">לא באי (הקפאה)</SelectItem>
+                                <SelectItem value="עזב">עזב</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => onRemoveStudentFromSession(session.id, record.studentId)}
+                            >
+                              🗑️
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
