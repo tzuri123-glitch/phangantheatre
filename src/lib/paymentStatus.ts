@@ -43,33 +43,27 @@ export function getPaymentStatusForDate(
 
   // טיפול בתשלומי ניסיון וחד פעמי
   if (lastPayment.type === 'ניסיון' || lastPayment.type === 'חד פעמי') {
-    // בדוק אם כבר עבר שיעור אחד מאז התשלום (לא משנה אם היה נוכח)
     const paymentDate = new Date(lastPayment.date);
-    
-    // מצא שיעורים שהתקיימו אחרי התשלום שהתלמיד רשום אליהם
-    const sessionsAfterPayment = sessions.filter(session => {
+
+    // האם התקיים שיעור בכיתה של התלמיד אחרי התשלום ועד התאריך המבוקש
+    const sessionsAfterPaymentForClass = sessions.filter((session) => {
       const sessionDate = new Date(session.date);
-      const isInSession = session.students.some(st => st.studentId === studentId);
-      return sessionDate > paymentDate && isInSession;
+      return (
+        session.className === student.className &&
+        sessionDate > paymentDate &&
+        sessionDate <= target
+      );
     });
-    
-    console.log('[Trial/Single Payment]', {
-      studentId,
-      paymentDate: lastPayment.date,
-      paymentType: lastPayment.type,
-      sessionsAfterPayment: sessionsAfterPayment.length,
-      sessionDates: sessionsAfterPayment.map(s => s.date)
-    });
-    
-    if (sessionsAfterPayment.length > 0) {
+
+    // אם לא נרשמו שיעורים - נ fallback לחוק שבוע
+    const msInDay = 24 * 60 * 60 * 1000;
+    const daysSincePayment = Math.floor((target.getTime() - paymentDate.getTime()) / msInDay);
+    const usedEntry = sessionsAfterPaymentForClass.length > 0 || daysSincePayment >= 7;
+
+    if (usedEntry) {
       return { canAttend: false, status: 'unpaid', message: 'צריך לשלם' };
     } else {
-      return { 
-        canAttend: true, 
-        status: 'paid', 
-        message: 'שילם', 
-        remainingEntries: 1 
-      };
+      return { canAttend: true, status: 'paid', message: 'שילם', remainingEntries: 1 };
     }
   }
 
@@ -83,18 +77,20 @@ export function getPaymentStatusForDate(
     const targetMonth = target.getMonth();
     const targetYear = target.getFullYear();
     
-    // ספור שיעורים שהתקיימו באותו חודש (לא משנה אם התלמיד היה נוכח)
     let usedEntries = 0;
     sessions.forEach(session => {
       const sessionDate = new Date(session.date);
       const sessionMonth = sessionDate.getMonth();
       const sessionYear = sessionDate.getFullYear();
       
-      // רק שיעורים באותו חודש של התשלום, שהתקיימו אחרי תאריך התשלום
-      if (sessionYear === paymentYear && 
-          sessionMonth === paymentMonth && 
-          sessionDate >= paymentDate &&
-          session.students.some(st => st.studentId === studentId)) {
+      // רק שיעורי הכיתה של התלמיד באותו חודש של התשלום, שהתקיימו אחרי התשלום ועד התאריך המבוקש
+      if (
+        session.className === student.className &&
+        sessionYear === paymentYear &&
+        sessionMonth === paymentMonth &&
+        sessionDate >= paymentDate &&
+        sessionDate <= target
+      ) {
         usedEntries++;
       }
     });
