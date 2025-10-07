@@ -1,5 +1,5 @@
 export interface Student {
-  id: number;
+  id: string;
   name: string;
   lastName: string;
   phone: string;
@@ -12,8 +12,8 @@ export interface Student {
 }
 
 export interface Payment {
-  id: number;
-  studentId: number;
+  id: string;
+  studentId: string;
   type: 'ניסיון' | 'חד פעמי' | 'חודשי';
   method: 'מזומן' | 'סקאן';
   date: string;
@@ -22,12 +22,12 @@ export interface Payment {
 }
 
 export interface SessionStudent {
-  studentId: number;
+  studentId: string;
   status: 'נוכח' | 'לא הגיע' | 'לא באי';
 }
 
 export interface Session {
-  id: number;
+  id: string;
   className: string;
   date: string;
   trial: boolean;

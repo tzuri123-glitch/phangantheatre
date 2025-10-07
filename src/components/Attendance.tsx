@@ -18,16 +18,16 @@ interface AttendanceProps {
 }
 
 export default function Attendance({ sessions, students, onCreateSession }: AttendanceProps) {
-  const [expandedSessions, setExpandedSessions] = useState<Record<number, boolean>>({});
+  const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({});
 
-  const toggleSession = (sessionId: number) => {
+  const toggleSession = (sessionId: string) => {
     setExpandedSessions((prev) => ({
       ...prev,
       [sessionId]: !prev[sessionId],
     }));
   };
 
-  const getStudentName = (studentId: number) => {
+  const getStudentName = (studentId: string) => {
     return students.find((s) => s.id === studentId)?.name || '';
   };
 

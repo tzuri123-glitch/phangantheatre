@@ -17,7 +17,7 @@ interface PaymentsProps {
 }
 
 export default function Payments({ payments, students, onAddPayment }: PaymentsProps) {
-  const getStudentName = (studentId: number) => {
+  const getStudentName = (studentId: string) => {
     return students.find((s) => s.id === studentId)?.name || '';
   };
 

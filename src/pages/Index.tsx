@@ -54,7 +54,7 @@ export default function Index() {
       
       if (studentsData) {
         setStudents(studentsData.map(s => ({
-          id: parseInt(s.id),
+          id: s.id,
           name: s.name,
           lastName: s.last_name || '',
           phone: s.phone || '',
@@ -69,8 +69,8 @@ export default function Index() {
       
       if (paymentsData) {
         setPayments(paymentsData.map(p => ({
-          id: parseInt(p.id),
-          studentId: parseInt(p.student_id),
+          id: p.id,
+          studentId: p.student_id,
           type: p.payment_type as Payment['type'],
           method: p.payment_method as Payment['method'],
           date: p.payment_date,
@@ -81,7 +81,7 @@ export default function Index() {
       
       if (sessionsData) {
         setSessions(sessionsData.map(s => ({
-          id: parseInt(s.id),
+          id: s.id,
           className: s.class_name,
           date: s.session_date,
           trial: s.is_trial || false,
@@ -93,7 +93,7 @@ export default function Index() {
     loadData();
   }, [user]);
 
-  function calcPayment(studentId: number, type: string, date: string) {
+  function calcPayment(studentId: string, type: string, date: string) {
     const student = students.find((s) => s.id === studentId);
     if (!student) return { amount: 0, note: '' };
     if (type === 'ניסיון') return { amount: TRIAL_PRICE, note: '' };
@@ -114,7 +114,7 @@ export default function Index() {
       <TabNavigation activeTab={tab} onTabChange={setTab} />
       <main>
         {tab === 'dashboard' && <Dashboard students={students} payments={payments} />}
-        {tab === 'students' && <Students students={students} onAddStudent={() => { studentFormRef.current = { id: 0, name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, className: CLASS_OPTIONS[0], status: 'חדש' }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} onEditStudent={(s) => { studentFormRef.current = { ...s }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} />}
+        {tab === 'students' && <Students students={students} onAddStudent={() => { studentFormRef.current = { id: '', name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, className: CLASS_OPTIONS[0], status: 'חדש' }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} onEditStudent={(s) => { studentFormRef.current = { ...s }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} />}
         {tab === 'payments' && <Payments payments={payments} students={students} onAddPayment={() => setShowPaymentModal(true)} />}
         {tab === 'attendance' && <Attendance sessions={sessions} students={students} onCreateSession={() => setShowSessionForm(true)} />}
       </main>
@@ -167,25 +167,25 @@ export default function Index() {
                     savedStudentId = data.id;
                     const newStudent = { 
                       ...editingStudent, 
-                      id: parseInt(data.id)
+                      id: data.id
                     };
                     setStudents((prev) => [...prev, newStudent]); 
-                    toast.success('תלמיד נוסף!'); 
+                    toast.success('תלמיד נוסף!');
                   } else { 
                     const { error } = await supabase
                       .from('students')
                       .update({
                         name: editingStudent.name,
                         last_name: editingStudent.lastName,
-                        phone: editingStudent.phone,
-                        birth_date: editingStudent.birthDate,
-                        parent_name: editingStudent.parentName,
-                        parent_phone: editingStudent.parentPhone,
+                        phone: editingStudent.phone || null,
+                        birth_date: editingStudent.birthDate || null,
+                        parent_name: editingStudent.parentName || null,
+                        parent_phone: editingStudent.parentPhone || null,
                         is_sibling: editingStudent.isSibling,
                         class_name: editingStudent.className,
                         status: editingStudent.status
                       })
-                      .eq('id', editingStudent.id.toString())
+                      .eq('id', editingStudent.id)
                       .eq('user_id', user.id);
                     
                     if (error) {
@@ -193,9 +193,9 @@ export default function Index() {
                       return;
                     }
                     
-                    savedStudentId = editingStudent.id.toString();
+                    savedStudentId = editingStudent.id;
                     setStudents((prev) => prev.map((s) => s.id === editingStudent.id ? editingStudent : s)); 
-                    toast.success('תלמיד עודכן!'); 
+                    toast.success('תלמיד עודכן!');
                   } 
                   setShowStudentModal(false); 
                   setEditingStudent(null);
@@ -247,10 +247,10 @@ export default function Index() {
                     
                     const newStudent = { 
                       ...editingStudent, 
-                      id: parseInt(data.id)
+                      id: data.id
                     };
                     setStudents((prev) => [...prev, newStudent]); 
-                    toast.success('תלמיד נוסף!'); 
+                    toast.success('תלמיד נוסף!');
                   } else { 
                     const { error } = await supabase
                       .from('students')
@@ -265,7 +265,7 @@ export default function Index() {
                         class_name: editingStudent.className,
                         status: editingStudent.status
                       })
-                      .eq('id', editingStudent.id.toString())
+                      .eq('id', editingStudent.id)
                       .eq('user_id', user.id);
                     
                     if (error) {
@@ -303,14 +303,14 @@ export default function Index() {
             <div className="space-y-2"><Label>תלמיד</Label><Select value={paymentForm.studentId} onValueChange={(v) => { 
               setPaymentForm({ ...paymentForm, studentId: v }); 
               if (v && paymentForm.type) {
-                const calc = calcPayment(Number(v), paymentForm.type, paymentForm.date);
+                const calc = calcPayment(v, paymentForm.type, paymentForm.date);
                 setPaymentForm(prev => ({ ...prev, studentId: v, amount: calc.amount, note: calc.note }));
               }
-            }}><SelectTrigger><SelectValue placeholder="בחר תלמיד" /></SelectTrigger><SelectContent>{students.map((s) => <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>)}</SelectContent></Select></div>
+            }}><SelectTrigger><SelectValue placeholder="בחר תלמיד" /></SelectTrigger><SelectContent>{students.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>סוג תשלום</Label><Select value={paymentForm.type} onValueChange={(v) => { 
               setPaymentForm({ ...paymentForm, type: v }); 
               if (paymentForm.studentId) {
-                const calc = calcPayment(Number(paymentForm.studentId), v, paymentForm.date);
+                const calc = calcPayment(paymentForm.studentId, v, paymentForm.date);
                 setPaymentForm(prev => ({ ...prev, type: v, amount: calc.amount, note: calc.note }));
               }
             }}><SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger><SelectContent><SelectItem value="ניסיון">ניסיון (700 ₪)</SelectItem><SelectItem value="חד פעמי">חד פעמי (800 ₪)</SelectItem><SelectItem value="חודשי">חודשי</SelectItem></SelectContent></Select></div>
@@ -318,7 +318,7 @@ export default function Index() {
             <div className="space-y-2"><Label>תאריך</Label><Input type="date" value={paymentForm.date} onChange={(e) => { 
               setPaymentForm({ ...paymentForm, date: e.target.value }); 
               if (paymentForm.studentId && paymentForm.type) {
-                const calc = calcPayment(Number(paymentForm.studentId), paymentForm.type, e.target.value);
+                const calc = calcPayment(paymentForm.studentId, paymentForm.type, e.target.value);
                 setPaymentForm(prev => ({ ...prev, date: e.target.value, amount: calc.amount, note: calc.note }));
               }
             }} /></div>
@@ -350,14 +350,14 @@ export default function Index() {
               }
               
               setPayments((prev) => [...prev, { 
-                id: parseInt(data.id), 
-                studentId: Number(paymentForm.studentId), 
+                id: data.id, 
+                studentId: paymentForm.studentId, 
                 type: paymentForm.type as Payment['type'], 
                 method: paymentForm.method, 
                 date: paymentForm.date, 
                 amount: paymentForm.amount, 
                 note: paymentForm.note 
-              }]); 
+              }]);
               setShowPaymentModal(false); 
               setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '' }); 
               toast.success('תשלום נוסף!'); 
@@ -372,7 +372,7 @@ export default function Index() {
             <div className="space-y-2"><Label>חוג</Label><Select value={sessionForm.className} onValueChange={(v) => setSessionForm({ ...sessionForm, className: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CLASS_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>תאריך</Label><Input type="date" value={sessionForm.date} onChange={(e) => setSessionForm({ ...sessionForm, date: e.target.value })} /></div>
             <div className="space-y-2"><Label>ניסיון?</Label><Select value={sessionForm.trial ? 'true' : 'false'} onValueChange={(v) => setSessionForm({ ...sessionForm, trial: v === 'true' })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="false">לא</SelectItem><SelectItem value="true">כן</SelectItem></SelectContent></Select></div>
-            <div className="flex gap-3"><Button className="flex-1" onClick={() => setCurrentSession({ id: 0, className: sessionForm.className, date: sessionForm.date, trial: sessionForm.trial, students: students.filter((s) => s.className === sessionForm.className).map((s) => ({ studentId: s.id, status: 'נוכח' })) })}>המשך</Button><Button variant="outline" className="flex-1" onClick={() => setShowSessionForm(false)}>ביטול</Button></div>
+            <div className="flex gap-3"><Button className="flex-1" onClick={() => setCurrentSession({ id: '', className: sessionForm.className, date: sessionForm.date, trial: sessionForm.trial, students: students.filter((s) => s.className === sessionForm.className).map((s) => ({ studentId: s.id, status: 'נוכח' })) })}>המשך</Button><Button variant="outline" className="flex-1" onClick={() => setShowSessionForm(false)}>ביטול</Button></div>
           </div> : <div className="space-y-4">
             {currentSession.students.map((rec, idx) => <div key={rec.studentId} className="flex gap-2 items-center"><span className="flex-1">{students.find((s) => s.id === rec.studentId)?.name}</span><Select value={rec.status} onValueChange={(v: typeof rec.status) => { const newStudents = [...currentSession.students]; newStudents[idx] = { ...rec, status: v }; setCurrentSession({ ...currentSession, students: newStudents }); }}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="נוכח">נוכח</SelectItem><SelectItem value="לא הגיע">לא הגיע</SelectItem><SelectItem value="לא באי">לא באי</SelectItem></SelectContent></Select></div>)}
             <div className="flex gap-3"><Button className="flex-1" onClick={async () => { 
@@ -402,7 +402,7 @@ export default function Index() {
                   .insert({
                     user_id: user.id,
                     session_id: sessionData.id,
-                    student_id: studentId.toString(),
+                    student_id: studentId,
                     status: status
                   });
                 
@@ -413,7 +413,7 @@ export default function Index() {
                     .from('payments')
                     .insert({
                       user_id: user.id,
-                      student_id: studentId.toString(),
+                      student_id: studentId,
                       payment_type: 'ניסיון',
                       payment_method: 'מזומן',
                       payment_date: currentSession.date,
@@ -421,11 +421,11 @@ export default function Index() {
                       note
                     });
                   
-                  setPayments((prev) => [...prev, { id: Date.now(), studentId, type: 'ניסיון', method: 'מזומן', date: currentSession.date, amount, note }]);
+                  setPayments((prev) => [...prev, { id: crypto.randomUUID(), studentId, type: 'ניסיון', method: 'מזומן', date: currentSession.date, amount, note }]);
                 }
               }
               
-              setSessions((prev) => [...prev, { ...currentSession, id: parseInt(sessionData.id) }]); 
+              setSessions((prev) => [...prev, { ...currentSession, id: sessionData.id }]);
               setCurrentSession(null); 
               setShowSessionForm(false); 
               setSessionForm({ className: CLASS_OPTIONS[0], date: new Date().toISOString().slice(0, 10), trial: false }); 
