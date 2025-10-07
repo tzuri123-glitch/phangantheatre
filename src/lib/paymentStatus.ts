@@ -31,7 +31,7 @@ export function getPaymentStatusForDate(
     const paymentDate = new Date(payment.date);
     
     if (payment.type === 'ניסיון' || payment.type === 'חד פעמי') {
-      // חד פעמי/ניסיון מכסה שיעור אחד שקורה אחרי התשלום
+      // חד פעמי/ניסיון מכסה שיעור אחד בלבד
       totalCredit += 1;
       
       // ספור כמה שיעורים של הכיתה נוצרו אחרי התשלום
@@ -40,10 +40,8 @@ export function getPaymentStatusForDate(
         return session.className === student.className && sessionDate > paymentDate;
       });
       
-      // נספור רק את השיעור הראשון כ"נוצל"
-      if (sessionsAfterPayment.length > 0) {
-        totalDebt += 1;
-      }
+      // נספור את כל השיעורים שנוצרו אחרי התשלום
+      totalDebt += sessionsAfterPayment.length;
       
     } else if (payment.type === 'חודשי') {
       // חודשי מכסה 4 שיעורים באותו חודש
