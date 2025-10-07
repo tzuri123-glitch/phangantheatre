@@ -454,25 +454,15 @@ export default function Index() {
                     <CommandList>
                       <CommandEmpty>לא נמצאו תלמידים</CommandEmpty>
                       <CommandGroup>
-                        {students
-                          .filter((s) => {
-                            const searchLower = studentSearchValue.toLowerCase();
-                            if (searchLower.length < 3) return true;
-                            const fullName = `${s.name} ${s.lastName}`.toLowerCase();
-                            return fullName.includes(searchLower);
-                          })
-                          .map((student) => (
+                        {students.map((student) => (
                             <CommandItem
                               key={student.id}
-                              value={student.id}
-                              onSelect={(currentValue) => {
-                                const selectedStudent = students.find((s) => s.id === currentValue);
-                                if (selectedStudent) {
-                                  setPaymentForm({ ...paymentForm, studentId: selectedStudent.id });
-                                  if (paymentForm.type) {
-                                    const calc = calcPayment(selectedStudent.id, paymentForm.type, paymentForm.date);
-                                    setPaymentForm(prev => ({ ...prev, studentId: selectedStudent.id, amount: calc.amount, note: calc.note }));
-                                  }
+                              value={`${student.name}${student.lastName ? ' ' + student.lastName : ''}`}
+                              onSelect={() => {
+                                setPaymentForm({ ...paymentForm, studentId: student.id });
+                                if (paymentForm.type) {
+                                  const calc = calcPayment(student.id, paymentForm.type, paymentForm.date);
+                                  setPaymentForm(prev => ({ ...prev, studentId: student.id, amount: calc.amount, note: calc.note }));
                                 }
                                 setOpenStudentCombobox(false);
                                 setStudentSearchValue('');
