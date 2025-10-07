@@ -25,10 +25,10 @@ export default function Index() {
   const studentFormRef = useRef<Student | null>(null);
   
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentForm, setPaymentForm] = useState({ studentId: '', type: '', method: 'מזומן' as const, date: new Date().toISOString().slice(0, 10) });
+  const [paymentForm, setPaymentForm] = useState<{ studentId: string; type: string; method: 'מזומן' | 'סקאן'; date: string }>({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10) });
   
   const [showSessionForm, setShowSessionForm] = useState(false);
-  const [sessionForm, setSessionForm] = useState({ className: CLASS_OPTIONS[0], date: new Date().toISOString().slice(0, 10), trial: false });
+  const [sessionForm, setSessionForm] = useState<{ className: string; date: string; trial: boolean }>({ className: CLASS_OPTIONS[0], date: new Date().toISOString().slice(0, 10), trial: false });
   const [currentSession, setCurrentSession] = useState<Session | null>(null);
 
   useEffect(() => {
