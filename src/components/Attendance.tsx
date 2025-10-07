@@ -123,8 +123,18 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
                     {filterStudentRecords(session.id, session.students).map((record) => {
                       const paymentStatus = getPaymentStatusForDate(record.studentId, session.date, students, payments, sessions);
                       
+                      // קביעת צבע רקע לפי סטטוס
+                      let rowClassName = '';
+                      if (paymentStatus.balance < 0) {
+                        rowClassName = 'bg-red-100 hover:bg-red-200'; // חוב - אדום
+                      } else if (paymentStatus.balance === 0) {
+                        rowClassName = 'bg-green-100 hover:bg-green-200'; // מאוזן - ירוק
+                      } else if (paymentStatus.balance > 0) {
+                        rowClassName = 'bg-yellow-100 hover:bg-yellow-200'; // יתרה - צהוב
+                      }
+                      
                       return (
-                        <TableRow key={record.studentId}>
+                        <TableRow key={record.studentId} className={rowClassName}>
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-2">
                               {getStudentName(record.studentId)}
