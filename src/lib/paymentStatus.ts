@@ -43,22 +43,32 @@ export function getPaymentStatusForDate(
   // חישוב יתרה: תשלומים - נוכחות
   const balance = totalPaidLessons - attendedCount;
 
-  // בדיקה אם יש מנוי חודשי פעיל
-  const target = new Date(targetDate);
-  const targetMonth = target.getMonth();
-  const targetYear = target.getFullYear();
+  // בדיקה אם יש מנוי חודשי פעיל - תשלום חודשי שעדיין יש לו יתרה
+  let hasActiveMonthly = false;
   
-  const hasActiveMonthly = studentPayments.some(payment => {
-    if (payment.type !== 'חודשי') return false;
-    
-    const paymentDate = new Date(payment.date);
-    const paymentMonth = paymentDate.getMonth();
-    const paymentYear = paymentDate.getFullYear();
-    
-    // מנוי פעיל אם התשלום באותו חודש או יש יתרה מחודש קודם
-    return (paymentYear === targetYear && paymentMonth === targetMonth) ||
-           (paymentYear === targetYear && paymentMonth === targetMonth - 1 && balance > 0) ||
-           (paymentYear === targetYear - 1 && paymentMonth === 11 && targetMonth === 0 && balance > 0);
+  // עבור על כל התשלומים החודשיים
+  studentPayments.forEach(payment => {
+    if (payment.type === 'חודשי') {
+      const paymentDate = new Date(payment.date);
+      
+      // ספור כמה פעמים היה נוכח אחרי התשלום החודשי הזה
+      const attendedAfterPayment = sessions.reduce((count, session) => {
+        const sessionDate = new Date(session.date);
+        const studentRecord = session.students.find(st => st.studentId === studentId);
+        
+        if (studentRecord && 
+            studentRecord.status === 'נוכח' && 
+            sessionDate >= paymentDate) {
+          return count + 1;
+        }
+        return count;
+      }, 0);
+      
+      // אם נוכח פחות מ-4 פעמים מאז התשלום, המנוי עדיין פעיל
+      if (attendedAfterPayment < 4) {
+        hasActiveMonthly = true;
+      }
+    }
   });
 
   // קביעת המסר והסטטוס
