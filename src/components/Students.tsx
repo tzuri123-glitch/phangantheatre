@@ -1,5 +1,6 @@
 import { Student, CLASS_OPTIONS } from '@/types';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -9,6 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card } from '@/components/ui/card';
+import { useState } from 'react';
 
 interface StudentsProps {
   students: Student[];
@@ -17,10 +19,29 @@ interface StudentsProps {
 }
 
 export default function Students({ students, onAddStudent, onEditStudent }: StudentsProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredStudents = students.filter((student) => {
+    if (searchQuery.length < 3) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      student.name.toLowerCase().includes(query) ||
+      student.lastName.toLowerCase().includes(query)
+    );
+  });
+
   return (
     <div className="space-y-6 p-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center gap-4">
         <h2 className="text-3xl font-bold text-foreground">תלמידים</h2>
+        <div className="flex gap-4 items-center flex-1 max-w-md">
+          <Input
+            placeholder="חיפוש לפי שם או שם משפחה..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1"
+          />
+        </div>
         <Button onClick={onAddStudent} className="bg-primary hover:bg-primary-hover">
           ➕ הוסף תלמיד
         </Button>
@@ -39,7 +60,7 @@ export default function Students({ students, onAddStudent, onEditStudent }: Stud
             </TableRow>
           </TableHeader>
           <TableBody>
-            {students.map((student) => (
+            {filteredStudents.map((student) => (
               <TableRow key={student.id}>
                 <TableCell className="font-medium">{student.name}</TableCell>
                 <TableCell className="font-medium">{student.lastName}</TableCell>

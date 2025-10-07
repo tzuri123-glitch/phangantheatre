@@ -1,5 +1,6 @@
 import { Payment, Student } from '@/types';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -21,6 +22,7 @@ interface PaymentsProps {
 
 export default function Payments({ payments, students, onAddPayment, onEditPayment }: PaymentsProps) {
   const [expandedStudents, setExpandedStudents] = useState<Record<string, boolean>>({});
+  const [searchQuery, setSearchQuery] = useState('');
 
   const toggleStudent = (studentId: string) => {
     setExpandedStudents((prev) => ({
@@ -69,17 +71,34 @@ export default function Payments({ payments, students, onAddPayment, onEditPayme
     };
   }).filter(sp => sp.payments.length > 0); // רק תלמידים עם תשלומים
 
+  const filteredStudentPayments = studentPayments.filter(({ student }) => {
+    if (searchQuery.length < 3) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      student.name.toLowerCase().includes(query) ||
+      student.lastName.toLowerCase().includes(query)
+    );
+  });
+
   return (
     <div className="space-y-6 p-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center gap-4">
         <h2 className="text-3xl font-bold text-foreground">תשלומים</h2>
+        <div className="flex gap-4 items-center flex-1 max-w-md">
+          <Input
+            placeholder="חיפוש לפי שם תלמיד..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1"
+          />
+        </div>
         <Button onClick={onAddPayment} className="bg-primary hover:bg-primary-hover">
           ➕ הוסף תשלום
         </Button>
       </div>
 
       <div className="space-y-4">
-        {studentPayments.map(({ student, payments: studentPaymentsList, totalPaid, totalExpected, balance }) => (
+        {filteredStudentPayments.map(({ student, payments: studentPaymentsList, totalPaid, totalExpected, balance }) => (
           <Card key={student.id} className="overflow-hidden">
             <div
               className="p-4 bg-accent cursor-pointer hover:bg-accent/80 transition-colors flex justify-between items-center"
