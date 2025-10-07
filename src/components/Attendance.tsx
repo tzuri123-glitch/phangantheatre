@@ -139,11 +139,15 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
                           </TableCell>
                           <TableCell>
                             <Select
-                              value={record.status}
-                              onValueChange={(v: typeof record.status) => onUpdateAttendance(session.id, record.studentId, v)}
+                              value={record.status || undefined}
+                              onValueChange={(v) => {
+                                if (v && v !== '') {
+                                  onUpdateAttendance(session.id, record.studentId, v as 'נוכח' | 'לא הגיע' | 'לא באי' | 'עזב');
+                                }
+                              }}
                             >
                               <SelectTrigger className="w-32">
-                                <SelectValue />
+                                <SelectValue placeholder="בחר" />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="נוכח">נוכח</SelectItem>
