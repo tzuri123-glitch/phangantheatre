@@ -190,12 +190,20 @@ export default function Index() {
     
     // קיזוז יתרה
     const finalAmount = Math.max(baseAmount - balance, 0);
-    
+
     if (balance > 0) {
       note = note ? `${note} | זכות: ${formatILS(balance)}` : `זכות: ${formatILS(balance)}`;
     } else if (balance < 0) {
       note = note ? `${note} | חוב: ${formatILS(Math.abs(balance))}` : `חוב: ${formatILS(Math.abs(balance))}`;
     }
+
+    // Debug: עוזר לאתר חישוב שגוי
+    try {
+      const dbgPrev = payments
+        .filter((p) => p.studentId === studentId)
+        .map((p) => ({ date: p.date, type: p.type, amount: p.amount }));
+      console.log('[calcPayment]', { studentId, type, date, balance, baseAmount, finalAmount, prevPayments: dbgPrev });
+    } catch {}
     
     return { amount: finalAmount, note };
   }
