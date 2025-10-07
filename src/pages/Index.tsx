@@ -56,6 +56,7 @@ export default function Index() {
         setStudents(studentsData.map(s => ({
           id: parseInt(s.id),
           name: s.name,
+          lastName: s.last_name || '',
           phone: s.phone || '',
           birthDate: s.birth_date || '',
           parentName: s.parent_name || '',
@@ -113,7 +114,7 @@ export default function Index() {
       <TabNavigation activeTab={tab} onTabChange={setTab} />
       <main>
         {tab === 'dashboard' && <Dashboard students={students} payments={payments} />}
-        {tab === 'students' && <Students students={students} onAddStudent={() => { studentFormRef.current = { id: 0, name: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, className: CLASS_OPTIONS[0], status: 'חדש' }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} onEditStudent={(s) => { studentFormRef.current = { ...s }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} />}
+        {tab === 'students' && <Students students={students} onAddStudent={() => { studentFormRef.current = { id: 0, name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, className: CLASS_OPTIONS[0], status: 'חדש' }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} onEditStudent={(s) => { studentFormRef.current = { ...s }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} />}
         {tab === 'payments' && <Payments payments={payments} students={students} onAddPayment={() => setShowPaymentModal(true)} />}
         {tab === 'attendance' && <Attendance sessions={sessions} students={students} onCreateSession={() => setShowSessionForm(true)} />}
       </main>
@@ -122,7 +123,8 @@ export default function Index() {
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editingStudent?.id ? 'עריכת תלמיד' : 'הוספת תלמיד'}</DialogTitle></DialogHeader>
           {editingStudent && <div className="space-y-4">
-            <div className="space-y-2"><Label>שם תלמיד</Label><Input value={editingStudent.name} onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })} /></div>
+            <div className="space-y-2"><Label>שם פרטי</Label><Input value={editingStudent.name} onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })} /></div>
+            <div className="space-y-2"><Label>שם משפחה</Label><Input value={editingStudent.lastName} onChange={(e) => setEditingStudent({ ...editingStudent, lastName: e.target.value })} /></div>
             <div className="space-y-2"><Label>טלפון תלמיד</Label><Input value={editingStudent.phone} onChange={(e) => setEditingStudent({ ...editingStudent, phone: e.target.value })} /></div>
             <div className="space-y-2"><Label>תאריך לידה</Label><Input type="date" value={editingStudent.birthDate} onChange={(e) => setEditingStudent({ ...editingStudent, birthDate: e.target.value })} /></div>
             <div className="space-y-2"><Label>שם הורה</Label><Input value={editingStudent.parentName} onChange={(e) => setEditingStudent({ ...editingStudent, parentName: e.target.value })} /></div>
@@ -145,6 +147,7 @@ export default function Index() {
                       .insert({
                         user_id: user.id,
                         name: editingStudent.name,
+                        last_name: editingStudent.lastName,
                         phone: editingStudent.phone,
                         birth_date: editingStudent.birthDate,
                         parent_name: editingStudent.parentName,
@@ -173,6 +176,7 @@ export default function Index() {
                       .from('students')
                       .update({
                         name: editingStudent.name,
+                        last_name: editingStudent.lastName,
                         phone: editingStudent.phone,
                         birth_date: editingStudent.birthDate,
                         parent_name: editingStudent.parentName,
@@ -224,6 +228,7 @@ export default function Index() {
                       .insert({
                         user_id: user.id,
                         name: editingStudent.name,
+                        last_name: editingStudent.lastName,
                         phone: editingStudent.phone,
                         birth_date: editingStudent.birthDate,
                         parent_name: editingStudent.parentName,
@@ -251,6 +256,7 @@ export default function Index() {
                       .from('students')
                       .update({
                         name: editingStudent.name,
+                        last_name: editingStudent.lastName,
                         phone: editingStudent.phone,
                         birth_date: editingStudent.birthDate,
                         parent_name: editingStudent.parentName,

@@ -187,6 +187,7 @@ export type Database = {
           created_at: string | null
           id: string
           is_sibling: boolean | null
+          last_name: string | null
           name: string
           parent_name: string | null
           parent_phone: string | null
@@ -200,6 +201,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_sibling?: boolean | null
+          last_name?: string | null
           name: string
           parent_name?: string | null
           parent_phone?: string | null
@@ -213,6 +215,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_sibling?: boolean | null
+          last_name?: string | null
           name?: string
           parent_name?: string | null
           parent_phone?: string | null

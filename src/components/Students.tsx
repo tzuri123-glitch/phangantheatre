@@ -30,7 +30,8 @@ export default function Students({ students, onAddStudent, onEditStudent }: Stud
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-right">שם</TableHead>
+              <TableHead className="text-right">שם פרטי</TableHead>
+              <TableHead className="text-right">שם משפחה</TableHead>
               <TableHead className="text-right">טלפון</TableHead>
               <TableHead className="text-right">חוג</TableHead>
               <TableHead className="text-right">סטטוס</TableHead>
@@ -41,6 +42,7 @@ export default function Students({ students, onAddStudent, onEditStudent }: Stud
             {students.map((student) => (
               <TableRow key={student.id}>
                 <TableCell className="font-medium">{student.name}</TableCell>
+                <TableCell className="font-medium">{student.lastName}</TableCell>
                 <TableCell>{student.phone}</TableCell>
                 <TableCell>{student.className}</TableCell>
                 <TableCell>
