@@ -168,7 +168,34 @@ export default function Index() {
       <TabNavigation activeTab={tab} onTabChange={setTab} />
       <main>
         {tab === 'dashboard' && <Dashboard students={students} payments={payments} onAddStudent={() => { studentFormRef.current = { id: '', name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, siblingId: undefined, className: CLASS_OPTIONS[0], status: 'חדש' }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} />}
-        {tab === 'students' && <Students students={students} onAddStudent={() => { studentFormRef.current = { id: '', name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, siblingId: undefined, className: CLASS_OPTIONS[0], status: 'חדש' }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} onEditStudent={(s) => { studentFormRef.current = { ...s }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} />}
+        {tab === 'students' && <Students 
+          students={students} 
+          payments={payments.map(p => ({ studentId: p.studentId, amount: p.amount }))}
+          onAddStudent={() => { 
+            studentFormRef.current = { id: '', name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, siblingId: undefined, className: CLASS_OPTIONS[0], status: 'חדש' }; 
+            setEditingStudent(studentFormRef.current); 
+            setShowStudentModal(true); 
+          }} 
+          onEditStudent={(s) => { 
+            studentFormRef.current = { ...s }; 
+            setEditingStudent(studentFormRef.current); 
+            setShowStudentModal(true); 
+          }}
+          onDeleteStudent={async (studentId) => {
+            if (!user) return;
+            if (!confirm('האם אתה בטוח שברצונך למחוק תלמיד זה?')) return;
+            
+            const { error } = await supabase.from('students').delete().eq('id', studentId).eq('user_id', user.id);
+            
+            if (error) {
+              toast.error('שגיאה במחיקת תלמיד');
+              return;
+            }
+            
+            setStudents(prev => prev.filter(s => s.id !== studentId));
+            toast.success('תלמיד נמחק!');
+          }}
+        />}
         {tab === 'payments' && <Payments 
           payments={payments} 
           students={students} 

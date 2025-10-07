@@ -12,14 +12,17 @@ import {
 import { Card } from '@/components/ui/card';
 import { useState } from 'react';
 import { Users } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface StudentsProps {
   students: Student[];
+  payments: { studentId: string; amount: number }[];
   onAddStudent: () => void;
   onEditStudent: (student: Student) => void;
+  onDeleteStudent: (studentId: string) => void;
 }
 
-export default function Students({ students, onAddStudent, onEditStudent }: StudentsProps) {
+export default function Students({ students, payments, onAddStudent, onEditStudent, onDeleteStudent }: StudentsProps) {
   const [expandedClasses, setExpandedClasses] = useState<Record<string, boolean>>({});
   const [classSearchQueries, setClassSearchQueries] = useState<Record<string, string>>({});
 
@@ -92,40 +95,65 @@ export default function Students({ students, onAddStudent, onEditStudent }: Stud
                         <TableHead className="text-right">שם פרטי</TableHead>
                         <TableHead className="text-right">שם משפחה</TableHead>
                         <TableHead className="text-right">סטטוס</TableHead>
+                        <TableHead className="text-right">תשלומים</TableHead>
                         <TableHead className="text-right">פעולות</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filterStudents(className, classStudents).map((student) => (
-                        <TableRow key={student.id}>
-                          <TableCell className="font-medium">{student.name}</TableCell>
-                          <TableCell className="font-medium">{student.lastName}</TableCell>
-                          <TableCell>
-                            <span
-                              className={`inline-block px-3 py-1 rounded-full text-sm ${
-                                student.status === 'פעיל'
-                                  ? 'bg-green-100 text-green-800'
-                                  : student.status === 'חדש'
-                                  ? 'bg-blue-100 text-blue-800'
-                                  : student.status === 'בהקפאה'
-                                  ? 'bg-orange-100 text-orange-800'
-                                  : 'bg-gray-100 text-gray-800'
-                              }`}
-                            >
-                              {student.status}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => onEditStudent(student)}
-                            >
-                              ערוך
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {filterStudents(className, classStudents).map((student) => {
+                        const studentPaymentCount = payments.filter(p => p.studentId === student.id).length;
+                        
+                        return (
+                          <TableRow key={student.id}>
+                            <TableCell className="font-medium">{student.name}</TableCell>
+                            <TableCell className="font-medium">{student.lastName}</TableCell>
+                            <TableCell>
+                              <span
+                                className={`inline-block px-3 py-1 rounded-full text-sm ${
+                                  student.status === 'פעיל'
+                                    ? 'bg-green-100 text-green-800'
+                                    : student.status === 'חדש'
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : student.status === 'בהקפאה'
+                                    ? 'bg-orange-100 text-orange-800'
+                                    : 'bg-gray-100 text-gray-800'
+                                }`}
+                              >
+                                {student.status}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm text-muted-foreground">
+                                {studentPaymentCount > 0 ? `${studentPaymentCount} תשלומים` : 'אין תשלומים'}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => onEditStudent(student)}
+                                >
+                                  ✏️
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => {
+                                    if (studentPaymentCount > 0) {
+                                      toast.error('לא ניתן למחוק תלמיד עם תשלומים קיימים');
+                                      return;
+                                    }
+                                    onDeleteStudent(student.id);
+                                  }}
+                                >
+                                  🗑️
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
