@@ -58,7 +58,7 @@ export default function Students({ students, payments, onAddStudent, onEditStude
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {CLASS_OPTIONS.map((className) => {
           const classStudents = getStudentsByClass(className);
           const studentCount = classStudents.length;
@@ -89,8 +89,8 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                     />
                   </div>
                   
-                  <div className="max-h-[500px] overflow-y-auto px-4 pb-4">
-                    <Table>
+                  <div className="overflow-x-auto px-4 pb-4">
+                    <Table className="min-w-full">
                     <TableHeader className="sticky top-0 bg-background z-10">
                       <TableRow>
                         <TableHead className="text-right">שם פרטי</TableHead>
