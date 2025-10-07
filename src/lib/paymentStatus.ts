@@ -19,6 +19,8 @@ export function getPaymentStatusForDate(
     return { canAttend: false, status: 'unpaid', message: 'תלמיד לא נמצא' };
   }
 
+  console.log('[getPaymentStatusForDate]', { studentId, targetDate, paymentsCount: payments.filter(p => p.studentId === studentId).length });
+
   // מיון תשלומים לפי תאריך
   const studentPayments = payments
     .filter(p => p.studentId === studentId)
