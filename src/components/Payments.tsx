@@ -1,4 +1,4 @@
-import { Payment, Student, CLASS_OPTIONS, Session } from '@/types';
+import { Payment, Student, CLASS_OPTIONS } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -12,18 +12,16 @@ import {
 import { Card } from '@/components/ui/card';
 import { useState } from 'react';
 import { formatILS } from '@/lib/utils';
-import { calculatePaymentStatus, getStatusColor, getStatusIcon } from '@/lib/paymentStatus';
 
 
 interface PaymentsProps {
   payments: Payment[];
   students: Student[];
-  sessions: Session[];
   onAddPayment: () => void;
   onEditPayment: (payment: Payment) => void;
 }
 
-export default function Payments({ payments, students, sessions, onAddPayment, onEditPayment }: PaymentsProps) {
+export default function Payments({ payments, students, onAddPayment, onEditPayment }: PaymentsProps) {
   const [expandedClasses, setExpandedClasses] = useState<Record<string, boolean>>({});
   const [expandedStudents, setExpandedStudents] = useState<Record<string, boolean>>({});
   const [classSearchQueries, setClassSearchQueries] = useState<Record<string, string>>({});
@@ -139,27 +137,18 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
                   </div>
                   
                   <div className="space-y-2">
-                    {filterStudentPayments(className, studentPayments).map(({ student, payments: studentPaymentsList, totalPaid, totalExpected, balance }) => {
-                      const paymentStatus = calculatePaymentStatus(student, payments, sessions);
-                      
-                      return (
+                    {filterStudentPayments(className, studentPayments).map(({ student, payments: studentPaymentsList, totalPaid, totalExpected, balance }) => (
                       <Card key={student.id} className="overflow-hidden">
                         <div
                           className="p-3 bg-muted cursor-pointer hover:bg-muted/80 transition-colors flex justify-between items-center"
                           onClick={() => toggleStudent(student.id)}
                         >
                           <div className="flex items-center gap-3">
-                            <div className={`flex items-center justify-center w-7 h-7 rounded-full border-2 font-bold text-sm ${getStatusColor(paymentStatus.status)}`}>
-                              {getStatusIcon(paymentStatus.status)}
-                            </div>
                             <span className="font-semibold text-sm text-foreground">
                               {student.name} {student.lastName}
                             </span>
                             <span className="text-xs text-muted-foreground">
                               {studentPaymentsList.length} תשלומים
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              ({paymentStatus.message})
                             </span>
                           </div>
                           <div className="flex items-center gap-3">
@@ -226,8 +215,7 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
                           </Table>
                         )}
                       </Card>
-                    )}
-                    )}
+                    ))}
                   </div>
                 </div>
               )}

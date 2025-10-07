@@ -1,4 +1,4 @@
-import { Session, Student, Payment } from '@/types';
+import { Session, Student } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -12,12 +12,10 @@ import {
 } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState } from 'react';
-import { calculatePaymentStatus, getStatusColor, getStatusIcon } from '@/lib/paymentStatus';
 
 interface AttendanceProps {
   sessions: Session[];
   students: Student[];
-  payments: Payment[];
   onCreateSession: () => void;
   onEditSession: (session: Session) => void;
   onDeleteSession: (sessionId: string) => void;
@@ -25,7 +23,7 @@ interface AttendanceProps {
   onRemoveStudentFromSession: (sessionId: string, studentId: string) => void;
 }
 
-export default function Attendance({ sessions, students, payments, onCreateSession, onEditSession, onDeleteSession, onUpdateAttendance, onRemoveStudentFromSession }: AttendanceProps) {
+export default function Attendance({ sessions, students, onCreateSession, onEditSession, onDeleteSession, onUpdateAttendance, onRemoveStudentFromSession }: AttendanceProps) {
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({});
   const [sessionSearchQueries, setSessionSearchQueries] = useState<Record<string, string>>({});
 
@@ -114,30 +112,15 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
                   <TableHeader>
                     <TableRow>
                       <TableHead className="text-right">תלמיד</TableHead>
-                      <TableHead className="text-right">סטטוס תשלום</TableHead>
                       <TableHead className="text-right">סטטוס</TableHead>
                       <TableHead className="text-right">פעולות</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filterStudentRecords(session.id, session.students).map((record) => {
-                      const student = students.find(s => s.id === record.studentId);
-                      const paymentStatus = student ? calculatePaymentStatus(student, payments, sessions) : null;
-                      
-                      return (
+                    {filterStudentRecords(session.id, session.students).map((record) => (
                       <TableRow key={record.studentId}>
                         <TableCell className="font-medium">
                           {getStudentName(record.studentId)}
-                        </TableCell>
-                        <TableCell>
-                          {paymentStatus && (
-                            <div className="flex items-center gap-2">
-                              <div className={`flex items-center justify-center w-6 h-6 rounded-full border-2 font-bold text-xs ${getStatusColor(paymentStatus.status)}`}>
-                                {getStatusIcon(paymentStatus.status)}
-                              </div>
-                              <span className="text-xs text-muted-foreground">{paymentStatus.message}</span>
-                            </div>
-                          )}
                         </TableCell>
                         <TableCell>
                           <Select
@@ -165,8 +148,7 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
                           </Button>
                         </TableCell>
                       </TableRow>
-                    )}
-                    )}
+                    ))}
                   </TableBody>
                 </Table>
               </div>
