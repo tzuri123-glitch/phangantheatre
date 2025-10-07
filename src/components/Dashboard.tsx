@@ -1,15 +1,17 @@
 import { useEffect, useRef } from 'react';
 import { Student, Payment } from '@/types';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import Chart from 'chart.js/auto';
 import { formatILS } from '@/lib/utils';
 
 interface DashboardProps {
   students: Student[];
   payments: Payment[];
+  onAddStudent: () => void;
 }
 
-export default function Dashboard({ students, payments }: DashboardProps) {
+export default function Dashboard({ students, payments, onAddStudent }: DashboardProps) {
   const barChartRef = useRef<HTMLCanvasElement>(null);
   const pieChartRef = useRef<HTMLCanvasElement>(null);
   const barChartInstance = useRef<Chart | null>(null);
@@ -105,7 +107,12 @@ export default function Dashboard({ students, payments }: DashboardProps) {
 
   return (
     <div className="space-y-6 p-6">
-      <h2 className="text-3xl font-bold text-foreground">ברוך הבא למערכת ניהול החוג! 🎭</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-3xl font-bold text-foreground">ברוך הבא למערכת ניהול החוג! 🎭</h2>
+        <Button onClick={onAddStudent} className="bg-primary hover:bg-primary-hover">
+          ➕ הוסף תלמיד
+        </Button>
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="p-6 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
