@@ -27,7 +27,7 @@ export function getPaymentStatusForDate(
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   if (studentPayments.length === 0) {
-    return { canAttend: false, status: 'unpaid', message: 'לא שילם' };
+    return { canAttend: false, status: 'unpaid', message: 'נדרש תשלום' };
   }
 
   const target = new Date(targetDate);
@@ -36,7 +36,7 @@ export function getPaymentStatusForDate(
   const relevantPayments = studentPayments.filter(p => new Date(p.date) <= target);
   
   if (relevantPayments.length === 0) {
-    return { canAttend: false, status: 'unpaid', message: 'לא שילם' };
+    return { canAttend: false, status: 'unpaid', message: 'נדרש תשלום' };
   }
 
   const lastPayment = relevantPayments[relevantPayments.length - 1];
@@ -61,9 +61,9 @@ export function getPaymentStatusForDate(
     const usedEntry = sessionsAfterPaymentForClass.length > 0 || daysSincePayment >= 7;
 
     if (usedEntry) {
-      return { canAttend: false, status: 'unpaid', message: 'צריך לשלם' };
+      return { canAttend: false, status: 'unpaid', message: 'נדרש תשלום' };
     } else {
-      return { canAttend: true, status: 'paid', message: 'שילם', remainingEntries: 1 };
+      return { canAttend: true, status: 'paid', message: 'רשאי להשתתף', remainingEntries: 1 };
     }
   }
 
@@ -103,14 +103,14 @@ export function getPaymentStatusForDate(
         return { 
           canAttend: true, 
           status: 'paid', 
-          message: 'שילם', 
+          message: 'רשאי להשתתף', 
           remainingEntries 
         };
       } else {
         return { 
           canAttend: false, 
           status: 'unpaid', 
-          message: 'צריך לשלם (נוצלו כל הכניסות)' 
+          message: 'נדרש תשלום (נוצלו כל הכניסות)' 
         };
       }
     }
@@ -128,11 +128,11 @@ export function getPaymentStatusForDate(
         return { 
           canAttend: false, 
           status: 'unpaid', 
-          message: 'צריך לשלם' 
+          message: 'נדרש תשלום' 
         };
       }
     }
   }
 
-  return { canAttend: false, status: 'unpaid', message: 'לא שילם' };
+  return { canAttend: false, status: 'unpaid', message: 'נדרש תשלום' };
 }

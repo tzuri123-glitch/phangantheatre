@@ -134,7 +134,7 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
                                   {paymentStatus.remainingEntries && ` ${paymentStatus.remainingEntries}`}
                                 </Badge>
                               ) : (
-                                <Badge variant="destructive" className="text-xs">לא שילם</Badge>
+                                <Badge variant="destructive" className="text-xs">נדרש תשלום</Badge>
                               )}
                             </div>
                           </TableCell>

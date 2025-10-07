@@ -159,11 +159,11 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
                               </span>
                               {paymentStatus.canAttend ? (
                                 <Badge className="bg-green-500 text-white">
-                                  ✓ יכול להיכנס
+                                  ✓ רשאי להשתתף
                                   {paymentStatus.remainingEntries && ` (${paymentStatus.remainingEntries})`}
                                 </Badge>
                               ) : (
-                                <Badge variant="destructive">צריך לשלם</Badge>
+                                <Badge variant="destructive">נדרש תשלום</Badge>
                               )}
                             </div>
                             <div className="flex items-center gap-3">
