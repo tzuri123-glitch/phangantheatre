@@ -7,13 +7,12 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatILS(value: number) {
   try {
-    return new Intl.NumberFormat('he-IL', {
+    return new Intl.NumberFormat('th-TH', {
       style: 'currency',
-      currency: 'ILS',
+      currency: 'THB',
       maximumFractionDigits: 0,
-      currencyDisplay: 'narrowSymbol',
     }).format(value);
   } catch {
-    return `₪${value.toLocaleString('he-IL')}`;
+    return `฿${value.toLocaleString('th-TH')}`;
   }
 }
