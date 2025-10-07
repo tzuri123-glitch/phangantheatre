@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { formatILS } from '@/lib/utils';
+import { getPaymentStatusForDate } from '@/lib/paymentStatus';
 export default function Index() {
   const { user } = useAuth();
   const [tab, setTab] = useState('dashboard');
@@ -858,7 +859,48 @@ export default function Index() {
             <div className="space-y-2"><Label>תאריך</Label><Input type="date" value={sessionForm.date} onChange={(e) => setSessionForm({ ...sessionForm, date: e.target.value })} /></div>
             <div className="flex gap-3"><Button className="flex-1" onClick={() => setCurrentSession({ id: '', className: sessionForm.className, date: sessionForm.date, trial: false, students: students.filter((s) => s.className === sessionForm.className).map((s) => ({ studentId: s.id, status: '' })) })}>המשך</Button><Button variant="outline" className="flex-1" onClick={() => setShowSessionForm(false)}>ביטול</Button></div>
           </div> : <div className="space-y-4">
-            {currentSession.students.map((rec, idx) => <div key={rec.studentId} className="flex gap-2 items-center"><span className="flex-1">{students.find((s) => s.id === rec.studentId)?.name}</span><Select value={rec.status} onValueChange={(v: typeof rec.status) => { const newStudents = [...currentSession.students]; newStudents[idx] = { ...rec, status: v }; setCurrentSession({ ...currentSession, students: newStudents }); }}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="נוכח">נוכח</SelectItem><SelectItem value="לא הגיע">לא הגיע</SelectItem><SelectItem value="לא באי">לא באי (הקפאה)</SelectItem><SelectItem value="עזב">עזב</SelectItem></SelectContent></Select></div>)}
+            {currentSession.students.map((rec, idx) => {
+              const student = students.find((s) => s.id === rec.studentId);
+              if (!student) return null;
+              
+              const paymentStatus = getPaymentStatusForDate(rec.studentId, currentSession.date, students, payments, sessions);
+              
+              // קביעת צבע רקע לפי סטטוס
+              let bgColor = '';
+              if (paymentStatus.balance < 0) {
+                bgColor = 'bg-red-100'; // חוב - אדום
+              } else if (paymentStatus.balance === 0) {
+                bgColor = 'bg-green-100'; // מאוזן - ירוק
+              } else if (paymentStatus.balance > 0) {
+                bgColor = 'bg-yellow-100'; // יתרה - צהוב
+              }
+              
+              return (
+                <div key={rec.studentId} className={`flex gap-2 items-center p-2 rounded ${bgColor}`}>
+                  <span className="flex-1 font-medium">{student.name} {student.lastName}</span>
+                  <span className="text-xs text-muted-foreground">{paymentStatus.message}</span>
+                  <Select value={rec.status || undefined} onValueChange={(v) => { 
+                    if (v && v !== '') {
+                      const newStudents = [...currentSession.students]; 
+                      newStudents[idx] = { ...rec, status: v as 'נוכח' | 'לא הגיע' | 'לא באי' | 'עזב' }; 
+                      setCurrentSession({ ...currentSession, students: newStudents }); 
+                    }
+                  }}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue placeholder="בחר" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="נוכח">נוכח</SelectItem>
+                      <SelectItem value="לא הגיע">לא הגיע</SelectItem>
+                      {paymentStatus.hasMonthlySubscription && (
+                        <SelectItem value="לא באי">לא באי (הקפאה)</SelectItem>
+                      )}
+                      <SelectItem value="עזב">עזב</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              );
+            })}
             <div className="flex gap-3"><Button className="flex-1" onClick={async () => { 
               if (!user) return;
               
