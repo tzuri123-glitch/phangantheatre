@@ -261,7 +261,7 @@ export default function Index() {
             
             // עדכון סטטוס התלמיד בהתאם לסטטוס הנוכחות
             if (status === 'לא באי' || status === 'עזב') {
-              const newStatus = status === 'לא באי' ? 'בהקפאה' : 'בהמתנה';
+              const newStatus = status === 'לא באי' ? 'בהקפאה' : 'לא פעיל';
               
               const { error: studentError } = await supabase
                 .from('students')
@@ -352,7 +352,7 @@ export default function Index() {
               </div>
             )}
             <div className="space-y-2"><Label>שיוך חוג</Label><Select value={editingStudent.className} onValueChange={(v) => setEditingStudent({ ...editingStudent, className: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CLASS_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}</SelectContent></Select></div>
-            <div className="space-y-2"><Label>סטטוס</Label><Select value={editingStudent.status} onValueChange={(v: Student['status']) => setEditingStudent({ ...editingStudent, status: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="חדש">חדש</SelectItem><SelectItem value="פעיל">פעיל</SelectItem><SelectItem value="בהקפאה">בהקפאה</SelectItem><SelectItem value="בהמתנה">בהמתנה</SelectItem></SelectContent></Select></div>
+            <div className="space-y-2"><Label>סטטוס</Label><Select value={editingStudent.status} onValueChange={(v: Student['status']) => setEditingStudent({ ...editingStudent, status: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="חדש">חדש</SelectItem><SelectItem value="פעיל">פעיל</SelectItem><SelectItem value="בהקפאה">בהקפאה</SelectItem><SelectItem value="לא פעיל">לא פעיל</SelectItem></SelectContent></Select></div>
             <div className="flex gap-3">
               <Button 
                 className="flex-1" 
