@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-
+import { formatILS } from '@/lib/utils';
 export default function Index() {
   const { user } = useAuth();
   const [tab, setTab] = useState('dashboard');
@@ -104,7 +104,7 @@ export default function Index() {
       const sumSingles = singles.reduce((sum, p) => sum + p.amount, 0);
       const base = student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
       const final = Math.max(base - sumSingles, 0);
-      return { amount: final, note: sumSingles > 0 ? `כולל קיזוז ${sumSingles} ₪` : '' };
+      return { amount: final, note: sumSingles > 0 ? `כולל קיזוז ${formatILS(sumSingles)}` : '' };
     }
     return { amount: 0, note: '' };
   }
@@ -322,7 +322,7 @@ export default function Index() {
                 setPaymentForm(prev => ({ ...prev, date: e.target.value, amount: calc.amount, note: calc.note }));
               }
             }} /></div>
-            <div className="space-y-2"><Label>סכום (₪)</Label><Input type="number" value={paymentForm.amount} onChange={(e) => setPaymentForm({ ...paymentForm, amount: Number(e.target.value) })} /></div>
+            <div className="space-y-2"><Label>סכום</Label><Input type="number" value={paymentForm.amount} onChange={(e) => setPaymentForm({ ...paymentForm, amount: Number(e.target.value) })} /></div>
             {paymentForm.note && <div className="text-sm text-muted-foreground">{paymentForm.note}</div>}
             <div className="flex gap-3"><Button className="flex-1" onClick={async () => { 
               if (!paymentForm.studentId || !paymentForm.type || !user) { 

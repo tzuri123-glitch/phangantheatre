@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Student, Payment } from '@/types';
 import { Card } from '@/components/ui/card';
 import Chart from 'chart.js/auto';
+import { formatILS } from '@/lib/utils';
 
 interface DashboardProps {
   students: Student[];
@@ -114,7 +115,7 @@ export default function Dashboard({ students, payments }: DashboardProps) {
         
         <Card className="p-6 bg-gradient-to-br from-accent to-accent/50 border-primary/20">
           <h3 className="text-lg font-semibold text-muted-foreground mb-2">סה"כ הכנסות</h3>
-          <p className="text-4xl font-bold text-primary">₪{totalIncome.toLocaleString('he-IL')}</p>
+          <p className="text-4xl font-bold text-primary">{formatILS(totalIncome)}</p>
         </Card>
       </div>
 

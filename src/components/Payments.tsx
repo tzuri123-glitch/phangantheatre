@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/table';
 import { Card } from '@/components/ui/card';
 import { useState } from 'react';
+import { formatILS } from '@/lib/utils';
 
 interface PaymentsProps {
   payments: Payment[];
@@ -82,11 +83,11 @@ export default function Payments({ payments, students, onAddPayment }: PaymentsP
               <div className="flex items-center gap-4">
                 <div className="text-left">
                   <div className="font-bold text-primary text-lg">
-                    ₪{totalPaid.toLocaleString('he-IL')}
+                    {formatILS(totalPaid)}
                   </div>
                   {balance !== 0 && (
                     <div className={`text-sm font-medium ${balance < 0 ? 'text-red-500' : 'text-yellow-500'}`}>
-                      {balance < 0 ? `חוב: ₪${Math.abs(balance).toLocaleString('he-IL')}` : `יתרה: ₪${balance.toLocaleString('he-IL')}`}
+                      {balance < 0 ? `חוב: ${formatILS(Math.abs(balance))}` : `יתרה: ${formatILS(balance)}`}
                     </div>
                   )}
                 </div>
@@ -116,7 +117,7 @@ export default function Payments({ payments, students, onAddPayment }: PaymentsP
                       </TableCell>
                       <TableCell>{payment.method}</TableCell>
                       <TableCell className="font-bold text-primary">
-                        ₪{payment.amount.toLocaleString('he-IL')}
+                        {formatILS(payment.amount)}
                       </TableCell>
                       <TableCell className="text-muted-foreground">{payment.note}</TableCell>
                     </TableRow>
