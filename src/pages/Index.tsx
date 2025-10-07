@@ -118,7 +118,7 @@ export default function Index() {
     if (!student) return { amount: 0, note: '' };
     
     // חישוב יתרת התלמיד (זכות/חוב) מכל התשלומים הקודמים
-    const studentPayments = payments.filter((p) => p.studentId === studentId && p.date <= date);
+    const studentPayments = payments.filter((p) => p.studentId === studentId && p.date < date);
     let balance = 0;
     
     studentPayments.forEach((payment) => {
