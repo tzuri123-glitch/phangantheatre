@@ -174,7 +174,7 @@ export default function Payments({ payments, students, onAddPayment, onEditPayme
                                 <TableHead className="text-right">סוג</TableHead>
                                 <TableHead className="text-right">אמצעי</TableHead>
                                 <TableHead className="text-right">הנחה</TableHead>
-                                <TableHead className="text-right">סכום</TableHead>
+                                <TableHead className="text-right">סכום שהתקבל</TableHead>
                                 <TableHead className="text-right">הערה</TableHead>
                                 <TableHead className="text-right">פעולות</TableHead>
                               </TableRow>
