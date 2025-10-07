@@ -117,8 +117,33 @@ export default function Index() {
     const student = students.find((s) => s.id === studentId);
     if (!student) return { amount: 0, note: '' };
     
+    // Parser עמיד לפורמטים שונים (YYYY-MM-DD וגם DD.MM[.YYYY])
+    const parseDate = (s: string) => {
+      const d = new Date(s);
+      if (!isNaN(d.getTime())) return d;
+      const m = s.match(/^(\d{1,2})\.(\d{1,2})(?:\.(\d{2,4}))?$/);
+      if (m) {
+        const dd = Number(m[1]);
+        const mm = Number(m[2]) - 1;
+        const yyRaw = m[3];
+        const yyyy = yyRaw ? (yyRaw.length === 2 ? 2000 + Number(yyRaw) : Number(yyRaw)) : new Date().getFullYear();
+        return new Date(yyyy, mm, dd);
+      }
+      return new Date(NaN);
+    };
+
+    const currDate = parseDate(date);
+    
     // חישוב יתרת התלמיד (זכות/חוב) מכל התשלומים הקודמים
-    const studentPayments = payments.filter((p) => p.studentId === studentId && p.date < date);
+    const studentPayments = payments.filter((p) => {
+      if (p.studentId !== studentId) return false;
+      const pd = parseDate(p.date);
+      if (isNaN(pd.getTime()) || isNaN(currDate.getTime())) {
+        // נפילה חכמה להשוואת מחרוזות במקרה של תאריך לא תקין
+        return p.date < date;
+      }
+      return pd < currDate; // רק תשלומים לפני התשלום הנוכחי
+    });
     let balance = 0;
     
     studentPayments.forEach((payment) => {
@@ -145,8 +170,16 @@ export default function Index() {
     } else if (type === 'חד פעמי') {
       baseAmount = SINGLE_PRICE;
     } else if (type === 'חודשי') {
-      const monthKey = date.slice(0, 7);
-      const singles = payments.filter((p) => p.studentId === studentId && p.date.slice(0, 7) === monthKey && (p.type === 'ניסיון' || p.type === 'חד פעמי'));
+      // קיזוז תשלומי ניסיון/חד-פעמי באותו חודש של התשלום הנוכחי
+      const singles = payments.filter((p) => {
+        if (p.studentId !== studentId) return false;
+        if (!(p.type === 'ניסיון' || p.type === 'חד פעמי')) return false;
+        const pd = parseDate(p.date);
+        if (isNaN(pd.getTime()) || isNaN(currDate.getTime())) {
+          return p.date.slice(0, 7) === date.slice(0, 7);
+        }
+        return pd.getFullYear() === currDate.getFullYear() && pd.getMonth() === currDate.getMonth();
+      });
       const sumSingles = singles.reduce((sum, p) => sum + p.amount, 0);
       const base = student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
       baseAmount = Math.max(base - sumSingles, 0);
