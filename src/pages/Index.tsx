@@ -11,10 +11,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-
-const genId = () => Date.now() + Math.floor(Math.random() * 1000);
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Index() {
+  const { user } = useAuth();
   const [tab, setTab] = useState('dashboard');
   const [students, setStudents] = useState<Student[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -31,19 +32,65 @@ export default function Index() {
   const [sessionForm, setSessionForm] = useState<{ className: string; date: string; trial: boolean }>({ className: CLASS_OPTIONS[0], date: new Date().toISOString().slice(0, 10), trial: false });
   const [currentSession, setCurrentSession] = useState<Session | null>(null);
 
+  // טעינת נתונים מהדטהבייס
   useEffect(() => {
-    try {
-      setStudents(JSON.parse(localStorage.getItem('omanuyot_students') || '[]'));
-      setPayments(JSON.parse(localStorage.getItem('omanuyot_payments') || '[]'));
-      setSessions(JSON.parse(localStorage.getItem('omanuyot_sessions') || '[]'));
-    } catch (err) {
-      console.error('שגיאה:', err);
-    }
-  }, []);
-
-  useEffect(() => { localStorage.setItem('omanuyot_students', JSON.stringify(students)); }, [students]);
-  useEffect(() => { localStorage.setItem('omanuyot_payments', JSON.stringify(payments)); }, [payments]);
-  useEffect(() => { localStorage.setItem('omanuyot_sessions', JSON.stringify(sessions)); }, [sessions]);
+    if (!user) return;
+    
+    const loadData = async () => {
+      const { data: studentsData } = await supabase
+        .from('students')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      const { data: paymentsData } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      const { data: sessionsData } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      if (studentsData) {
+        setStudents(studentsData.map(s => ({
+          id: parseInt(s.id),
+          name: s.name,
+          phone: s.phone || '',
+          birthDate: s.birth_date || '',
+          parentName: s.parent_name || '',
+          parentPhone: s.parent_phone || '',
+          isSibling: s.is_sibling || false,
+          className: s.class_name,
+          status: s.status as Student['status']
+        })));
+      }
+      
+      if (paymentsData) {
+        setPayments(paymentsData.map(p => ({
+          id: parseInt(p.id),
+          studentId: parseInt(p.student_id),
+          type: p.payment_type as Payment['type'],
+          method: p.payment_method as Payment['method'],
+          date: p.payment_date,
+          amount: Number(p.amount),
+          note: p.note || ''
+        })));
+      }
+      
+      if (sessionsData) {
+        setSessions(sessionsData.map(s => ({
+          id: parseInt(s.id),
+          className: s.class_name,
+          date: s.session_date,
+          trial: s.is_trial || false,
+          students: []
+        })));
+      }
+    };
+    
+    loadData();
+  }, [user]);
 
   function calcPayment(studentId: number, type: string, date: string) {
     const student = students.find((s) => s.id === studentId);
@@ -86,19 +133,63 @@ export default function Index() {
             <div className="flex gap-3">
               <Button 
                 className="flex-1" 
-                onClick={() => { 
-                  if (!editingStudent.name) { 
+                onClick={async () => { 
+                  if (!editingStudent.name || !user) { 
                     toast.error('נא למלא שם'); 
                     return; 
                   } 
-                  let savedStudentId: number;
+                  let savedStudentId: string;
                   if (!editingStudent.id) { 
-                    const newStudent = { ...editingStudent, id: genId() }; 
-                    savedStudentId = newStudent.id;
+                    const { data, error } = await supabase
+                      .from('students')
+                      .insert({
+                        user_id: user.id,
+                        name: editingStudent.name,
+                        phone: editingStudent.phone,
+                        birth_date: editingStudent.birthDate,
+                        parent_name: editingStudent.parentName,
+                        parent_phone: editingStudent.parentPhone,
+                        is_sibling: editingStudent.isSibling,
+                        class_name: editingStudent.className,
+                        status: editingStudent.status
+                      })
+                      .select()
+                      .single();
+                    
+                    if (error) {
+                      toast.error('שגיאה בשמירת תלמיד');
+                      return;
+                    }
+                    
+                    savedStudentId = data.id;
+                    const newStudent = { 
+                      ...editingStudent, 
+                      id: parseInt(data.id)
+                    };
                     setStudents((prev) => [...prev, newStudent]); 
                     toast.success('תלמיד נוסף!'); 
                   } else { 
-                    savedStudentId = editingStudent.id;
+                    const { error } = await supabase
+                      .from('students')
+                      .update({
+                        name: editingStudent.name,
+                        phone: editingStudent.phone,
+                        birth_date: editingStudent.birthDate,
+                        parent_name: editingStudent.parentName,
+                        parent_phone: editingStudent.parentPhone,
+                        is_sibling: editingStudent.isSibling,
+                        class_name: editingStudent.className,
+                        status: editingStudent.status
+                      })
+                      .eq('id', editingStudent.id.toString())
+                      .eq('user_id', user.id);
+                    
+                    if (error) {
+                      toast.error('שגיאה בעדכון תלמיד');
+                      return;
+                    }
+                    
+                    savedStudentId = editingStudent.id.toString();
                     setStudents((prev) => prev.map((s) => s.id === editingStudent.id ? editingStudent : s)); 
                     toast.success('תלמיד עודכן!'); 
                   } 
@@ -107,7 +198,7 @@ export default function Index() {
                   // מעבר לעמוד תשלומים והוספת תשלום
                   setTab('payments');
                   setPaymentForm({ 
-                    studentId: savedStudentId.toString(), 
+                    studentId: savedStudentId, 
                     type: '', 
                     method: 'מזומן', 
                     date: new Date().toISOString().slice(0, 10),
@@ -122,16 +213,60 @@ export default function Index() {
               <Button 
                 variant="outline" 
                 className="flex-1" 
-                onClick={() => { 
-                  if (!editingStudent.name) { 
+                onClick={async () => { 
+                  if (!editingStudent.name || !user) { 
                     toast.error('נא למלא שם'); 
                     return; 
                   }
                   if (!editingStudent.id) { 
-                    const newStudent = { ...editingStudent, id: genId() }; 
+                    const { data, error } = await supabase
+                      .from('students')
+                      .insert({
+                        user_id: user.id,
+                        name: editingStudent.name,
+                        phone: editingStudent.phone,
+                        birth_date: editingStudent.birthDate,
+                        parent_name: editingStudent.parentName,
+                        parent_phone: editingStudent.parentPhone,
+                        is_sibling: editingStudent.isSibling,
+                        class_name: editingStudent.className,
+                        status: editingStudent.status
+                      })
+                      .select()
+                      .single();
+                    
+                    if (error) {
+                      toast.error('שגיאה בשמירת תלמיד');
+                      return;
+                    }
+                    
+                    const newStudent = { 
+                      ...editingStudent, 
+                      id: parseInt(data.id)
+                    };
                     setStudents((prev) => [...prev, newStudent]); 
                     toast.success('תלמיד נוסף!'); 
                   } else { 
+                    const { error } = await supabase
+                      .from('students')
+                      .update({
+                        name: editingStudent.name,
+                        phone: editingStudent.phone,
+                        birth_date: editingStudent.birthDate,
+                        parent_name: editingStudent.parentName,
+                        parent_phone: editingStudent.parentPhone,
+                        is_sibling: editingStudent.isSibling,
+                        class_name: editingStudent.className,
+                        status: editingStudent.status
+                      })
+                      .eq('id', editingStudent.id.toString())
+                      .eq('user_id', user.id);
+                    
+                    if (error) {
+                      toast.error('שגיאה בעדכון תלמיד');
+                      return;
+                    }
+                    
                     setStudents((prev) => prev.map((s) => s.id === editingStudent.id ? editingStudent : s)); 
                     toast.success('תלמיד עודכן!'); 
                   } 
@@ -183,7 +318,44 @@ export default function Index() {
             }} /></div>
             <div className="space-y-2"><Label>סכום (₪)</Label><Input type="number" value={paymentForm.amount} onChange={(e) => setPaymentForm({ ...paymentForm, amount: Number(e.target.value) })} /></div>
             {paymentForm.note && <div className="text-sm text-muted-foreground">{paymentForm.note}</div>}
-            <div className="flex gap-3"><Button className="flex-1" onClick={() => { if (!paymentForm.studentId || !paymentForm.type) { toast.error('נא למלא את כל השדות'); return; } setPayments((prev) => [...prev, { id: genId(), studentId: Number(paymentForm.studentId), type: paymentForm.type as Payment['type'], method: paymentForm.method, date: paymentForm.date, amount: paymentForm.amount, note: paymentForm.note }]); setShowPaymentModal(false); setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '' }); toast.success('תשלום נוסף!'); }}>אישור</Button><Button variant="outline" className="flex-1" onClick={() => setShowPaymentModal(false)}>ביטול</Button></div>
+            <div className="flex gap-3"><Button className="flex-1" onClick={async () => { 
+              if (!paymentForm.studentId || !paymentForm.type || !user) { 
+                toast.error('נא למלא את כל השדות'); 
+                return; 
+              } 
+              
+              const { data, error } = await supabase
+                .from('payments')
+                .insert({
+                  user_id: user.id,
+                  student_id: paymentForm.studentId,
+                  payment_type: paymentForm.type,
+                  payment_method: paymentForm.method,
+                  payment_date: paymentForm.date,
+                  amount: paymentForm.amount,
+                  note: paymentForm.note
+                })
+                .select()
+                .single();
+              
+              if (error) {
+                toast.error('שגיאה בשמירת תשלום');
+                return;
+              }
+              
+              setPayments((prev) => [...prev, { 
+                id: parseInt(data.id), 
+                studentId: Number(paymentForm.studentId), 
+                type: paymentForm.type as Payment['type'], 
+                method: paymentForm.method, 
+                date: paymentForm.date, 
+                amount: paymentForm.amount, 
+                note: paymentForm.note 
+              }]); 
+              setShowPaymentModal(false); 
+              setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '' }); 
+              toast.success('תשלום נוסף!'); 
+            }}>אישור</Button><Button variant="outline" className="flex-1" onClick={() => setShowPaymentModal(false)}>ביטול</Button></div>
           </div>
         </DialogContent>
       </Dialog>
@@ -194,10 +366,65 @@ export default function Index() {
             <div className="space-y-2"><Label>חוג</Label><Select value={sessionForm.className} onValueChange={(v) => setSessionForm({ ...sessionForm, className: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CLASS_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>תאריך</Label><Input type="date" value={sessionForm.date} onChange={(e) => setSessionForm({ ...sessionForm, date: e.target.value })} /></div>
             <div className="space-y-2"><Label>ניסיון?</Label><Select value={sessionForm.trial ? 'true' : 'false'} onValueChange={(v) => setSessionForm({ ...sessionForm, trial: v === 'true' })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="false">לא</SelectItem><SelectItem value="true">כן</SelectItem></SelectContent></Select></div>
-            <div className="flex gap-3"><Button className="flex-1" onClick={() => setCurrentSession({ id: genId(), className: sessionForm.className, date: sessionForm.date, trial: sessionForm.trial, students: students.filter((s) => s.className === sessionForm.className).map((s) => ({ studentId: s.id, status: 'נוכח' })) })}>המשך</Button><Button variant="outline" className="flex-1" onClick={() => setShowSessionForm(false)}>ביטול</Button></div>
+            <div className="flex gap-3"><Button className="flex-1" onClick={() => setCurrentSession({ id: 0, className: sessionForm.className, date: sessionForm.date, trial: sessionForm.trial, students: students.filter((s) => s.className === sessionForm.className).map((s) => ({ studentId: s.id, status: 'נוכח' })) })}>המשך</Button><Button variant="outline" className="flex-1" onClick={() => setShowSessionForm(false)}>ביטול</Button></div>
           </div> : <div className="space-y-4">
             {currentSession.students.map((rec, idx) => <div key={rec.studentId} className="flex gap-2 items-center"><span className="flex-1">{students.find((s) => s.id === rec.studentId)?.name}</span><Select value={rec.status} onValueChange={(v: typeof rec.status) => { const newStudents = [...currentSession.students]; newStudents[idx] = { ...rec, status: v }; setCurrentSession({ ...currentSession, students: newStudents }); }}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="נוכח">נוכח</SelectItem><SelectItem value="לא הגיע">לא הגיע</SelectItem><SelectItem value="לא באי">לא באי</SelectItem></SelectContent></Select></div>)}
-            <div className="flex gap-3"><Button className="flex-1" onClick={() => { if (currentSession.trial) { currentSession.students.forEach(({ studentId, status }) => { if (status === 'נוכח' && !payments.some((p) => p.studentId === studentId && p.type === 'ניסיון' && p.date === currentSession.date)) { const { amount, note } = calcPayment(studentId, 'ניסיון', currentSession.date); setPayments((prev) => [...prev, { id: genId(), studentId, type: 'ניסיון', method: 'מזומן', date: currentSession.date, amount, note }]); } }); } setSessions((prev) => [...prev, currentSession]); setCurrentSession(null); setShowSessionForm(false); setSessionForm({ className: CLASS_OPTIONS[0], date: new Date().toISOString().slice(0, 10), trial: false }); toast.success('שיעור נשמר!'); }}>אישור</Button><Button variant="outline" className="flex-1" onClick={() => { setCurrentSession(null); setShowSessionForm(false); }}>ביטול</Button></div>
+            <div className="flex gap-3"><Button className="flex-1" onClick={async () => { 
+              if (!user) return;
+              
+              // שמירת השיעור
+              const { data: sessionData, error: sessionError } = await supabase
+                .from('sessions')
+                .insert({
+                  user_id: user.id,
+                  class_name: currentSession.className,
+                  session_date: currentSession.date,
+                  is_trial: currentSession.trial
+                })
+                .select()
+                .single();
+              
+              if (sessionError) {
+                toast.error('שגיאה בשמירת שיעור');
+                return;
+              }
+              
+              // שמירת נוכחות
+              for (const { studentId, status } of currentSession.students) {
+                await supabase
+                  .from('attendance')
+                  .insert({
+                    user_id: user.id,
+                    session_id: sessionData.id,
+                    student_id: studentId.toString(),
+                    status: status
+                  });
+                
+                // אם זה ניסיון והתלמיד נוכח, צור תשלום
+                if (currentSession.trial && status === 'נוכח' && !payments.some((p) => p.studentId === studentId && p.type === 'ניסיון' && p.date === currentSession.date)) {
+                  const { amount, note } = calcPayment(studentId, 'ניסיון', currentSession.date);
+                  await supabase
+                    .from('payments')
+                    .insert({
+                      user_id: user.id,
+                      student_id: studentId.toString(),
+                      payment_type: 'ניסיון',
+                      payment_method: 'מזומן',
+                      payment_date: currentSession.date,
+                      amount,
+                      note
+                    });
+                  
+                  setPayments((prev) => [...prev, { id: Date.now(), studentId, type: 'ניסיון', method: 'מזומן', date: currentSession.date, amount, note }]);
+                }
+              }
+              
+              setSessions((prev) => [...prev, { ...currentSession, id: parseInt(sessionData.id) }]); 
+              setCurrentSession(null); 
+              setShowSessionForm(false); 
+              setSessionForm({ className: CLASS_OPTIONS[0], date: new Date().toISOString().slice(0, 10), trial: false }); 
+              toast.success('שיעור נשמר!'); 
+            }}>אישור</Button><Button variant="outline" className="flex-1" onClick={() => { setCurrentSession(null); setShowSessionForm(false); }}>ביטול</Button></div>
           </div>}
         </DialogContent>
       </Dialog>
