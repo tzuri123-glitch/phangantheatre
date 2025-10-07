@@ -142,22 +142,22 @@ export default function Index() {
                   } 
                   let savedStudentId: string;
                   if (!editingStudent.id) { 
-                    const { data, error } = await supabase
-                      .from('students')
-                      .insert({
-                        user_id: user.id,
-                        name: editingStudent.name,
-                        last_name: editingStudent.lastName,
-                        phone: editingStudent.phone,
-                        birth_date: editingStudent.birthDate,
-                        parent_name: editingStudent.parentName,
-                        parent_phone: editingStudent.parentPhone,
-                        is_sibling: editingStudent.isSibling,
-                        class_name: editingStudent.className,
-                        status: editingStudent.status
-                      })
-                      .select()
-                      .single();
+                  const { data, error } = await supabase
+                    .from('students')
+                    .insert({
+                      user_id: user.id,
+                      name: editingStudent.name,
+                      last_name: editingStudent.lastName,
+                      phone: editingStudent.phone || null,
+                      birth_date: editingStudent.birthDate || null,
+                      parent_name: editingStudent.parentName || null,
+                      parent_phone: editingStudent.parentPhone || null,
+                      is_sibling: editingStudent.isSibling,
+                      class_name: editingStudent.className,
+                      status: editingStudent.status
+                    })
+                    .select()
+                    .single();
                     
                     if (error) {
                       toast.error('שגיאה בשמירת תלמיד');
@@ -229,10 +229,10 @@ export default function Index() {
                         user_id: user.id,
                         name: editingStudent.name,
                         last_name: editingStudent.lastName,
-                        phone: editingStudent.phone,
-                        birth_date: editingStudent.birthDate,
-                        parent_name: editingStudent.parentName,
-                        parent_phone: editingStudent.parentPhone,
+                        phone: editingStudent.phone || null,
+                        birth_date: editingStudent.birthDate || null,
+                        parent_name: editingStudent.parentName || null,
+                        parent_phone: editingStudent.parentPhone || null,
                         is_sibling: editingStudent.isSibling,
                         class_name: editingStudent.className,
                         status: editingStudent.status
@@ -257,10 +257,10 @@ export default function Index() {
                       .update({
                         name: editingStudent.name,
                         last_name: editingStudent.lastName,
-                        phone: editingStudent.phone,
-                        birth_date: editingStudent.birthDate,
-                        parent_name: editingStudent.parentName,
-                        parent_phone: editingStudent.parentPhone,
+                        phone: editingStudent.phone || null,
+                        birth_date: editingStudent.birthDate || null,
+                        parent_name: editingStudent.parentName || null,
+                        parent_phone: editingStudent.parentPhone || null,
                         is_sibling: editingStudent.isSibling,
                         class_name: editingStudent.className,
                         status: editingStudent.status
