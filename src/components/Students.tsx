@@ -80,7 +80,7 @@ export default function Students({ students, payments, onAddStudent, onEditStude
               </div>
 
               {expandedClasses[className] && studentCount > 0 && (
-                <div className="p-4 border-t">
+                <div className="p-4 border-t max-h-[600px] overflow-y-auto">
                   <div className="mb-4">
                     <Input
                       placeholder="חיפוש תלמיד..."
@@ -90,7 +90,7 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                   </div>
                   
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="sticky top-0 bg-background z-10">
                       <TableRow>
                         <TableHead className="text-right">שם פרטי</TableHead>
                         <TableHead className="text-right">שם משפחה</TableHead>
