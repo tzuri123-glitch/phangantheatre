@@ -25,7 +25,7 @@ export default function Index() {
   const studentFormRef = useRef<Student | null>(null);
   
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentForm, setPaymentForm] = useState<{ studentId: string; type: string; method: 'מזומן' | 'סקאן'; date: string }>({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10) });
+  const [paymentForm, setPaymentForm] = useState<{ studentId: string; type: string; method: 'מזומן' | 'סקאן'; date: string; amount: number; note: string }>({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '' });
   
   const [showSessionForm, setShowSessionForm] = useState(false);
   const [sessionForm, setSessionForm] = useState<{ className: string; date: string; trial: boolean }>({ className: CLASS_OPTIONS[0], date: new Date().toISOString().slice(0, 10), trial: false });
@@ -110,7 +110,9 @@ export default function Index() {
                     studentId: savedStudentId.toString(), 
                     type: '', 
                     method: 'מזומן', 
-                    date: new Date().toISOString().slice(0, 10) 
+                    date: new Date().toISOString().slice(0, 10),
+                    amount: 0,
+                    note: ''
                   });
                   setShowPaymentModal(true);
                 }}
@@ -124,7 +126,7 @@ export default function Index() {
                   if (!editingStudent.name) { 
                     toast.error('נא למלא שם'); 
                     return; 
-                  } 
+                  }
                   if (!editingStudent.id) { 
                     const newStudent = { ...editingStudent, id: genId() }; 
                     setStudents((prev) => [...prev, newStudent]); 
@@ -157,11 +159,31 @@ export default function Index() {
       <Dialog open={showPaymentModal} onOpenChange={(open) => { if (!open) setShowPaymentModal(false); }}>
         <DialogContent className="max-w-md"><DialogHeader><DialogTitle>הוספת תשלום</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2"><Label>תלמיד</Label><Select value={paymentForm.studentId} onValueChange={(v) => setPaymentForm({ ...paymentForm, studentId: v })}><SelectTrigger><SelectValue placeholder="בחר תלמיד" /></SelectTrigger><SelectContent>{students.map((s) => <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>)}</SelectContent></Select></div>
-            <div className="space-y-2"><Label>סוג תשלום</Label><Select value={paymentForm.type} onValueChange={(v) => setPaymentForm({ ...paymentForm, type: v })}><SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger><SelectContent><SelectItem value="ניסיון">ניסיון (700 ₪)</SelectItem><SelectItem value="חד פעמי">חד פעמי (800 ₪)</SelectItem><SelectItem value="חודשי">חודשי</SelectItem></SelectContent></Select></div>
+            <div className="space-y-2"><Label>תלמיד</Label><Select value={paymentForm.studentId} onValueChange={(v) => { 
+              setPaymentForm({ ...paymentForm, studentId: v }); 
+              if (v && paymentForm.type) {
+                const calc = calcPayment(Number(v), paymentForm.type, paymentForm.date);
+                setPaymentForm(prev => ({ ...prev, studentId: v, amount: calc.amount, note: calc.note }));
+              }
+            }}><SelectTrigger><SelectValue placeholder="בחר תלמיד" /></SelectTrigger><SelectContent>{students.map((s) => <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2"><Label>סוג תשלום</Label><Select value={paymentForm.type} onValueChange={(v) => { 
+              setPaymentForm({ ...paymentForm, type: v }); 
+              if (paymentForm.studentId) {
+                const calc = calcPayment(Number(paymentForm.studentId), v, paymentForm.date);
+                setPaymentForm(prev => ({ ...prev, type: v, amount: calc.amount, note: calc.note }));
+              }
+            }}><SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger><SelectContent><SelectItem value="ניסיון">ניסיון (700 ₪)</SelectItem><SelectItem value="חד פעמי">חד פעמי (800 ₪)</SelectItem><SelectItem value="חודשי">חודשי</SelectItem></SelectContent></Select></div>
             <div className="space-y-2"><Label>אמצעי תשלום</Label><Select value={paymentForm.method} onValueChange={(v: 'מזומן' | 'סקאן') => setPaymentForm({ ...paymentForm, method: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="מזומן">מזומן</SelectItem><SelectItem value="סקאן">סקאן</SelectItem></SelectContent></Select></div>
-            <div className="space-y-2"><Label>תאריך</Label><Input type="date" value={paymentForm.date} onChange={(e) => setPaymentForm({ ...paymentForm, date: e.target.value })} /></div>
-            <div className="flex gap-3"><Button className="flex-1" onClick={() => { if (!paymentForm.studentId || !paymentForm.type) { toast.error('נא למלא את כל השדות'); return; } const { amount, note } = calcPayment(Number(paymentForm.studentId), paymentForm.type, paymentForm.date); setPayments((prev) => [...prev, { id: genId(), studentId: Number(paymentForm.studentId), type: paymentForm.type as Payment['type'], method: paymentForm.method, date: paymentForm.date, amount, note }]); setShowPaymentModal(false); setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10) }); toast.success('תשלום נוסף!'); }}>אישור</Button><Button variant="outline" className="flex-1" onClick={() => setShowPaymentModal(false)}>ביטול</Button></div>
+            <div className="space-y-2"><Label>תאריך</Label><Input type="date" value={paymentForm.date} onChange={(e) => { 
+              setPaymentForm({ ...paymentForm, date: e.target.value }); 
+              if (paymentForm.studentId && paymentForm.type) {
+                const calc = calcPayment(Number(paymentForm.studentId), paymentForm.type, e.target.value);
+                setPaymentForm(prev => ({ ...prev, date: e.target.value, amount: calc.amount, note: calc.note }));
+              }
+            }} /></div>
+            <div className="space-y-2"><Label>סכום (₪)</Label><Input type="number" value={paymentForm.amount} onChange={(e) => setPaymentForm({ ...paymentForm, amount: Number(e.target.value) })} /></div>
+            {paymentForm.note && <div className="text-sm text-muted-foreground">{paymentForm.note}</div>}
+            <div className="flex gap-3"><Button className="flex-1" onClick={() => { if (!paymentForm.studentId || !paymentForm.type) { toast.error('נא למלא את כל השדות'); return; } setPayments((prev) => [...prev, { id: genId(), studentId: Number(paymentForm.studentId), type: paymentForm.type as Payment['type'], method: paymentForm.method, date: paymentForm.date, amount: paymentForm.amount, note: paymentForm.note }]); setShowPaymentModal(false); setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '' }); toast.success('תשלום נוסף!'); }}>אישור</Button><Button variant="outline" className="flex-1" onClick={() => setShowPaymentModal(false)}>ביטול</Button></div>
           </div>
         </DialogContent>
       </Dialog>
