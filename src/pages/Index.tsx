@@ -27,7 +27,7 @@ export default function Index() {
   
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
-  const [paymentForm, setPaymentForm] = useState<{ studentId: string; type: string; method: 'מזומן' | 'סקאן'; date: string; amount: number; note: string }>({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '' });
+  const [paymentForm, setPaymentForm] = useState<{ studentId: string; type: string; method: 'מזומן' | 'סקאן'; date: string; amount: number; note: string; discount: number }>({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0 });
   
   const [showSessionForm, setShowSessionForm] = useState(false);
   const [sessionForm, setSessionForm] = useState<{ className: string; date: string; trial: boolean }>({ className: CLASS_OPTIONS[0], date: new Date().toISOString().slice(0, 10), trial: false });
@@ -76,7 +76,8 @@ export default function Index() {
           method: p.payment_method as Payment['method'],
           date: p.payment_date,
           amount: Number(p.amount),
-          note: p.note || ''
+          note: p.note || '',
+          discount: Number(p.discount) || 0
         })));
       }
       
@@ -121,7 +122,7 @@ export default function Index() {
           students={students} 
           onAddPayment={() => { 
             setEditingPayment(null);
-            setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '' }); 
+            setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0 }); 
             setShowPaymentModal(true); 
           }}
           onEditPayment={(payment) => {
@@ -132,7 +133,8 @@ export default function Index() {
               method: payment.method,
               date: payment.date,
               amount: payment.amount,
-              note: payment.note
+              note: payment.note,
+              discount: payment.discount || 0
             });
             setShowPaymentModal(true);
           }}
@@ -228,7 +230,8 @@ export default function Index() {
                     method: 'מזומן', 
                     date: new Date().toISOString().slice(0, 10),
                     amount: 0,
-                    note: ''
+                    note: '',
+                    discount: 0
                   });
                   setShowPaymentModal(true);
                 }}
@@ -344,6 +347,7 @@ export default function Index() {
               }
             }} /></div>
             <div className="space-y-2"><Label>סכום</Label><Input type="number" value={paymentForm.amount} onChange={(e) => setPaymentForm({ ...paymentForm, amount: Number(e.target.value) })} /></div>
+            <div className="space-y-2"><Label>הנחה (%)</Label><Input type="number" min="0" max="100" value={paymentForm.discount} onChange={(e) => setPaymentForm({ ...paymentForm, discount: Number(e.target.value) })} /></div>
             {paymentForm.note && <div className="text-sm text-muted-foreground">{paymentForm.note}</div>}
             <div className="flex gap-3"><Button className="flex-1" onClick={async () => { 
               if (!paymentForm.studentId || !paymentForm.type || !user) { 
@@ -360,7 +364,8 @@ export default function Index() {
                     payment_method: paymentForm.method,
                     payment_date: paymentForm.date,
                     amount: paymentForm.amount,
-                    note: paymentForm.note
+                    note: paymentForm.note,
+                    discount: paymentForm.discount
                   })
                   .eq('id', editingPayment.id)
                   .eq('user_id', user.id);
@@ -372,7 +377,7 @@ export default function Index() {
                 
                 setPayments((prev) => prev.map(p => 
                   p.id === editingPayment.id 
-                    ? { ...p, type: paymentForm.type as Payment['type'], method: paymentForm.method, date: paymentForm.date, amount: paymentForm.amount, note: paymentForm.note }
+                    ? { ...p, type: paymentForm.type as Payment['type'], method: paymentForm.method, date: paymentForm.date, amount: paymentForm.amount, note: paymentForm.note, discount: paymentForm.discount }
                     : p
                 ));
                 
@@ -388,7 +393,8 @@ export default function Index() {
                     payment_method: paymentForm.method,
                     payment_date: paymentForm.date,
                     amount: paymentForm.amount,
-                    note: paymentForm.note
+                    note: paymentForm.note,
+                    discount: paymentForm.discount
                   })
                   .select()
                   .single();
@@ -405,7 +411,8 @@ export default function Index() {
                   method: paymentForm.method, 
                   date: paymentForm.date, 
                   amount: paymentForm.amount, 
-                  note: paymentForm.note 
+                  note: paymentForm.note,
+                  discount: paymentForm.discount
                 };
                 
                 setPayments((prev) => [...prev, newPayment]);
@@ -434,7 +441,7 @@ export default function Index() {
               
               setShowPaymentModal(false); 
               setEditingPayment(null);
-              setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '' }); 
+              setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0 }); 
             }}>אישור</Button><Button variant="outline" className="flex-1" onClick={() => { setShowPaymentModal(false); setEditingPayment(null); }}>ביטול</Button></div>
           </div>
         </DialogContent>
@@ -492,10 +499,11 @@ export default function Index() {
                       payment_method: 'מזומן',
                       payment_date: currentSession.date,
                       amount,
-                      note
+                      note,
+                      discount: 0
                     });
                   
-                  setPayments((prev) => [...prev, { id: crypto.randomUUID(), studentId, type: 'ניסיון', method: 'מזומן', date: currentSession.date, amount, note }]);
+                  setPayments((prev) => [...prev, { id: crypto.randomUUID(), studentId, type: 'ניסיון', method: 'מזומן', date: currentSession.date, amount, note, discount: 0 }]);
                 }
               }
               

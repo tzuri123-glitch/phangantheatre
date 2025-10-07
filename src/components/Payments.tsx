@@ -37,13 +37,25 @@ export default function Payments({ payments, students, onAddPayment, onEditPayme
     // חישוב מה התלמיד אמור לשלם
     const monthlyPayments = studentPaymentsList.filter(p => p.type === 'חודשי');
     const monthlyPrice = student.isSibling ? 2400 : 2800;
-    const expectedMonthlyAmount = monthlyPayments.length * monthlyPrice;
+    const expectedMonthlyAmount = monthlyPayments.reduce((sum, p) => {
+      const discount = p.discount || 0;
+      const priceAfterDiscount = monthlyPrice * (1 - discount / 100);
+      return sum + priceAfterDiscount;
+    }, 0);
     
     const singlePayments = studentPaymentsList.filter(p => p.type === 'חד פעמי');
-    const expectedSingleAmount = singlePayments.length * 800;
+    const expectedSingleAmount = singlePayments.reduce((sum, p) => {
+      const discount = p.discount || 0;
+      const priceAfterDiscount = 800 * (1 - discount / 100);
+      return sum + priceAfterDiscount;
+    }, 0);
     
     const trialPayments = studentPaymentsList.filter(p => p.type === 'ניסיון');
-    const expectedTrialAmount = trialPayments.length * 700;
+    const expectedTrialAmount = trialPayments.reduce((sum, p) => {
+      const discount = p.discount || 0;
+      const priceAfterDiscount = 700 * (1 - discount / 100);
+      return sum + priceAfterDiscount;
+    }, 0);
     
     const totalExpected = expectedMonthlyAmount + expectedSingleAmount + expectedTrialAmount;
     const balance = totalPaid - totalExpected; // חיובי = יתרה, שלילי = חוב
@@ -103,6 +115,7 @@ export default function Payments({ payments, students, onAddPayment, onEditPayme
                     <TableHead className="text-right">תאריך</TableHead>
                     <TableHead className="text-right">סוג</TableHead>
                     <TableHead className="text-right">אמצעי</TableHead>
+                    <TableHead className="text-right">הנחה</TableHead>
                     <TableHead className="text-right">סכום</TableHead>
                     <TableHead className="text-right">הערה</TableHead>
                     <TableHead className="text-right">פעולות</TableHead>
@@ -118,6 +131,13 @@ export default function Payments({ payments, students, onAddPayment, onEditPayme
                         </span>
                       </TableCell>
                       <TableCell>{payment.method}</TableCell>
+                      <TableCell>
+                        {payment.discount ? (
+                          <span className="text-yellow-600 font-medium">{payment.discount}%</span>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
                       <TableCell className="font-bold text-primary">
                         {formatILS(payment.amount)}
                       </TableCell>

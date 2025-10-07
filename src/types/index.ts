@@ -19,6 +19,7 @@ export interface Payment {
   date: string;
   amount: number;
   note: string;
+  discount?: number; // אחוזי הנחה (0-100)
 }
 
 export interface SessionStudent {
