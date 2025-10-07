@@ -45,14 +45,23 @@ export function getPaymentStatusForDate(
   if (lastPayment.type === 'ניסיון' || lastPayment.type === 'חד פעמי') {
     // בדוק אם כבר עבר שיעור אחד מאז התשלום (לא משנה אם היה נוכח)
     const paymentDate = new Date(lastPayment.date);
-    const usedEntry = sessions.some(session => {
+    
+    // מצא שיעורים שהתקיימו אחרי התשלום שהתלמיד רשום אליהם
+    const sessionsAfterPayment = sessions.filter(session => {
       const sessionDate = new Date(session.date);
-      // בדוק אם יש שיעור שהתקיים אחרי התשלום
-      return sessionDate > paymentDate && 
-             session.students.some(st => st.studentId === studentId);
+      const isInSession = session.students.some(st => st.studentId === studentId);
+      return sessionDate > paymentDate && isInSession;
     });
-
-    if (usedEntry) {
+    
+    console.log('[Trial/Single Payment]', {
+      studentId,
+      paymentDate: lastPayment.date,
+      paymentType: lastPayment.type,
+      sessionsAfterPayment: sessionsAfterPayment.length,
+      sessionDates: sessionsAfterPayment.map(s => s.date)
+    });
+    
+    if (sessionsAfterPayment.length > 0) {
       return { canAttend: false, status: 'unpaid', message: 'צריך לשלם' };
     } else {
       return { 
