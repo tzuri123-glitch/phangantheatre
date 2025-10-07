@@ -118,14 +118,18 @@ export default function Index() {
     if (!student) return { amount: 0, note: '' };
     
     // חישוב יתרת התלמיד (זכות/חוב) מכל התשלומים הקודמים
-    const studentPayments = payments.filter((p) => p.studentId === studentId && p.date < date);
+    const studentPayments = payments.filter((p) => p.studentId === studentId && p.date <= date);
     let balance = 0;
     
     studentPayments.forEach((payment) => {
-      const expectedAmount = 
+      const baseExpectedAmount = 
         payment.type === 'ניסיון' ? TRIAL_PRICE :
         payment.type === 'חד פעמי' ? SINGLE_PRICE :
         student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+      
+      // חישוב סכום צפוי אחרי הנחה
+      const discount = payment.discount || 0;
+      const expectedAmount = baseExpectedAmount * (1 - discount / 100);
       
       // יתרה = סכום ששולם - סכום צפוי
       // אם חיובי = זכות, אם שלילי = חוב
