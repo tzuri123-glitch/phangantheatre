@@ -20,9 +20,10 @@ interface AttendanceProps {
   onEditSession: (session: Session) => void;
   onDeleteSession: (sessionId: string) => void;
   onUpdateAttendance: (sessionId: string, studentId: string, status: 'נוכח' | 'לא הגיע' | 'לא באי') => void;
+  onRemoveStudentFromSession: (sessionId: string, studentId: string) => void;
 }
 
-export default function Attendance({ sessions, students, onCreateSession, onEditSession, onDeleteSession, onUpdateAttendance }: AttendanceProps) {
+export default function Attendance({ sessions, students, onCreateSession, onEditSession, onDeleteSession, onUpdateAttendance, onRemoveStudentFromSession }: AttendanceProps) {
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({});
   const [sessionSearchQueries, setSessionSearchQueries] = useState<Record<string, string>>({});
 
@@ -112,6 +113,7 @@ export default function Attendance({ sessions, students, onCreateSession, onEdit
                     <TableRow>
                       <TableHead className="text-right">תלמיד</TableHead>
                       <TableHead className="text-right">סטטוס</TableHead>
+                      <TableHead className="text-right">פעולות</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -134,6 +136,15 @@ export default function Attendance({ sessions, students, onCreateSession, onEdit
                               <SelectItem value="לא באי">לא באי</SelectItem>
                             </SelectContent>
                           </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => onRemoveStudentFromSession(session.id, record.studentId)}
+                          >
+                            🗑️
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}

@@ -116,8 +116,6 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                                     ? 'bg-blue-100 text-blue-800'
                                     : student.status === 'בהקפאה'
                                     ? 'bg-orange-100 text-orange-800'
-                                    : student.status === 'עזב'
-                                    ? 'bg-red-100 text-red-800'
                                     : 'bg-gray-100 text-gray-800'
                                 }`}
                               >
