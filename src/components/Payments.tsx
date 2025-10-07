@@ -10,10 +10,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
 import { formatILS } from '@/lib/utils';
-import { getPaymentStatusForDate } from '@/lib/paymentStatus';
 
 
 interface PaymentsProps {
@@ -142,9 +140,6 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
                   
                   <div className="space-y-2">
                     {filterStudentPayments(className, studentPayments).map(({ student, payments: studentPaymentsList, totalPaid, totalExpected, balance }) => {
-                      const today = new Date().toISOString().slice(0, 10);
-                      const paymentStatus = getPaymentStatusForDate(student.id, today, students, payments, sessions);
-                      
                       return (
                         <Card key={student.id} className="overflow-hidden">
                           <div
@@ -158,15 +153,6 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
                               <span className="text-xs text-muted-foreground">
                                 {studentPaymentsList.length} תשלומים
                               </span>
-                              {paymentStatus.balance >= 0 ? (
-                                <Badge className="bg-green-500 text-white text-xs">
-                                  {paymentStatus.message}
-                                </Badge>
-                              ) : (
-                                <Badge variant="destructive" className="text-xs">
-                                  {paymentStatus.message}
-                                </Badge>
-                              )}
                             </div>
                             <div className="flex items-center gap-3">
                               <div className="text-left">
