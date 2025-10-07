@@ -377,6 +377,9 @@ export default function Index() {
                     setStudents((prev) => [...prev, newStudent]); 
                     toast.success('תלמיד נוסף!');
                   } else { 
+                    const oldStudent = students.find(s => s.id === editingStudent.id);
+                    const isBecomingActive = oldStudent && oldStudent.status !== 'פעיל' && editingStudent.status === 'פעיל';
+                    
                     const { error } = await supabase
                       .from('students')
                       .update({
@@ -399,10 +402,47 @@ export default function Index() {
                       return;
                     }
                     
+                    // אם התלמיד הפך לפעיל, הוסף אותו לשיעורים עתידיים
+                    if (isBecomingActive) {
+                      const today = new Date().toISOString().slice(0, 10);
+                      const futureSessions = sessions.filter(s => 
+                        s.className === editingStudent.className && 
+                        s.date >= today
+                      );
+                      
+                      for (const session of futureSessions) {
+                        const isInSession = session.students.some(st => st.studentId === editingStudent.id);
+                        if (!isInSession) {
+                          await supabase
+                            .from('attendance')
+                            .insert({
+                              user_id: user.id,
+                              session_id: session.id,
+                              student_id: editingStudent.id,
+                              status: 'נוכח'
+                            });
+                        }
+                      }
+                      
+                      // עדכון המצב המקומי
+                      setSessions(prev => prev.map(s => {
+                        if (s.className === editingStudent.className && s.date >= today) {
+                          const isInSession = s.students.some(st => st.studentId === editingStudent.id);
+                          if (!isInSession) {
+                            return {
+                              ...s,
+                              students: [...s.students, { studentId: editingStudent.id, status: 'נוכח' }]
+                            };
+                          }
+                        }
+                        return s;
+                      }));
+                    }
+                    
                     savedStudentId = editingStudent.id;
                     setStudents((prev) => prev.map((s) => s.id === editingStudent.id ? editingStudent : s)); 
                     toast.success('תלמיד עודכן!');
-                  } 
+                  }
                   setShowStudentModal(false); 
                   setEditingStudent(null);
                   // מעבר לעמוד תשלומים והוספת תשלום
@@ -460,6 +500,9 @@ export default function Index() {
                     setStudents((prev) => [...prev, newStudent]); 
                     toast.success('תלמיד נוסף!');
                   } else { 
+                    const oldStudent = students.find(s => s.id === editingStudent.id);
+                    const isBecomingActive = oldStudent && oldStudent.status !== 'פעיל' && editingStudent.status === 'פעיל';
+                    
                     const { error } = await supabase
                       .from('students')
                       .update({
@@ -482,9 +525,46 @@ export default function Index() {
                       return;
                     }
                     
+                    // אם התלמיד הפך לפעיל, הוסף אותו לשיעורים עתידיים
+                    if (isBecomingActive) {
+                      const today = new Date().toISOString().slice(0, 10);
+                      const futureSessions = sessions.filter(s => 
+                        s.className === editingStudent.className && 
+                        s.date >= today
+                      );
+                      
+                      for (const session of futureSessions) {
+                        const isInSession = session.students.some(st => st.studentId === editingStudent.id);
+                        if (!isInSession) {
+                          await supabase
+                            .from('attendance')
+                            .insert({
+                              user_id: user.id,
+                              session_id: session.id,
+                              student_id: editingStudent.id,
+                              status: 'נוכח'
+                            });
+                        }
+                      }
+                      
+                      // עדכון המצב המקומי
+                      setSessions(prev => prev.map(s => {
+                        if (s.className === editingStudent.className && s.date >= today) {
+                          const isInSession = s.students.some(st => st.studentId === editingStudent.id);
+                          if (!isInSession) {
+                            return {
+                              ...s,
+                              students: [...s.students, { studentId: editingStudent.id, status: 'נוכח' }]
+                            };
+                          }
+                        }
+                        return s;
+                      }));
+                    }
+                    
                     setStudents((prev) => prev.map((s) => s.id === editingStudent.id ? editingStudent : s)); 
                     toast.success('תלמיד עודכן!'); 
-                  } 
+                  }
                   setShowStudentModal(false); 
                   setEditingStudent(null); 
                 }}
