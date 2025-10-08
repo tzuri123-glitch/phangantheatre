@@ -1,4 +1,4 @@
-import { Student, CLASS_OPTIONS } from '@/types';
+import { Student, CLASS_OPTIONS, MONTHLY_PRICE, SIBLING_MONTHLY_PRICE } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,8 +11,9 @@ import {
 } from '@/components/ui/table';
 import { Card } from '@/components/ui/card';
 import { useState } from 'react';
-import { Users } from 'lucide-react';
+import { Users, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { createWhatsAppPaymentLink } from '@/lib/utils';
 
 interface StudentsProps {
   students: Student[];
@@ -134,6 +135,26 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                             </TableCell>
                             <TableCell>
                               <div className="flex gap-2">
+                                {student.parentPhone && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      const amount = student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+                                      const link = createWhatsAppPaymentLink(
+                                        student.parentPhone,
+                                        `${student.name} ${student.lastName}`,
+                                        amount,
+                                        student.isSibling
+                                      );
+                                      window.open(link, '_blank');
+                                      toast.success('נפתח WhatsApp עם הודעת תזכורת');
+                                    }}
+                                    title="שלח תזכורת WhatsApp"
+                                  >
+                                    <MessageCircle className="h-4 w-4" />
+                                  </Button>
+                                )}
                                 <Button
                                   variant="outline"
                                   size="sm"
