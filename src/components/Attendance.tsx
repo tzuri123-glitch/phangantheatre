@@ -88,13 +88,9 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold text-foreground">נוכחות</h2>
-        <button
-          onClick={onCreateSession}
-          className="px-6 py-3 rounded-lg font-bold text-base shadow-xl hover:shadow-2xl transition-all duration-200 hover:scale-105"
-          style={{ backgroundColor: 'hsl(var(--pink))', color: 'white' }}
-        >
+        <Button onClick={onCreateSession} className="bg-primary hover:bg-primary-hover">
           ➕ יצירת שיעור
-        </button>
+        </Button>
       </div>
 
       <div className="space-y-4">

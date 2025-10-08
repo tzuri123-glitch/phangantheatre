@@ -10,38 +10,22 @@ export function useAuth() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+      (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-        
-        // Navigate to home if user just signed in
-        if (event === 'SIGNED_IN' && session?.user) {
-          console.log('User signed in, navigating to home');
-          navigate('/');
-        }
-        
-        // Navigate to auth if user signed out
-        if (event === 'SIGNED_OUT') {
-          console.log('User signed out, navigating to auth');
-          navigate('/auth');
-        }
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, []);
 
   const signOut = async () => {
     await supabase.auth.signOut();

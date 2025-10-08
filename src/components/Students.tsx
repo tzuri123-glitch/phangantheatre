@@ -1,4 +1,4 @@
-import { Student, CLASS_OPTIONS, MONTHLY_PRICE, SIBLING_MONTHLY_PRICE } from '@/types';
+import { Student, CLASS_OPTIONS } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,9 +11,8 @@ import {
 } from '@/components/ui/table';
 import { Card } from '@/components/ui/card';
 import { useState } from 'react';
-import { Users, MessageCircle } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { toast } from 'sonner';
-import { createWhatsAppPaymentLink } from '@/lib/utils';
 
 interface StudentsProps {
   students: Student[];
@@ -54,13 +53,9 @@ export default function Students({ students, payments, onAddStudent, onEditStude
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold text-foreground">תלמידים</h2>
-        <button
-          onClick={onAddStudent}
-          className="px-6 py-3 rounded-lg font-bold text-base shadow-xl hover:shadow-2xl transition-all duration-200 hover:scale-105"
-          style={{ backgroundColor: 'hsl(var(--pink))', color: 'white' }}
-        >
+        <Button onClick={onAddStudent} className="bg-primary hover:bg-primary-hover">
           ➕ הוסף תלמיד
-        </button>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -135,26 +130,6 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                             </TableCell>
                             <TableCell>
                               <div className="flex gap-2">
-                                {student.parentPhone && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      const amount = student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
-                                      const link = createWhatsAppPaymentLink(
-                                        student.parentPhone,
-                                        `${student.name} ${student.lastName}`,
-                                        amount,
-                                        student.isSibling
-                                      );
-                                      window.open(link, '_blank');
-                                      toast.success('נפתח WhatsApp עם הודעת תזכורת');
-                                    }}
-                                    title="שלח תזכורת WhatsApp"
-                                  >
-                                    <MessageCircle className="h-4 w-4" />
-                                  </Button>
-                                )}
                                 <Button
                                   variant="outline"
                                   size="sm"

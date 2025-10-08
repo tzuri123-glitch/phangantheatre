@@ -169,13 +169,9 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold text-foreground">ברוך הבא למערכת ניהול החוג! 🎭</h2>
-        <button
-          onClick={onAddStudent}
-          className="px-6 py-3 rounded-lg font-bold text-base shadow-xl hover:shadow-2xl transition-all duration-200 hover:scale-105"
-          style={{ backgroundColor: 'hsl(var(--pink))', color: 'white' }}
-        >
+        <Button onClick={onAddStudent} className="bg-primary hover:bg-primary-hover">
           ➕ הוסף תלמיד
-        </button>
+        </Button>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
