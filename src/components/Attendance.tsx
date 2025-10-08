@@ -88,7 +88,7 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold text-foreground">נוכחות</h2>
-        <Button onClick={onCreateSession} className="bg-primary hover:bg-primary-hover">
+        <Button onClick={onCreateSession} variant="secondary" size="lg" className="shadow-lg">
           ➕ יצירת שיעור
         </Button>
       </div>

@@ -107,7 +107,7 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold text-foreground">תשלומים</h2>
-        <Button onClick={onAddPayment} className="bg-primary hover:bg-primary-hover">
+        <Button onClick={onAddPayment} variant="secondary" size="lg" className="shadow-lg">
           ➕ הוסף תשלום
         </Button>
       </div>
