@@ -11,7 +11,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { getPaymentStatusForSession, getStatusColor, getStatusBadge } from '@/lib/paymentStatus';
 
 interface AttendanceProps {
   sessions: Session[];
@@ -25,8 +29,34 @@ interface AttendanceProps {
 }
 
 export default function Attendance({ sessions, students, payments, onCreateSession, onEditSession, onDeleteSession, onUpdateAttendance, onRemoveStudentFromSession }: AttendanceProps) {
+  const { user } = useAuth();
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({});
   const [sessionSearchQueries, setSessionSearchQueries] = useState<Record<string, string>>({});
+  const [subscriptions, setSubscriptions] = useState<any[]>([]);
+
+  // Load subscriptions
+  useEffect(() => {
+    if (!user) return;
+    
+    const loadSubscriptions = async () => {
+      const { data } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      if (data) {
+        setSubscriptions(data.map(s => ({
+          id: s.id,
+          studentId: s.student_id,
+          monthYear: s.month_year,
+          totalEntries: s.total_entries,
+          entriesRemaining: s.entries_remaining
+        })));
+      }
+    };
+    
+    loadSubscriptions();
+  }, [user]);
 
   const toggleSession = (sessionId: string) => {
     setExpandedSessions((prev) => ({
@@ -113,47 +143,65 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
                   <TableHeader>
                     <TableRow>
                       <TableHead className="text-right">תלמיד</TableHead>
-                      <TableHead className="text-right">סטטוס</TableHead>
+                      <TableHead className="text-right">סטטוס תשלום</TableHead>
+                      <TableHead className="text-right">סטטוס נוכחות</TableHead>
                       <TableHead className="text-right">פעולות</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filterStudentRecords(session.id, session.students).map((record) => (
-                      <TableRow key={record.studentId}>
-                        <TableCell className="font-medium">
-                          {getStudentName(record.studentId)}
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={record.status || undefined}
-                            onValueChange={(v) => {
-                              if (v && v !== '') {
-                                onUpdateAttendance(session.id, record.studentId, v as 'נוכח' | 'לא הגיע' | 'לא באי' | 'עזב');
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue placeholder="בחר" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="נוכח">נוכח</SelectItem>
-                              <SelectItem value="לא הגיע">לא הגיע</SelectItem>
-                              <SelectItem value="לא באי">לא באי (הקפאה)</SelectItem>
-                              <SelectItem value="עזב">עזב</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => onRemoveStudentFromSession(session.id, record.studentId)}
-                          >
-                            🗑️
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {filterStudentRecords(session.id, session.students).map((record) => {
+                      const student = students.find(s => s.id === record.studentId);
+                      if (!student) return null;
+                      
+                      const paymentStatus = getPaymentStatusForSession(
+                        student,
+                        session,
+                        payments,
+                        subscriptions
+                      );
+                      const statusColor = getStatusColor(paymentStatus);
+                      const statusBadge = getStatusBadge(paymentStatus);
+                      
+                      return (
+                        <TableRow key={record.studentId} className={statusColor}>
+                          <TableCell className="font-medium">
+                            {getStudentName(record.studentId)}
+                          </TableCell>
+                          <TableCell>
+                            {statusBadge && <Badge variant="outline">{statusBadge}</Badge>}
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              value={record.status || undefined}
+                              onValueChange={(v) => {
+                                if (v && v !== '') {
+                                  onUpdateAttendance(session.id, record.studentId, v as 'נוכח' | 'לא הגיע' | 'לא באי' | 'עזב');
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="w-32">
+                                <SelectValue placeholder="בחר" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="נוכח">נוכח</SelectItem>
+                                <SelectItem value="לא הגיע">לא הגיע</SelectItem>
+                                <SelectItem value="לא באי">לא באי (הקפאה)</SelectItem>
+                                <SelectItem value="עזב">עזב</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => onRemoveStudentFromSession(session.id, record.studentId)}
+                            >
+                              🗑️
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
