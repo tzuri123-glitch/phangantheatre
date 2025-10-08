@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Student, Payment, Session, CLASS_OPTIONS, MONTHLY_PRICE, SIBLING_MONTHLY_PRICE, SINGLE_PRICE, TRIAL_PRICE } from '@/types';
+import { getPaymentStatusForSession, getStatusColor, getStatusBadge } from '@/lib/paymentStatus';
+import { Badge } from '@/components/ui/badge';
 import TabNavigation from '@/components/TabNavigation';
 import Dashboard from '@/components/Dashboard';
 import Students from '@/components/Students';
@@ -862,9 +864,14 @@ export default function Index() {
               const student = students.find((s) => s.id === rec.studentId);
               if (!student) return null;
               
+              const paymentStatus = getPaymentStatusForSession(student, currentSession, payments, []);
+              const statusColor = getStatusColor(paymentStatus);
+              const statusBadge = getStatusBadge(paymentStatus);
+              
               return (
-                <div key={rec.studentId} className="flex gap-2 items-center p-2">
+                <div key={rec.studentId} className={cn("flex gap-2 items-center p-2 rounded", statusColor)}>
                   <span className="flex-1 font-medium">{student.name} {student.lastName}</span>
+                  {statusBadge && <Badge variant="outline" className="text-xs">{statusBadge}</Badge>}
                   <Select value={rec.status || undefined} onValueChange={(v) => {
                     if (v && v !== '') {
                       const newStudents = [...currentSession.students]; 
