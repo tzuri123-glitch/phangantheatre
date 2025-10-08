@@ -45,7 +45,7 @@ export function getPaymentStatusForSession(
   
 // Check payments in range (one-time or trial)
 const studentPayments = payments.filter(p => p.studentId === student.id && (p.type === 'חד פעמי' || p.type === 'ניסיון' || p.type === 'חודשי'));
-console.log('💰 Student payments:', studentPayments.map(p => ({ type: p.type, date: p.date, amount: p.amount })));
+console.log('💰 Student payments:', studentPayments.map(p => ({ type: p.type, date: p.date, amount: p.amount, discount: p.discount })));
 
 const hasOneTimeOrTrialPayment = payments.some(payment => {
   if (payment.studentId !== student.id || (payment.type !== 'חד פעמי' && payment.type !== 'ניסיון')) {
