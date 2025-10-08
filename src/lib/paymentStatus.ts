@@ -18,7 +18,10 @@ export function getPaymentStatusForSession(
   subscriptions: Subscription[]
 ): PaymentStatus {
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
   const sessionDate = parseISO(session.date);
+  sessionDate.setHours(0, 0, 0, 0);
   
   // Check if trial lesson
   if (student.status === 'חדש' && session.trial) {
@@ -33,12 +36,16 @@ export function getPaymentStatusForSession(
            sub.entriesRemaining > 0
   );
   
-  // Check for one-time payment within range (before session to 2 days after)
+  // Check for one-time payment within range
+  // Can pay before session or up to 2 days after
   const hasOneTimePayment = payments.some(payment => {
     if (payment.studentId !== student.id || payment.type !== 'חד פעמי') {
       return false;
     }
     const paymentDate = parseISO(payment.date);
+    paymentDate.setHours(0, 0, 0, 0);
+    
+    // Check if payment is before session or within 2 days after
     return isWithinInterval(paymentDate, {
       start: subDays(sessionDate, 365), // Can pay in advance
       end: addDays(sessionDate, 2) // Up to 2 days after
@@ -47,18 +54,19 @@ export function getPaymentStatusForSession(
   
   const hasPaid = !!activeSubscription || hasOneTimePayment;
   
-  const todayStr = format(today, 'yyyy-MM-dd');
+  // Determine status based on session date vs today
+  const isToday = sessionDate.getTime() === today.getTime();
+  const isPast = sessionDate < today;
   
-  // Determine status based on current date
-  if (todayStr === session.date) {
-    // On session day - show if paid or not
+  if (isToday) {
+    // On session day - show paid (green) or unpaid (red)
     return hasPaid ? 'paid' : 'unpaid';
-  } else if (today > sessionDate) {
-    // After session day - show debt or neutral
+  } else if (isPast) {
+    // Past session - show neutral if paid, red if unpaid (debt)
     return hasPaid ? 'neutral' : 'unpaid';
   }
   
-  // Before session day - neutral
+  // Future session - neutral
   return 'neutral';
 }
 
