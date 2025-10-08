@@ -108,7 +108,8 @@ console.log('💵 Has paid:', { hasMonthlyPayment, hasOneTimeOrTrialPayment, has
   } else if (isPast) {
     status = hasPaid ? 'neutral' : 'unpaid';
   } else {
-    status = 'neutral';
+    // For future sessions: show preview so you can see debts in advance
+    status = hasPaid ? 'paid' : 'unpaid';
   }
   
   console.log('🎯 Final status:', status);
