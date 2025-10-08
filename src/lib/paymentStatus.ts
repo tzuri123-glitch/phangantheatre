@@ -1,5 +1,5 @@
 import { Student, Session, Payment } from '@/types';
-import { parseISO, isWithinInterval, addDays, subDays, format } from 'date-fns';
+import { parseISO, isWithinInterval, addDays, subDays, format, isSameMonth } from 'date-fns';
 
 export type PaymentStatus = 'trial' | 'paid' | 'unpaid' | 'neutral';
 
@@ -43,31 +43,43 @@ export function getPaymentStatusForSession(
   
   console.log('💳 Active subscription:', activeSubscription);
   
-  // Check for one-time payment within range
-  const studentPayments = payments.filter(p => p.studentId === student.id && p.type === 'חד פעמי');
-  console.log('💰 Student one-time payments:', studentPayments.map(p => p.date));
+// Check payments in range (one-time or trial)
+const studentPayments = payments.filter(p => p.studentId === student.id && (p.type === 'חד פעמי' || p.type === 'ניסיון' || p.type === 'חודשי'));
+console.log('💰 Student payments:', studentPayments.map(p => ({ type: p.type, date: p.date, amount: p.amount })));
+
+const hasOneTimeOrTrialPayment = payments.some(payment => {
+  if (payment.studentId !== student.id || (payment.type !== 'חד פעמי' && payment.type !== 'ניסיון')) {
+    return false;
+  }
+  const paymentDate = parseISO(payment.date);
+  paymentDate.setHours(0, 0, 0, 0);
   
-  const hasOneTimePayment = payments.some(payment => {
-    if (payment.studentId !== student.id || payment.type !== 'חד פעמי') {
-      return false;
-    }
-    const paymentDate = parseISO(payment.date);
-    paymentDate.setHours(0, 0, 0, 0);
-    
-    const inRange = isWithinInterval(paymentDate, {
-      start: subDays(sessionDate, 365),
-      end: addDays(sessionDate, 2)
-    });
-    
-    if (inRange) {
-      console.log('✅ Found payment in range:', payment.date);
-    }
-    
-    return inRange;
+  const inRange = isWithinInterval(paymentDate, {
+    start: subDays(sessionDate, 365),
+    end: addDays(sessionDate, 2)
   });
   
-  const hasPaid = !!activeSubscription || hasOneTimePayment;
-  console.log('💵 Has paid:', hasPaid);
+  if (inRange) {
+    console.log('✅ Found one-time/trial payment in range:', payment.type, payment.date);
+  }
+  
+  return inRange;
+});
+
+// Monthly payment counts for the whole month of the session
+const hasMonthlyPayment = payments.some(payment => {
+  if (payment.studentId !== student.id || payment.type !== 'חודשי') return false;
+  const paymentDate = parseISO(payment.date);
+  paymentDate.setHours(0, 0, 0, 0);
+  const sameMonth = isSameMonth(paymentDate, sessionDate);
+  if (sameMonth) {
+    console.log('✅ Found monthly payment for session month:', payment.date);
+  }
+  return sameMonth;
+});
+
+const hasPaid = !!activeSubscription || hasMonthlyPayment || hasOneTimeOrTrialPayment;
+console.log('💵 Has paid:', { hasMonthlyPayment, hasOneTimeOrTrialPayment, activeSubscription: !!activeSubscription });
   
   // Determine status based on session date vs today
   const isToday = sessionDate.getTime() === today.getTime();
