@@ -8,84 +8,92 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 238 100% 97%;
-    --foreground: 195 100% 10%;
-
+    --background: 210 40% 98%;
+    --foreground: 210 60% 15%;
     --card: 0 0% 100%;
-    --card-foreground: 195 100% 10%;
-
+    --card-foreground: 210 60% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 195 100% 10%;
-
-    --primary: 188 91% 36%;
+    --popover-foreground: 210 60% 15%;
+    
+    /* Navy Blue from logo */
+    --primary: 210 60% 25%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 188 91% 30%;
-
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 195 100% 10%;
-
+    
+    /* Pink/Magenta from logo */
+    --secondary: 340 75% 60%;
+    --secondary-foreground: 0 0% 100%;
+    
+    /* Turquoise from logo */
+    --accent: 188 65% 60%;
+    --accent-foreground: 210 60% 15%;
+    
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
-
-    --accent: 188 91% 95%;
-    --accent-foreground: 188 91% 36%;
-
+    
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-
+    
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 188 91% 36%;
-
-    --radius: 0.75rem;
-
-    --gradient-primary: linear-gradient(135deg, hsl(188 91% 36%), hsl(188 91% 45%));
-    --gradient-subtle: linear-gradient(180deg, hsl(238 100% 97%), hsl(210 40% 98%));
+    --ring: 210 60% 25%;
     
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    /* Additional theme colors from logo */
+    --pink: 340 75% 60%;
+    --turquoise: 188 65% 60%;
+    --green: 95 45% 65%;
+    --yellow: 38 100% 65%;
+    
+    --radius: 0.75rem;
+    
+    /* Shadows and effects */
+    --shadow-sm: 0 1px 2px 0 hsl(210 60% 25% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(210 60% 25% / 0.1), 0 2px 4px -2px hsl(210 60% 25% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(210 60% 25% / 0.1), 0 4px 6px -4px hsl(210 60% 25% / 0.1);
+    --shadow-xl: 0 20px 25px -5px hsl(210 60% 25% / 0.1), 0 8px 10px -6px hsl(210 60% 25% / 0.1);
   }
-
+  
   .dark {
-    --background: 222 47% 11%;
+    --background: 210 60% 8%;
     --foreground: 210 40% 98%;
-
-    --card: 222 47% 15%;
+    --card: 210 60% 12%;
     --card-foreground: 210 40% 98%;
-
-    --popover: 222 47% 15%;
+    --popover: 210 60% 12%;
     --popover-foreground: 210 40% 98%;
-
-    --primary: 188 91% 45%;
-    --primary-foreground: 0 0% 100%;
-    --primary-hover: 188 91% 55%;
-
-    --secondary: 217 33% 18%;
-    --secondary-foreground: 210 40% 98%;
-
+    
+    --primary: 188 65% 60%;
+    --primary-foreground: 210 60% 8%;
+    
+    --secondary: 340 75% 60%;
+    --secondary-foreground: 0 0% 100%;
+    
+    --accent: 95 45% 65%;
+    --accent-foreground: 210 60% 8%;
+    
     --muted: 217 33% 18%;
     --muted-foreground: 215 20% 65%;
-
-    --accent: 217 33% 18%;
-    --accent-foreground: 188 91% 45%;
-
+    
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
-
+    
     --border: 217 33% 18%;
     --input: 217 33% 18%;
-    --ring: 188 91% 45%;
+    --ring: 188 65% 60%;
+    
+    --pink: 340 75% 60%;
+    --turquoise: 188 65% 60%;
+    --green: 95 45% 65%;
+    --yellow: 38 100% 65%;
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
 
   body {
-    @apply bg-background text-foreground;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
