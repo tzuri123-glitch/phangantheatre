@@ -47,6 +47,7 @@ export function getPaymentStatusForSession(
 const studentPayments = payments.filter(p => p.studentId === student.id && (p.type === 'חד פעמי' || p.type === 'ניסיון' || p.type === 'חודשי'));
 console.log('💰 Student payments:', studentPayments.map(p => ({ type: p.type, date: p.date, amount: p.amount, discount: p.discount })));
 
+// One-time and trial payments cover ONLY the specific session date, not a range
 const hasOneTimeOrTrialPayment = payments.some(payment => {
   if (payment.studentId !== student.id || (payment.type !== 'חד פעמי' && payment.type !== 'ניסיון')) {
     return false;
@@ -54,16 +55,14 @@ const hasOneTimeOrTrialPayment = payments.some(payment => {
   const paymentDate = parseISO(payment.date);
   paymentDate.setHours(0, 0, 0, 0);
   
-  const inRange = isWithinInterval(paymentDate, {
-    start: subDays(sessionDate, 365),
-    end: addDays(sessionDate, 2)
-  });
+  // One-time/trial payment must match the exact session date
+  const isExactMatch = paymentDate.getTime() === sessionDate.getTime();
   
-  if (inRange) {
-    console.log('✅ Found one-time/trial payment in range:', payment.type, payment.date, 'discount:', payment.discount);
+  if (isExactMatch) {
+    console.log('✅ Found one-time/trial payment for exact session date:', payment.type, payment.date, 'discount:', payment.discount);
   }
   
-  return inRange;
+  return isExactMatch;
 });
 
 // Check for 100% discount or zero-amount payments near the session date
