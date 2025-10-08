@@ -66,16 +66,21 @@ const hasOneTimeOrTrialPayment = payments.some(payment => {
   return inRange;
 });
 
-// Check for 100% discount payments in the same month
+// Check for 100% discount or zero-amount payments near the session date
 const has100PercentDiscount = payments.some(payment => {
-  if (payment.studentId !== student.id || payment.discount !== 100) return false;
+  if (payment.studentId !== student.id) return false;
+  const isFullDiscount = payment.discount === 100 || payment.amount === 0;
+  if (!isFullDiscount) return false;
   const paymentDate = parseISO(payment.date);
   paymentDate.setHours(0, 0, 0, 0);
-  const sameMonth = isSameMonth(paymentDate, sessionDate);
-  if (sameMonth) {
-    console.log('✅ Found 100% discount payment for session month:', payment.date);
+  const inRange = isWithinInterval(paymentDate, {
+    start: subDays(sessionDate, 365),
+    end: addDays(sessionDate, 365)
+  });
+  if (inRange) {
+    console.log('✅ Found 100% discount/zero-amount payment near session:', payment.date);
   }
-  return sameMonth;
+  return inRange;
 });
 
 // Monthly payment counts for the whole month of the session
