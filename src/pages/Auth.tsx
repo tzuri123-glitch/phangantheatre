@@ -45,7 +45,8 @@ export default function Auth() {
           title: "התחברת בהצלחה!",
         });
         
-        // Navigation will happen automatically via onAuthStateChange
+        // Navigate explicitly (and hook will also navigate)
+        setTimeout(() => navigate('/'), 0);
       } else {
         const { error } = await supabase.auth.signUp({
           email,
