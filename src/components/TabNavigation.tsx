@@ -12,17 +12,22 @@ const tabs = [
 
 export default function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
   return (
-    <div className="sticky top-0 z-10 bg-card shadow-md">
-      <div className="flex justify-center gap-2 p-3">
+    <div className="sticky top-0 z-10 shadow-lg" style={{ backgroundColor: 'hsl(var(--card))' }}>
+      <div className="flex justify-center gap-3 p-4">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`px-5 py-2.5 rounded-xl font-medium transition-all ${
+            className={`px-6 py-3 rounded-xl font-bold text-base transition-all duration-200 ${
               activeTab === tab.id
-                ? 'bg-primary text-primary-foreground shadow-md'
-                : 'bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground'
+                ? 'shadow-xl scale-105'
+                : 'hover:scale-105 hover:shadow-lg'
             }`}
+            style={
+              activeTab === tab.id
+                ? { backgroundColor: 'hsl(var(--turquoise))', color: 'hsl(var(--foreground))' }
+                : { backgroundColor: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }
+            }
           >
             {tab.label}
           </button>
