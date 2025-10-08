@@ -23,8 +23,13 @@ export function getPaymentStatusForSession(
   const sessionDate = parseISO(session.date);
   sessionDate.setHours(0, 0, 0, 0);
   
+  console.log('🔍 Checking payment status for:', student.name, student.lastName);
+  console.log('📅 Session date:', session.date);
+  console.log('📅 Today:', format(today, 'yyyy-MM-dd'));
+  
   // Check if trial lesson
   if (student.status === 'חדש' && session.trial) {
+    console.log('✅ Trial lesson');
     return 'trial';
   }
   
@@ -36,8 +41,12 @@ export function getPaymentStatusForSession(
            sub.entriesRemaining > 0
   );
   
+  console.log('💳 Active subscription:', activeSubscription);
+  
   // Check for one-time payment within range
-  // Can pay before session or up to 2 days after
+  const studentPayments = payments.filter(p => p.studentId === student.id && p.type === 'חד פעמי');
+  console.log('💰 Student one-time payments:', studentPayments.map(p => p.date));
+  
   const hasOneTimePayment = payments.some(payment => {
     if (payment.studentId !== student.id || payment.type !== 'חד פעמי') {
       return false;
@@ -45,29 +54,38 @@ export function getPaymentStatusForSession(
     const paymentDate = parseISO(payment.date);
     paymentDate.setHours(0, 0, 0, 0);
     
-    // Check if payment is before session or within 2 days after
-    return isWithinInterval(paymentDate, {
-      start: subDays(sessionDate, 365), // Can pay in advance
-      end: addDays(sessionDate, 2) // Up to 2 days after
+    const inRange = isWithinInterval(paymentDate, {
+      start: subDays(sessionDate, 365),
+      end: addDays(sessionDate, 2)
     });
+    
+    if (inRange) {
+      console.log('✅ Found payment in range:', payment.date);
+    }
+    
+    return inRange;
   });
   
   const hasPaid = !!activeSubscription || hasOneTimePayment;
+  console.log('💵 Has paid:', hasPaid);
   
   // Determine status based on session date vs today
   const isToday = sessionDate.getTime() === today.getTime();
   const isPast = sessionDate < today;
   
+  let status: PaymentStatus;
   if (isToday) {
-    // On session day - show paid (green) or unpaid (red)
-    return hasPaid ? 'paid' : 'unpaid';
+    status = hasPaid ? 'paid' : 'unpaid';
   } else if (isPast) {
-    // Past session - show neutral if paid, red if unpaid (debt)
-    return hasPaid ? 'neutral' : 'unpaid';
+    status = hasPaid ? 'neutral' : 'unpaid';
+  } else {
+    status = 'neutral';
   }
   
-  // Future session - neutral
-  return 'neutral';
+  console.log('🎯 Final status:', status);
+  console.log('---');
+  
+  return status;
 }
 
 export function getStatusColor(status: PaymentStatus): string {
