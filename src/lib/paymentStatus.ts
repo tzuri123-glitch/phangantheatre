@@ -60,10 +60,22 @@ const hasOneTimeOrTrialPayment = payments.some(payment => {
   });
   
   if (inRange) {
-    console.log('✅ Found one-time/trial payment in range:', payment.type, payment.date);
+    console.log('✅ Found one-time/trial payment in range:', payment.type, payment.date, 'discount:', payment.discount);
   }
   
   return inRange;
+});
+
+// Check for 100% discount payments in the same month
+const has100PercentDiscount = payments.some(payment => {
+  if (payment.studentId !== student.id || payment.discount !== 100) return false;
+  const paymentDate = parseISO(payment.date);
+  paymentDate.setHours(0, 0, 0, 0);
+  const sameMonth = isSameMonth(paymentDate, sessionDate);
+  if (sameMonth) {
+    console.log('✅ Found 100% discount payment for session month:', payment.date);
+  }
+  return sameMonth;
 });
 
 // Monthly payment counts for the whole month of the session
@@ -78,8 +90,8 @@ const hasMonthlyPayment = payments.some(payment => {
   return sameMonth;
 });
 
-const hasPaid = !!activeSubscription || hasMonthlyPayment || hasOneTimeOrTrialPayment;
-console.log('💵 Has paid:', { hasMonthlyPayment, hasOneTimeOrTrialPayment, activeSubscription: !!activeSubscription });
+const hasPaid = !!activeSubscription || hasMonthlyPayment || hasOneTimeOrTrialPayment || has100PercentDiscount;
+console.log('💵 Has paid:', { hasMonthlyPayment, hasOneTimeOrTrialPayment, has100PercentDiscount, activeSubscription: !!activeSubscription });
   
   // Determine status based on session date vs today
   const isToday = sessionDate.getTime() === today.getTime();
