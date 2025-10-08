@@ -8,6 +8,9 @@ import Dashboard from '@/components/Dashboard';
 import Students from '@/components/Students';
 import Payments from '@/components/Payments';
 import Attendance from '@/components/Attendance';
+import StudentDialog from '@/components/dialogs/StudentDialog';
+import PaymentDialog from '@/components/dialogs/PaymentDialog';
+import SessionDialog from '@/components/dialogs/SessionDialog';
 import { LogOut } from 'lucide-react';
 import logo from '@/assets/logo.jpeg';
 import { toast } from 'sonner';
@@ -20,6 +23,10 @@ export default function Index() {
   const [students, setStudents] = useState<Student[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
+  
+  const [studentDialog, setStudentDialog] = useState<{ open: boolean; student?: Student }>({ open: false });
+  const [paymentDialog, setPaymentDialog] = useState<{ open: boolean; payment?: Payment }>({ open: false });
+  const [sessionDialog, setSessionDialog] = useState<{ open: boolean; session?: Session }>({ open: false });
 
   useEffect(() => {
     if (!user) {
@@ -106,6 +113,272 @@ export default function Index() {
     await supabase.auth.signOut();
   };
 
+  const handleSaveStudent = async (studentData: Omit<Student, 'id'> & { id?: string }) => {
+    if (!user) return;
+    
+    if (studentData.id) {
+      // Edit existing student
+      const { error } = await supabase
+        .from('students')
+        .update({
+          name: studentData.name,
+          last_name: studentData.lastName,
+          phone: studentData.phone,
+          birth_date: studentData.birthDate,
+          parent_name: studentData.parentName,
+          parent_phone: studentData.parentPhone,
+          is_sibling: studentData.isSibling,
+          sibling_id: studentData.siblingId || null,
+          class_name: studentData.className,
+          status: studentData.status,
+        })
+        .eq('id', studentData.id)
+        .eq('user_id', user.id);
+      
+      if (error) return toast.error('שגיאה בעדכון תלמיד');
+      
+      setStudents((prev) =>
+        prev.map((s) =>
+          s.id === studentData.id
+            ? { ...studentData, id: studentData.id }
+            : s
+        )
+      );
+      toast.success('תלמיד עודכן!');
+    } else {
+      // Add new student
+      const { data, error } = await supabase
+        .from('students')
+        .insert({
+          user_id: user.id,
+          name: studentData.name,
+          last_name: studentData.lastName,
+          phone: studentData.phone,
+          birth_date: studentData.birthDate,
+          parent_name: studentData.parentName,
+          parent_phone: studentData.parentPhone,
+          is_sibling: studentData.isSibling,
+          sibling_id: studentData.siblingId || null,
+          class_name: studentData.className,
+          status: studentData.status,
+        })
+        .select()
+        .single();
+      
+      if (error) return toast.error('שגיאה בהוספת תלמיד');
+      
+      setStudents((prev) => [
+        ...prev,
+        {
+          id: data.id,
+          name: data.name,
+          lastName: data.last_name || '',
+          phone: data.phone || '',
+          birthDate: data.birth_date || '',
+          parentName: data.parent_name || '',
+          parentPhone: data.parent_phone || '',
+          isSibling: data.is_sibling || false,
+          siblingId: data.sibling_id || undefined,
+          className: data.class_name,
+          status: data.status as Student['status'],
+        },
+      ]);
+      toast.success('תלמיד נוסף!');
+    }
+    
+    setStudentDialog({ open: false });
+  };
+
+  const handleDeleteStudent = async (studentId: string) => {
+    if (!user) return;
+    
+    const { error } = await supabase
+      .from('students')
+      .delete()
+      .eq('id', studentId)
+      .eq('user_id', user.id);
+    
+    if (error) return toast.error('שגיאה במחיקת תלמיד');
+    
+    setStudents((prev) => prev.filter((s) => s.id !== studentId));
+    toast.success('תלמיד נמחק!');
+  };
+
+  const handleSavePayment = async (paymentData: Omit<Payment, 'id'> & { id?: string }) => {
+    if (!user) return;
+    
+    if (paymentData.id) {
+      // Edit existing payment
+      const { error } = await supabase
+        .from('payments')
+        .update({
+          student_id: paymentData.studentId,
+          payment_type: paymentData.type,
+          payment_method: paymentData.method,
+          payment_date: paymentData.date,
+          amount: paymentData.amount,
+          note: paymentData.note,
+          discount: paymentData.discount,
+        })
+        .eq('id', paymentData.id)
+        .eq('user_id', user.id);
+      
+      if (error) return toast.error('שגיאה בעדכון תשלום');
+      
+      setPayments((prev) =>
+        prev.map((p) =>
+          p.id === paymentData.id
+            ? { ...paymentData, id: paymentData.id }
+            : p
+        )
+      );
+      toast.success('תשלום עודכן!');
+    } else {
+      // Add new payment
+      const { data, error } = await supabase
+        .from('payments')
+        .insert({
+          user_id: user.id,
+          student_id: paymentData.studentId,
+          payment_type: paymentData.type,
+          payment_method: paymentData.method,
+          payment_date: paymentData.date,
+          amount: paymentData.amount,
+          note: paymentData.note,
+          discount: paymentData.discount,
+        })
+        .select()
+        .single();
+      
+      if (error) return toast.error('שגיאה בהוספת תשלום');
+      
+      setPayments((prev) => [
+        ...prev,
+        {
+          id: data.id,
+          studentId: data.student_id,
+          type: data.payment_type as Payment['type'],
+          method: data.payment_method as Payment['method'],
+          date: data.payment_date,
+          amount: Number(data.amount),
+          note: data.note || '',
+          discount: Number(data.discount) || 0,
+        },
+      ]);
+      toast.success('תשלום נוסף!');
+    }
+    
+    setPaymentDialog({ open: false });
+  };
+
+  const handleDeletePayment = async (paymentId: string) => {
+    if (!user) return;
+    
+    const { error } = await supabase
+      .from('payments')
+      .delete()
+      .eq('id', paymentId)
+      .eq('user_id', user.id);
+    
+    if (error) return toast.error('שגיאה במחיקת תשלום');
+    
+    setPayments((prev) => prev.filter((p) => p.id !== paymentId));
+    toast.success('תשלום נמחק!');
+  };
+
+  const handleSaveSession = async (sessionData: Omit<Session, 'id'> & { id?: string }) => {
+    if (!user) return;
+    
+    if (sessionData.id) {
+      // Edit existing session
+      const { error: sessionError } = await supabase
+        .from('sessions')
+        .update({
+          class_name: sessionData.className,
+          session_date: sessionData.date,
+          is_trial: sessionData.trial,
+        })
+        .eq('id', sessionData.id)
+        .eq('user_id', user.id);
+      
+      if (sessionError) return toast.error('שגיאה בעדכון שיעור');
+      
+      // Delete old attendance and insert new
+      await supabase
+        .from('attendance')
+        .delete()
+        .eq('session_id', sessionData.id)
+        .eq('user_id', user.id);
+      
+      if (sessionData.students.length > 0) {
+        const { error: attendanceError } = await supabase
+          .from('attendance')
+          .insert(
+            sessionData.students.map((s) => ({
+              user_id: user.id,
+              session_id: sessionData.id!,
+              student_id: s.studentId,
+              status: s.status,
+            }))
+          );
+        
+        if (attendanceError) return toast.error('שגיאה בעדכון נוכחות');
+      }
+      
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === sessionData.id
+            ? { ...sessionData, id: sessionData.id }
+            : s
+        )
+      );
+      toast.success('שיעור עודכן!');
+    } else {
+      // Add new session
+      const { data: sessionDbData, error: sessionError } = await supabase
+        .from('sessions')
+        .insert({
+          user_id: user.id,
+          class_name: sessionData.className,
+          session_date: sessionData.date,
+          is_trial: sessionData.trial,
+        })
+        .select()
+        .single();
+      
+      if (sessionError) return toast.error('שגיאה ביצירת שיעור');
+      
+      if (sessionData.students.length > 0) {
+        const { error: attendanceError } = await supabase
+          .from('attendance')
+          .insert(
+            sessionData.students.map((s) => ({
+              user_id: user.id,
+              session_id: sessionDbData.id,
+              student_id: s.studentId,
+              status: s.status,
+            }))
+          );
+        
+        if (attendanceError) return toast.error('שגיאה בהוספת תלמידים לשיעור');
+      }
+      
+      setSessions((prev) => [
+        ...prev,
+        {
+          id: sessionDbData.id,
+          className: sessionDbData.class_name,
+          date: sessionDbData.session_date,
+          trial: sessionDbData.is_trial || false,
+          students: sessionData.students,
+        },
+      ]);
+      toast.success('שיעור נוצר!');
+    }
+    
+    setSessionDialog({ open: false });
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'hsl(var(--background))' }}>
       {/* Header with Logo */}
@@ -133,15 +406,21 @@ export default function Index() {
       <TabNavigation activeTab={tab} onTabChange={(t) => setTab(t as any)} />
 
       <main className="container mx-auto px-4 py-6">
-        {tab === 'dashboard' && <Dashboard students={students} payments={payments} onAddStudent={() => toast('פעולה תתווסף בהמשך')} />}
+        {tab === 'dashboard' && (
+          <Dashboard
+            students={students}
+            payments={payments}
+            onAddStudent={() => setStudentDialog({ open: true })}
+          />
+        )}
 
         {tab === 'students' && (
           <Students
             students={students}
             payments={payments.map((p) => ({ studentId: p.studentId, amount: p.amount }))}
-            onAddStudent={() => toast('הוספת תלמיד תוחזר בהמשך')}
-            onEditStudent={() => toast('עריכת תלמיד תוחזר בהמשך')}
-            onDeleteStudent={() => toast('מחיקת תלמיד תוחזר בהמשך')}
+            onAddStudent={() => setStudentDialog({ open: true })}
+            onEditStudent={(student) => setStudentDialog({ open: true, student })}
+            onDeleteStudent={handleDeleteStudent}
           />
         )}
 
@@ -150,9 +429,9 @@ export default function Index() {
             payments={payments}
             students={students}
             sessions={sessions}
-            onAddPayment={() => toast('הוספת תשלום תוחזר בהמשך')}
-            onEditPayment={() => toast('עריכת תשלום תוחזר בהמשך')}
-            onDeletePayment={() => toast('מחיקת תשלום תוחזר בהמשך')}
+            onAddPayment={() => setPaymentDialog({ open: true })}
+            onEditPayment={(payment) => setPaymentDialog({ open: true, payment })}
+            onDeletePayment={handleDeletePayment}
           />
         )}
 
@@ -161,8 +440,8 @@ export default function Index() {
             sessions={sessions}
             students={students}
             payments={payments}
-            onCreateSession={() => toast('יצירת שיעור תוחזר בהמשך')}
-            onEditSession={() => toast('עריכת שיעור תוחזר בהמשך')}
+            onCreateSession={() => setSessionDialog({ open: true })}
+            onEditSession={(session) => setSessionDialog({ open: true, session })}
             onDeleteSession={async (sessionId) => {
               if (!user) return;
               await supabase.from('attendance').delete().eq('session_id', sessionId).eq('user_id', user.id);
@@ -197,6 +476,31 @@ export default function Index() {
             }}
           />
         )}
+
+        {/* Dialogs */}
+        <StudentDialog
+          open={studentDialog.open}
+          onOpenChange={(open) => setStudentDialog({ open })}
+          student={studentDialog.student}
+          students={students}
+          onSave={handleSaveStudent}
+        />
+
+        <PaymentDialog
+          open={paymentDialog.open}
+          onOpenChange={(open) => setPaymentDialog({ open })}
+          payment={paymentDialog.payment}
+          students={students}
+          onSave={handleSavePayment}
+        />
+
+        <SessionDialog
+          open={sessionDialog.open}
+          onOpenChange={(open) => setSessionDialog({ open })}
+          session={sessionDialog.session}
+          students={students}
+          onSave={handleSaveSession}
+        />
       </main>
     </div>
   );
