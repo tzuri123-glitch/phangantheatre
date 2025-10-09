@@ -20,6 +20,8 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { formatILS } from '@/lib/utils';
+import logo from '@/assets/logo.png';
+
 export default function Index() {
   const { user } = useAuth();
   const [tab, setTab] = useState('dashboard');
@@ -212,6 +214,12 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
+      <header className="bg-card border-b border-border shadow-sm">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <img src={logo} alt="לוגו" className="h-12 object-contain" />
+          <h1 className="text-2xl font-bold text-foreground">מערכת ניהול חוג</h1>
+        </div>
+      </header>
       <TabNavigation activeTab={tab} onTabChange={setTab} />
       <main>
         {tab === 'dashboard' && <Dashboard students={students} payments={payments} onAddStudent={() => { studentFormRef.current = { id: '', name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, siblingId: undefined, className: CLASS_OPTIONS[0], status: 'חדש' }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} />}
