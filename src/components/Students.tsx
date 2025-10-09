@@ -17,12 +17,13 @@ import { toast } from 'sonner';
 interface StudentsProps {
   students: Student[];
   payments: { studentId: string; amount: number }[];
+  sessions: { id: string; className: string; students: { studentId: string; status: string }[] }[];
   onAddStudent: () => void;
   onEditStudent: (student: Student) => void;
   onDeleteStudent: (studentId: string) => void;
 }
 
-export default function Students({ students, payments, onAddStudent, onEditStudent, onDeleteStudent }: StudentsProps) {
+export default function Students({ students, payments, sessions, onAddStudent, onEditStudent, onDeleteStudent }: StudentsProps) {
   const [expandedClasses, setExpandedClasses] = useState<Record<string, boolean>>({});
   const [classSearchQueries, setClassSearchQueries] = useState<Record<string, string>>({});
 
@@ -210,10 +211,11 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                   <div className="overflow-x-auto px-4 pb-4">
                     <Table className="min-w-full">
                      <TableHeader className="sticky top-0 bg-background z-10">
-                      <TableRow>
+                       <TableRow>
                         <TableHead className="text-right">שם פרטי</TableHead>
                         <TableHead className="text-right">שם משפחה</TableHead>
                         <TableHead className="text-right">סטטוס</TableHead>
+                        <TableHead className="text-right">נוכחות</TableHead>
                         <TableHead className="text-right">תשלומים</TableHead>
                         <TableHead className="text-right">פעולות</TableHead>
                       </TableRow>
@@ -221,6 +223,18 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                     <TableBody>
                       {filterStudents(className, classStudents).map((student) => {
                         const studentPaymentCount = payments.filter(p => p.studentId === student.id).length;
+                        
+                        // חישוב נתוני נוכחות
+                        const classSessionsForStudent = sessions.filter(s => s.className === student.className);
+                        const studentAttendances = classSessionsForStudent.flatMap(s => 
+                          s.students.filter(st => st.studentId === student.id)
+                        );
+                        const totalSessions = classSessionsForStudent.length;
+                        const attendedSessions = studentAttendances.filter(a => a.status === 'נוכח').length;
+                        const missedSessions = studentAttendances.filter(a => a.status === 'לא הגיע').length;
+                        const notComingSessions = studentAttendances.filter(a => a.status === 'לא באי').length;
+                        const leftSessions = studentAttendances.filter(a => a.status === 'עזב').length;
+                        const attendancePercentage = totalSessions > 0 ? Math.round((attendedSessions / totalSessions) * 100) : 0;
                         
                         return (
                           <TableRow key={student.id}>
@@ -280,9 +294,35 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                               </span>
                             </TableCell>
                             <TableCell>
-                              <span className="text-sm text-muted-foreground">
-                                {studentPaymentCount > 0 ? `${studentPaymentCount} תשלומים` : 'אין תשלומים'}
-                              </span>
+                              <div className="flex flex-col gap-1">
+                                <div className="text-sm font-medium">
+                                  {attendedSessions}/{totalSessions} שיעורים
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className={`text-xs px-2 py-0.5 rounded ${
+                                    attendancePercentage >= 80 ? 'bg-green-100 text-green-700' :
+                                    attendancePercentage >= 60 ? 'bg-yellow-100 text-yellow-700' :
+                                    'bg-red-100 text-red-700'
+                                  }`}>
+                                    {attendancePercentage}%
+                                  </div>
+                                  {missedSessions > 0 && (
+                                    <span className="text-xs text-orange-600" title="לא הגיע">
+                                      🔴 {missedSessions}
+                                    </span>
+                                  )}
+                                  {notComingSessions > 0 && (
+                                    <span className="text-xs text-red-600" title="לא באי">
+                                      ⏸️ {notComingSessions}
+                                    </span>
+                                  )}
+                                  {leftSessions > 0 && (
+                                    <span className="text-xs text-gray-600" title="עזב">
+                                      ❌ {leftSessions}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
                             </TableCell>
                             <TableCell>
                               <div className="flex gap-2">
