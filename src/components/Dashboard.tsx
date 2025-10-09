@@ -166,39 +166,54 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
   }, [payments]);
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-6 animate-fade-in">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold text-foreground">ברוך הבא למערכת ניהול החוג! 🎭</h2>
-        <Button onClick={onAddStudent} className="bg-magenta hover:bg-magenta-hover text-magenta-foreground">
+        <h2 className="text-3xl font-bold bg-gradient-to-l from-primary to-magenta bg-clip-text text-transparent">
+          ברוך הבא למערכת ניהול החוג! 🎭
+        </h2>
+        <Button 
+          onClick={onAddStudent} 
+          className="bg-gradient-to-l from-magenta to-magenta-hover text-white button-hover shadow-lg hover:shadow-xl"
+        >
           ➕ הוסף תלמיד
         </Button>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="p-6 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+        <Card className="p-6 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 card-hover backdrop-blur-sm">
           <h3 className="text-lg font-semibold text-muted-foreground mb-2">סה"כ תלמידים</h3>
-          <p className="text-4xl font-bold text-primary">{students.length}</p>
+          <p className="text-5xl font-bold bg-gradient-to-l from-primary to-primary-glow bg-clip-text text-transparent">
+            {students.length}
+          </p>
         </Card>
         
-        <Card className="p-6 bg-gradient-to-br from-accent to-accent/50 border-primary/20">
+        <Card className="p-6 bg-gradient-to-br from-magenta/10 via-magenta/5 to-transparent border-magenta/20 card-hover backdrop-blur-sm">
           <h3 className="text-lg font-semibold text-muted-foreground mb-2">סה"כ הכנסות</h3>
-          <p className="text-4xl font-bold text-primary">{formatILS(totalIncome)}</p>
+          <p className="text-5xl font-bold bg-gradient-to-l from-magenta to-magenta-glow bg-clip-text text-transparent">
+            {formatILS(totalIncome)}
+          </p>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="p-6">
-          <h3 className="text-xl font-semibold mb-4 text-foreground">הכנסות חודשיות</h3>
+        <Card className="p-6 card-hover bg-card/50 backdrop-blur-sm shadow-lg">
+          <h3 className="text-xl font-semibold mb-4 text-foreground flex items-center gap-2">
+            📊 הכנסות חודשיות
+          </h3>
           <canvas ref={barChartRef}></canvas>
         </Card>
 
-        <Card className="p-6">
-          <h3 className="text-xl font-semibold mb-4 text-foreground">הכנסות שבועיות</h3>
+        <Card className="p-6 card-hover bg-card/50 backdrop-blur-sm shadow-lg">
+          <h3 className="text-xl font-semibold mb-4 text-foreground flex items-center gap-2">
+            📈 הכנסות שבועיות
+          </h3>
           <canvas ref={weeklyChartRef}></canvas>
         </Card>
 
-        <Card className="p-6">
-          <h3 className="text-xl font-semibold mb-4 text-foreground">הכנסות לפי סוג</h3>
+        <Card className="p-6 card-hover bg-card/50 backdrop-blur-sm shadow-lg">
+          <h3 className="text-xl font-semibold mb-4 text-foreground flex items-center gap-2">
+            🎯 הכנסות לפי סוג
+          </h3>
           <canvas ref={pieChartRef}></canvas>
         </Card>
       </div>

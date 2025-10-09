@@ -213,17 +213,19 @@ export default function Index() {
   }
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
-      <header className="bg-card border-b border-border shadow-sm">
+    <div className="min-h-screen bg-gradient-to-br from-background via-accent/10 to-background" dir="rtl">
+      <header className="bg-card/80 backdrop-blur-md border-b border-border shadow-md sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <img src={logo} alt="לוגו" className="h-12 object-contain" />
-            <h1 className="text-2xl font-bold text-foreground">מערכת ניהול מרכז אומנויות הבמה</h1>
+          <div className="flex items-center gap-4 animate-fade-in">
+            <img src={logo} alt="לוגו" className="h-12 object-contain drop-shadow-lg" />
+            <h1 className="text-2xl font-bold bg-gradient-to-l from-primary to-magenta bg-clip-text text-transparent">
+              מערכת ניהול מרכז אומנויות הבמה
+            </h1>
           </div>
           <Button 
             onClick={signOut}
             size="lg"
-            className="bg-pink-600 hover:bg-pink-700 text-white font-bold text-lg px-8"
+            className="bg-gradient-to-l from-magenta to-magenta-hover text-white font-bold text-lg px-8 button-hover shadow-lg hover:shadow-xl"
           >
             התנתק
           </Button>
