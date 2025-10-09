@@ -51,22 +51,35 @@ export default function Students({ students, payments, onAddStudent, onEditStude
 
   const formatWhatsAppNumber = (phone: string) => {
     if (!phone) return '';
-    
-    // הסרת רווחים ותווים מיוחדים
-    const cleaned = phone.replace(/[\s\-()]/g, '');
-    
-    // אם יש קידומת (מתחיל ב-+ או 00)
-    if (cleaned.startsWith('+')) {
-      return cleaned.substring(1); // הסרת ה-+ לצורך wa.me
+
+    // הסרת תווי כיווניות ותווים שאינם ספרות/+
+    const sanitized = phone
+      .replace(/[\u200E\u200F\u202A-\u202E]/g, '') // bidi marks
+      .replace(/[\s\-().]/g, '');
+
+    let num = sanitized;
+
+    // נורמליזציה של קידומות
+    if (num.startsWith('+')) {
+      num = num.slice(1);
+    } else if (num.startsWith('00')) {
+      num = num.slice(2);
+    } else {
+      // מספר מקומי ישראלי
+      const digits = num.replace(/\D/g, '');
+      const local = digits.startsWith('0') ? digits.slice(1) : digits;
+      num = '972' + local;
     }
-    if (cleaned.startsWith('00')) {
-      return cleaned.substring(2);
+
+    // תיקון למספרים ישראליים שנשמרו כ+9720...
+    if (num.startsWith('9720')) {
+      num = '972' + num.slice(4);
     }
-    
-    // אם אין קידומת - זה מספר ישראלי
-    // הסרת 0 מהתחלה אם קיים והוספת קידומת ישראלית
-    const withoutLeadingZero = cleaned.startsWith('0') ? cleaned.substring(1) : cleaned;
-    return '972' + withoutLeadingZero;
+
+    // שמירה על ספרות בלבד
+    num = num.replace(/\D/g, '');
+
+    return num;
   };
 
   const openWhatsApp = (phone: string, studentName: string) => {
@@ -75,9 +88,10 @@ export default function Students({ students, payments, onAddStudent, onEditStude
       toast.error('לא קיים מספר טלפון');
       return;
     }
-    
+
     const url = `https://wa.me/${formattedNumber}`;
-    window.open(url, '_blank');
+    console.log('[WhatsApp] opening', { phone, formattedNumber, url });
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
