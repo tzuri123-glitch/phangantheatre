@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Card } from '@/components/ui/card';
 import { useState } from 'react';
-import { Users, MessageCircle } from 'lucide-react';
+import { Users, MessageCircle, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface StudentsProps {
@@ -147,6 +147,26 @@ export default function Students({ students, payments, onAddStudent, onEditStude
     }
   };
 
+  const copyWhatsAppLink = async (phone?: string) => {
+    const url = getWhatsAppFallbackUrl(phone);
+    if (!url) {
+      toast.error('מספר טלפון לא תקין');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('קישור ווטסאפ הועתק!');
+    } catch {
+      // Fallback
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); toast.success('קישור הועתק!'); } catch {}
+      document.body.removeChild(ta);
+    }
+  };
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
@@ -207,29 +227,42 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                             <TableCell className="font-medium">
                               <div className="flex items-center gap-2">
                                 {student.name}
-                                {(student.phone || student.parentPhone) && (
-                                  <Button
-                                    asChild
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
-                                  >
-                                    <a
-                                      href={getWhatsAppFallbackUrl(student.parentPhone || student.phone)}
-                                      target="_top"
-                                      rel="noopener noreferrer"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        openWhatsAppLink(student.parentPhone || student.phone);
-                                      }}
-                                      aria-label={`שליחת הודעה בווטסאפ ל${student.name}`}
-                                    >
-                                      <MessageCircle size={16} />
-                                    </a>
-                                  </Button>
-                                )}
-                              </div>
-                            </TableCell>
+                                  {(
+                                    student.phone || student.parentPhone
+                                  ) && (
+                                    <>
+                                      <Button
+                                        asChild
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                      >
+                                        <a
+                                          href={getWhatsAppFallbackUrl(student.parentPhone || student.phone)}
+                                          target="_top"
+                                          rel="noopener noreferrer"
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            openWhatsAppLink(student.parentPhone || student.phone);
+                                          }}
+                                          aria-label={`שליחת הודעה בווטסאפ ל${student.name}`}
+                                        >
+                                          <MessageCircle size={16} />
+                                        </a>
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => copyWhatsAppLink(student.parentPhone || student.phone)}
+                                        className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
+                                        aria-label={`העתק קישור ווטסאפ ל${student.name}`}
+                                      >
+                                        <Copy size={16} />
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
+                              </TableCell>
                             <TableCell className="font-medium">{student.lastName}</TableCell>
                             <TableCell>
                               <span
