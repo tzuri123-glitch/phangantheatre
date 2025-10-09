@@ -174,7 +174,7 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
         {/* מנויים */}
         <Card className="overflow-hidden">
           <div
-            className="p-6 bg-green-100 dark:bg-green-900/20 cursor-pointer hover:bg-green-200 dark:hover:bg-green-900/30 transition-colors"
+            className="p-6 bg-emerald-200 dark:bg-emerald-800/40 cursor-pointer hover:bg-emerald-300 dark:hover:bg-emerald-700/50 transition-colors"
             onClick={() => setExpandedSubscribers(!expandedSubscribers)}
           >
             <h3 className="font-semibold text-lg text-foreground mb-1">💎 מנויים חודשיים</h3>
