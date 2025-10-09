@@ -57,6 +57,13 @@ const hasOneTimeOrTrialPayment = payments.some(payment => {
   if (payment.studentId !== student.id || (payment.type !== 'חד פעמי' && payment.type !== 'ניסיון')) {
     return false;
   }
+  
+  // Must have actual payment amount or discount
+  const hasActualPayment = payment.amount > 0 || (payment.discount && payment.discount > 0);
+  if (!hasActualPayment) {
+    return false;
+  }
+  
   const paymentDate = parseISO(payment.date);
   paymentDate.setHours(0, 0, 0, 0);
   
@@ -64,17 +71,20 @@ const hasOneTimeOrTrialPayment = payments.some(payment => {
   const isExactMatch = paymentDate.getTime() === sessionDate.getTime();
   
   if (isExactMatch) {
-    console.log('✅ Found one-time/trial payment for exact session date:', payment.type, payment.date, 'discount:', payment.discount);
+    console.log('✅ Found one-time/trial payment for exact session date:', payment.type, payment.date, 'amount:', payment.amount, 'discount:', payment.discount);
   }
   
   return isExactMatch;
 });
 
-// Check for 100% discount or zero-amount payments for the exact session date
+// Check for 100% discount payments for the exact session date
 const has100PercentDiscount = payments.some(payment => {
   if (payment.studentId !== student.id) return false;
-  const isFullDiscount = payment.discount === 100 || payment.amount === 0;
+  
+  // Only 100% discount counts as payment - amount 0 without discount is NOT a payment
+  const isFullDiscount = payment.discount === 100;
   if (!isFullDiscount) return false;
+  
   const paymentDate = parseISO(payment.date);
   paymentDate.setHours(0, 0, 0, 0);
   
@@ -82,7 +92,7 @@ const has100PercentDiscount = payments.some(payment => {
   const isExactMatch = paymentDate.getTime() === sessionDate.getTime();
   
   if (isExactMatch) {
-    console.log('✅ Found 100% discount/zero-amount payment for exact session date:', payment.date);
+    console.log('✅ Found 100% discount payment for exact session date:', payment.date);
   }
   return isExactMatch;
 });
