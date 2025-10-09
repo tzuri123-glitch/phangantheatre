@@ -166,14 +166,15 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
   }, [payments]);
 
   return (
-    <div className="space-y-6 p-6 animate-fade-in">
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-6 animate-fade-in">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold bg-gradient-to-l from-primary to-magenta bg-clip-text text-transparent">
+        <h2 className="text-xl sm:text-3xl font-bold bg-gradient-to-l from-primary to-magenta bg-clip-text text-transparent">
           ברוך הבא למערכת ניהול החוג! 🎭
         </h2>
         <Button 
-          onClick={onAddStudent} 
-          className="bg-gradient-to-l from-magenta to-magenta-hover text-white button-hover shadow-lg hover:shadow-xl"
+          onClick={onAddStudent}
+          size="sm"
+          className="bg-gradient-to-l from-magenta to-magenta-hover text-white button-hover shadow-lg hover:shadow-xl text-xs sm:text-base px-3 sm:px-4"
         >
           ➕ הוסף תלמיד
         </Button>

@@ -215,17 +215,17 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/10 to-background" dir="rtl">
       <header className="bg-card/80 backdrop-blur-md border-b border-border shadow-md sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4 animate-fade-in">
-            <img src={logo} alt="לוגו" className="h-12 object-contain drop-shadow-lg" />
-            <h1 className="text-2xl font-bold bg-gradient-to-l from-primary to-magenta bg-clip-text text-transparent">
+        <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 animate-fade-in">
+            <img src={logo} alt="לוגו" className="h-8 sm:h-12 object-contain drop-shadow-lg" />
+            <h1 className="text-base sm:text-2xl font-bold bg-gradient-to-l from-primary to-magenta bg-clip-text text-transparent">
               מערכת ניהול מרכז אומנויות הבמה
             </h1>
           </div>
           <Button 
             onClick={signOut}
-            size="lg"
-            className="bg-gradient-to-l from-magenta to-magenta-hover text-white font-bold text-lg px-8 button-hover shadow-lg hover:shadow-xl"
+            size="sm"
+            className="bg-gradient-to-l from-magenta to-magenta-hover text-white font-bold text-xs sm:text-lg px-3 sm:px-8 button-hover shadow-lg hover:shadow-xl"
           >
             התנתק
           </Button>

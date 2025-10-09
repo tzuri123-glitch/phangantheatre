@@ -161,10 +161,10 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold text-foreground">תשלומים</h2>
-        <Button onClick={onAddPayment} className="bg-magenta hover:bg-magenta-hover text-magenta-foreground">
+        <h2 className="text-xl sm:text-3xl font-bold text-foreground">תשלומים</h2>
+        <Button onClick={onAddPayment} size="sm" className="bg-magenta hover:bg-magenta-hover text-magenta-foreground text-xs sm:text-base px-3 sm:px-4">
           ➕ הוסף תשלום
         </Button>
       </div>
