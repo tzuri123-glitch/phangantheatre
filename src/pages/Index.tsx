@@ -81,7 +81,7 @@ export default function Index() {
           siblingId: s.sibling_id || undefined,
           className: s.class_name,
           status: s.status as Student['status']
-        })));
+        })).sort((a, b) => a.name.localeCompare(b.name, 'he')));
       }
       
       if (paymentsData) {
@@ -462,7 +462,7 @@ export default function Index() {
                       ...editingStudent, 
                       id: data.id
                     };
-                    setStudents((prev) => [...prev, newStudent]); 
+                    setStudents((prev) => [...prev, newStudent].sort((a, b) => a.name.localeCompare(b.name, 'he'))); 
                     toast.success('תלמיד נוסף!');
                   } else { 
                     const oldStudent = students.find(s => s.id === editingStudent.id);
@@ -528,7 +528,7 @@ export default function Index() {
                     }
                     
                     savedStudentId = editingStudent.id;
-                    setStudents((prev) => prev.map((s) => s.id === editingStudent.id ? editingStudent : s)); 
+                    setStudents((prev) => prev.map((s) => s.id === editingStudent.id ? editingStudent : s).sort((a, b) => a.name.localeCompare(b.name, 'he'))); 
                     toast.success('תלמיד עודכן!');
                   }
                   setShowStudentModal(false); 
