@@ -23,7 +23,7 @@ import { formatILS } from '@/lib/utils';
 import logo from '@/assets/logo.png';
 
 export default function Index() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [tab, setTab] = useState('dashboard');
   const [students, setStudents] = useState<Student[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -215,9 +215,18 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       <header className="bg-card border-b border-border shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <img src={logo} alt="לוגו" className="h-12 object-contain" />
-          <h1 className="text-2xl font-bold text-foreground">מערכת ניהול מרכז אומנויות הבמה</h1>
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <img src={logo} alt="לוגו" className="h-12 object-contain" />
+            <h1 className="text-2xl font-bold text-foreground">מערכת ניהול מרכז אומנויות הבמה</h1>
+          </div>
+          <Button 
+            onClick={signOut}
+            size="lg"
+            className="bg-pink-600 hover:bg-pink-700 text-white font-bold text-lg px-8"
+          >
+            התנתק
+          </Button>
         </div>
       </header>
       <TabNavigation activeTab={tab} onTabChange={setTab} />
