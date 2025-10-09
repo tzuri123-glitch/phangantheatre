@@ -99,6 +99,54 @@ export default function Students({ students, payments, onAddStudent, onEditStude
     return `https://web.whatsapp.com/send?phone=${formatted}`;
   };
 
+  const getWhatsAppFallbackUrl = (phone?: string) => {
+    if (!phone) return '';
+    const formatted = formatWhatsAppNumber(phone);
+    return formatted ? `https://wa.me/${formatted}` : '';
+  };
+
+  const openWhatsAppLink = (phone?: string) => {
+    if (!phone) {
+      toast.error('מספר טלפון לא תקין');
+      return;
+    }
+    const formatted = formatWhatsAppNumber(phone);
+    if (!formatted) {
+      toast.error('מספר טלפון לא תקין');
+      return;
+    }
+
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+
+    if (isMobile) {
+      const appUrl = `whatsapp://send?phone=${formatted}`;
+      const fallback = `https://wa.me/${formatted}`;
+      try {
+        if (window.top) (window.top as Window).location.href = appUrl;
+        else window.location.href = appUrl;
+      } catch {
+        window.location.href = appUrl;
+      }
+      setTimeout(() => {
+        try {
+          if (window.top) (window.top as Window).location.href = fallback;
+          else window.location.href = fallback;
+        } catch {
+          window.location.href = fallback;
+        }
+      }, 700);
+    } else {
+      const webUrl = `https://web.whatsapp.com/send?phone=${formatted}`;
+      try {
+        if (window.top) (window.top as Window).location.href = webUrl;
+        else window.location.href = webUrl;
+      } catch {
+        window.location.href = webUrl;
+      }
+    }
+  };
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
@@ -167,15 +215,12 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                                     className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
                                   >
                                     <a
-                                      href={getWhatsAppUrl(student.parentPhone || student.phone)}
+                                      href={getWhatsAppFallbackUrl(student.parentPhone || student.phone)}
                                       target="_top"
                                       rel="noopener noreferrer"
                                       onClick={(e) => {
-                                        const url = getWhatsAppUrl(student.parentPhone || student.phone);
-                                        if (!url) {
-                                          e.preventDefault();
-                                          toast.error('מספר טלפון לא תקין');
-                                        }
+                                        e.preventDefault();
+                                        openWhatsAppLink(student.parentPhone || student.phone);
                                       }}
                                       aria-label={`שליחת הודעה בווטסאפ ל${student.name}`}
                                     >
