@@ -49,8 +49,8 @@ export default function Students({ students, payments, onAddStudent, onEditStude
     });
   };
 
-  const MONTHLY_PRICE = 2400;
-  const SIBLING_MONTHLY_PRICE = 2100;
+  const MONTHLY_PRICE = 2800;
+  const SIBLING_MONTHLY_PRICE = 2400;
   const SINGLE_PRICE = 800;
   const TRIAL_PRICE = 700;
 
