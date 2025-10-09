@@ -215,9 +215,9 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       <header className="bg-card border-b border-border shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
           <img src={logo} alt="לוגו" className="h-12 object-contain" />
-          <h1 className="text-2xl font-bold text-foreground">מערכת ניהול חוג</h1>
+          <h1 className="text-2xl font-bold text-foreground">מערכת ניהול מרכז אומנויות הבמה</h1>
         </div>
       </header>
       <TabNavigation activeTab={tab} onTabChange={setTab} />
