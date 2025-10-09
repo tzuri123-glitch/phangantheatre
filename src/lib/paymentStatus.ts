@@ -58,23 +58,26 @@ const hasOneTimeOrTrialPayment = payments.some(payment => {
     return false;
   }
   
-  // Must have actual payment amount or discount
-  const hasActualPayment = payment.amount > 0 || (payment.discount && payment.discount > 0);
-  if (!hasActualPayment) {
-    return false;
-  }
-  
   const paymentDate = parseISO(payment.date);
   paymentDate.setHours(0, 0, 0, 0);
   
   // One-time/trial payment must match the exact session date
   const isExactMatch = paymentDate.getTime() === sessionDate.getTime();
+  if (!isExactMatch) return false;
   
-  if (isExactMatch) {
-    console.log('✅ Found one-time/trial payment for exact session date:', payment.type, payment.date, 'amount:', payment.amount, 'discount:', payment.discount);
+  // Check if payment amount is sufficient or has 100% discount
+  const requiredAmount = payment.type === 'ניסיון' ? 700 : (student.isSibling ? 600 : 800);
+  const effectiveAmount = payment.amount * (1 - (payment.discount || 0) / 100);
+  const isFullDiscount = payment.discount === 100;
+  const isPaidEnough = effectiveAmount >= requiredAmount || isFullDiscount;
+  
+  if (isExactMatch && isPaidEnough) {
+    console.log('✅ Found one-time/trial payment for exact session date:', payment.type, payment.date, 'amount:', payment.amount, 'discount:', payment.discount, 'required:', requiredAmount);
+  } else if (isExactMatch) {
+    console.log('❌ Insufficient payment:', payment.type, payment.date, 'paid:', effectiveAmount, 'required:', requiredAmount);
   }
   
-  return isExactMatch;
+  return isPaidEnough;
 });
 
 // Check for 100% discount payments for the exact session date
