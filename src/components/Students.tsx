@@ -85,7 +85,18 @@ export default function Students({ students, payments, onAddStudent, onEditStude
   const getWhatsAppUrl = (phone?: string) => {
     if (!phone) return '';
     const formatted = formatWhatsAppNumber(phone);
-    return formatted ? `https://wa.me/${formatted}` : '';
+    if (!formatted) return '';
+
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+
+    // בדסקטופ נלך ישירות ל-web.whatsapp.com כדי להימנע מהפניה ל-api.whatsapp.com
+    // במובייל נעדיף סכמת whatsapp:// לפתיחת האפליקציה, עם נפילה ל-wa.me אם הדפדפן לא תומך
+    if (isMobile) {
+      // ננסה לפתוח את האפליקציה, ואם לא, קישור רגיל יעבוד כגיבוי
+      return `whatsapp://send?phone=${formatted}`;
+    }
+    return `https://web.whatsapp.com/send?phone=${formatted}`;
   };
 
   return (
