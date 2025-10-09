@@ -27,6 +27,10 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
   const [expandedClasses, setExpandedClasses] = useState<Record<string, boolean>>({});
   const [expandedStudents, setExpandedStudents] = useState<Record<string, boolean>>({});
   const [classSearchQueries, setClassSearchQueries] = useState<Record<string, string>>({});
+  const [expandedSubscribers, setExpandedSubscribers] = useState(false);
+  const [expandedOneTime, setExpandedOneTime] = useState(false);
+  const [subscribersSearch, setSubscribersSearch] = useState('');
+  const [oneTimeSearch, setOneTimeSearch] = useState('');
 
   const toggleClass = (className: string) => {
     setExpandedClasses((prev) => ({
@@ -103,6 +107,59 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
     });
   };
 
+  // פונקציה לחלוקת תלמידים למנויים וחד פעמיים
+  const getSubscriptionCategories = () => {
+    // תלמידים עם לפחות תשלום אחד
+    const activeStudents = students.filter(student => 
+      payments.some(p => p.studentId === student.id)
+    );
+
+    const subscribers: Student[] = [];
+    const oneTimePayersOnly: Student[] = [];
+
+    activeStudents.forEach(student => {
+      const studentPayments = payments.filter(p => p.studentId === student.id);
+      const hasMonthlyPayment = studentPayments.some(p => p.type === 'חודשי');
+      
+      if (hasMonthlyPayment) {
+        subscribers.push(student);
+      } else {
+        oneTimePayersOnly.push(student);
+      }
+    });
+
+    return { subscribers, oneTimePayersOnly };
+  };
+
+  const { subscribers, oneTimePayersOnly } = getSubscriptionCategories();
+
+  const filterStudentsList = (studentsList: Student[], searchQuery: string) => {
+    if (searchQuery.length < 3) return studentsList;
+    const query = searchQuery.toLowerCase();
+    return studentsList.filter(student => 
+      student.name.toLowerCase().includes(query) ||
+      student.lastName.toLowerCase().includes(query)
+    );
+  };
+
+  const formatWhatsAppNumber = (phone: string) => {
+    let cleaned = phone.replace(/\D/g, '');
+    if (cleaned.startsWith('0')) {
+      cleaned = '972' + cleaned.substring(1);
+    } else if (!cleaned.startsWith('972')) {
+      cleaned = '972' + cleaned;
+    }
+    return cleaned;
+  };
+
+  const openWhatsAppLink = (phone: string) => {
+    if (!phone) return;
+    const whatsappNumber = formatWhatsAppNumber(phone);
+    const message = encodeURIComponent('שלום! אשמח לדבר איתך על מעבר למנוי חודשי');
+    const url = `https://wa.me/${whatsappNumber}?text=${message}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
@@ -111,6 +168,146 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
           ➕ הוסף תשלום
         </Button>
       </div>
+
+      {/* סקשן מנויים וחד פעמיים */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* מנויים */}
+        <Card className="overflow-hidden">
+          <div
+            className="p-6 bg-green-100 dark:bg-green-900/20 cursor-pointer hover:bg-green-200 dark:hover:bg-green-900/30 transition-colors"
+            onClick={() => setExpandedSubscribers(!expandedSubscribers)}
+          >
+            <h3 className="font-semibold text-lg text-foreground mb-1">💎 מנויים חודשיים</h3>
+            <p className="text-sm text-muted-foreground">
+              {subscribers.length} תלמידים עם מנוי
+            </p>
+          </div>
+
+          {expandedSubscribers && (
+            <div className="p-4 border-t">
+              <div className="mb-4">
+                <Input
+                  placeholder="חיפוש תלמיד..."
+                  value={subscribersSearch}
+                  onChange={(e) => setSubscribersSearch(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                {filterStudentsList(subscribers, subscribersSearch).map(student => (
+                  <Card key={student.id} className="p-3 bg-muted">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-semibold text-foreground">
+                          {student.name} {student.lastName}
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          🎭 {student.className}
+                        </div>
+                        {student.phone && (
+                          <div className="text-sm text-muted-foreground">
+                            📱 {student.phone}
+                          </div>
+                        )}
+                        {student.parentPhone && (
+                          <div className="text-sm text-muted-foreground">
+                            👨‍👩‍👧 {student.parentPhone} ({student.parentName || 'הורה'})
+                          </div>
+                        )}
+                      </div>
+                      {(student.phone || student.parentPhone) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-green-50 hover:bg-green-100 dark:bg-green-900/10 dark:hover:bg-green-900/20"
+                          onClick={() => openWhatsAppLink(student.parentPhone || student.phone)}
+                        >
+                          💬 WhatsApp
+                        </Button>
+                      )}
+                    </div>
+                  </Card>
+                ))}
+                {filterStudentsList(subscribers, subscribersSearch).length === 0 && (
+                  <div className="text-center text-muted-foreground py-4">
+                    אין תוצאות
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </Card>
+
+        {/* חד פעמיים */}
+        <Card className="overflow-hidden">
+          <div
+            className="p-6 bg-yellow-100 dark:bg-yellow-900/20 cursor-pointer hover:bg-yellow-200 dark:hover:bg-yellow-900/30 transition-colors"
+            onClick={() => setExpandedOneTime(!expandedOneTime)}
+          >
+            <h3 className="font-semibold text-lg text-foreground mb-1">🎯 תשלומים חד פעמיים</h3>
+            <p className="text-sm text-muted-foreground">
+              {oneTimePayersOnly.length} תלמידים (פוטנציאל למנוי!)
+            </p>
+          </div>
+
+          {expandedOneTime && (
+            <div className="p-4 border-t">
+              <div className="mb-4">
+                <Input
+                  placeholder="חיפוש תלמיד..."
+                  value={oneTimeSearch}
+                  onChange={(e) => setOneTimeSearch(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                {filterStudentsList(oneTimePayersOnly, oneTimeSearch).map(student => (
+                  <Card key={student.id} className="p-3 bg-muted">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-semibold text-foreground">
+                          {student.name} {student.lastName}
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          🎭 {student.className}
+                        </div>
+                        {student.phone && (
+                          <div className="text-sm text-muted-foreground">
+                            📱 {student.phone}
+                          </div>
+                        )}
+                        {student.parentPhone && (
+                          <div className="text-sm text-muted-foreground">
+                            👨‍👩‍👧 {student.parentPhone} ({student.parentName || 'הורה'})
+                          </div>
+                        )}
+                      </div>
+                      {(student.phone || student.parentPhone) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-900/10 dark:hover:bg-yellow-900/20"
+                          onClick={() => openWhatsAppLink(student.parentPhone || student.phone)}
+                        >
+                          💬 WhatsApp
+                        </Button>
+                      )}
+                    </div>
+                  </Card>
+                ))}
+                {filterStudentsList(oneTimePayersOnly, oneTimeSearch).length === 0 && (
+                  <div className="text-center text-muted-foreground py-4">
+                    אין תוצאות
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </Card>
+      </div>
+
+      {/* תשלומים לפי חוגים */}
+      <h3 className="text-2xl font-bold text-foreground mt-8">תשלומים לפי חוגים</h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {CLASS_OPTIONS.map((className) => {
