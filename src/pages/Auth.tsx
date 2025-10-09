@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import logo from '@/assets/logo.png';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -68,9 +69,12 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md p-8">
-        <h1 className="text-3xl font-bold text-center mb-6 text-foreground">
-          {isLogin ? 'התחברות' : 'הרשמה'}
-        </h1>
+        <div className="flex flex-col items-center mb-6">
+          <img src={logo} alt="לוגו" className="h-24 mb-4" />
+          <h1 className="text-3xl font-bold text-center text-foreground">
+            {isLogin ? 'התחברות' : 'הרשמה'}
+          </h1>
+        </div>
         
         <form onSubmit={handleAuth} className="space-y-4">
           {!isLogin && (
