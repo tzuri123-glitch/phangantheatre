@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Card } from '@/components/ui/card';
 import { useState } from 'react';
-import { Users } from 'lucide-react';
+import { Users, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface StudentsProps {
@@ -47,6 +47,37 @@ export default function Students({ students, payments, onAddStudent, onEditStude
         student.lastName.toLowerCase().includes(query)
       );
     });
+  };
+
+  const formatWhatsAppNumber = (phone: string) => {
+    if (!phone) return '';
+    
+    // הסרת רווחים ותווים מיוחדים
+    const cleaned = phone.replace(/[\s\-()]/g, '');
+    
+    // אם יש קידומת (מתחיל ב-+ או 00)
+    if (cleaned.startsWith('+')) {
+      return cleaned;
+    }
+    if (cleaned.startsWith('00')) {
+      return '+' + cleaned.substring(2);
+    }
+    
+    // אם אין קידומת - זה מספר ישראלי
+    // הסרת 0 מהתחלה אם קיים והוספת קידומת ישראלית
+    const withoutLeadingZero = cleaned.startsWith('0') ? cleaned.substring(1) : cleaned;
+    return '+972' + withoutLeadingZero;
+  };
+
+  const openWhatsApp = (phone: string, studentName: string) => {
+    const formattedNumber = formatWhatsAppNumber(phone);
+    if (!formattedNumber) {
+      toast.error('לא קיים מספר טלפון');
+      return;
+    }
+    
+    const url = `https://wa.me/${formattedNumber}`;
+    window.open(url, '_blank');
   };
 
   return (
@@ -106,7 +137,21 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                         
                         return (
                           <TableRow key={student.id}>
-                            <TableCell className="font-medium">{student.name}</TableCell>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                {student.name}
+                                {(student.phone || student.parentPhone) && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => openWhatsApp(student.parentPhone || student.phone, student.name)}
+                                    className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                  >
+                                    <MessageCircle size={16} />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
                             <TableCell className="font-medium">{student.lastName}</TableCell>
                             <TableCell>
                               <span
