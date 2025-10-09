@@ -168,7 +168,7 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                                   >
                                     <a
                                       href={getWhatsAppUrl(student.parentPhone || student.phone)}
-                                      target="_blank"
+                                      target="_top"
                                       rel="noopener noreferrer"
                                       onClick={(e) => {
                                         const url = getWhatsAppUrl(student.parentPhone || student.phone);
