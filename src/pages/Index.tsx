@@ -234,8 +234,7 @@ export default function Index() {
         {tab === 'dashboard' && <Dashboard students={students} payments={payments} onAddStudent={() => { studentFormRef.current = { id: '', name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, siblingId: undefined, className: CLASS_OPTIONS[0], status: 'חדש' }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} />}
         {tab === 'students' && <Students 
           students={students}
-          sessions={sessions}
-          payments={payments.map(p => ({ studentId: p.studentId, amount: p.amount }))}
+          payments={payments.map(p => ({ studentId: p.studentId, amount: p.amount, type: p.type, discount: p.discount || 0, date: p.date }))}
           onAddStudent={() => {
             studentFormRef.current = { id: '', name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, siblingId: undefined, className: CLASS_OPTIONS[0], status: 'חדש' }; 
             setEditingStudent(studentFormRef.current); 
