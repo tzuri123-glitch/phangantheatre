@@ -23,6 +23,11 @@ export default {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
         },
+        magenta: {
+          DEFAULT: "hsl(var(--magenta))",
+          foreground: "hsl(var(--magenta-foreground))",
+          hover: "hsl(var(--magenta-hover))",
+        },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",

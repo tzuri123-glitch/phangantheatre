@@ -53,7 +53,7 @@ export default function Students({ students, payments, onAddStudent, onEditStude
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold text-foreground">תלמידים</h2>
-        <Button onClick={onAddStudent} className="bg-primary hover:bg-primary-hover">
+        <Button onClick={onAddStudent} className="bg-magenta hover:bg-magenta-hover text-magenta-foreground">
           ➕ הוסף תלמיד
         </Button>
       </div>

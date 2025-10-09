@@ -20,6 +20,10 @@ All colors MUST be HSL.
     --primary: 188 91% 36%;
     --primary-foreground: 0 0% 100%;
     --primary-hover: 188 91% 30%;
+    
+    --magenta: 330 70% 55%;
+    --magenta-foreground: 0 0% 100%;
+    --magenta-hover: 330 70% 45%;
 
     --secondary: 210 40% 96%;
     --secondary-foreground: 195 100% 10%;
@@ -60,6 +64,10 @@ All colors MUST be HSL.
     --primary: 188 91% 45%;
     --primary-foreground: 0 0% 100%;
     --primary-hover: 188 91% 55%;
+    
+    --magenta: 330 70% 55%;
+    --magenta-foreground: 0 0% 100%;
+    --magenta-hover: 330 70% 65%;
 
     --secondary: 217 33% 18%;
     --secondary-foreground: 210 40% 98%;

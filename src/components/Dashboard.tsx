@@ -169,7 +169,7 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold text-foreground">ברוך הבא למערכת ניהול החוג! 🎭</h2>
-        <Button onClick={onAddStudent} className="bg-primary hover:bg-primary-hover">
+        <Button onClick={onAddStudent} className="bg-magenta hover:bg-magenta-hover text-magenta-foreground">
           ➕ הוסף תלמיד
         </Button>
       </div>
