@@ -82,16 +82,10 @@ export default function Students({ students, payments, onAddStudent, onEditStude
     return num;
   };
 
-  const openWhatsApp = (phone: string, studentName: string) => {
-    const formattedNumber = formatWhatsAppNumber(phone);
-    if (!formattedNumber) {
-      toast.error('לא קיים מספר טלפון');
-      return;
-    }
-
-    const url = `https://wa.me/${formattedNumber}`;
-    console.log('[WhatsApp] opening', { phone, formattedNumber, url });
-    window.open(url, '_blank', 'noopener,noreferrer');
+  const getWhatsAppUrl = (phone?: string) => {
+    if (!phone) return '';
+    const formatted = formatWhatsAppNumber(phone);
+    return formatted ? `https://wa.me/${formatted}` : '';
   };
 
   return (
@@ -156,12 +150,26 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                                 {student.name}
                                 {(student.phone || student.parentPhone) && (
                                   <Button
+                                    asChild
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => openWhatsApp(student.parentPhone || student.phone, student.name)}
                                     className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
                                   >
-                                    <MessageCircle size={16} />
+                                    <a
+                                      href={getWhatsAppUrl(student.parentPhone || student.phone)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => {
+                                        const url = getWhatsAppUrl(student.parentPhone || student.phone);
+                                        if (!url) {
+                                          e.preventDefault();
+                                          toast.error('מספר טלפון לא תקין');
+                                        }
+                                      }}
+                                      aria-label={`שליחת הודעה בווטסאפ ל${student.name}`}
+                                    >
+                                      <MessageCircle size={16} />
+                                    </a>
                                   </Button>
                                 )}
                               </div>
