@@ -327,6 +327,10 @@ export default function Index() {
           onUpdateAttendance={async (sessionId, studentId, status) => {
             if (!user) return;
             
+            const session = sessions.find(s => s.id === sessionId);
+            if (!session) return;
+            
+            // עדכון נוכחות
             const { error } = await supabase
               .from('attendance')
               .update({ status })
@@ -337,6 +341,44 @@ export default function Index() {
             if (error) {
               toast.error('שגיאה בעדכון נוכחות');
               return;
+            }
+            
+            // ניהול מנויים
+            const sessionDate = new Date(session.date);
+            const monthYear = `${String(sessionDate.getMonth() + 1).padStart(2, '0')}/${sessionDate.getFullYear()}`;
+            
+            // קבלת המנוי של התלמיד לחודש הרלוונטי
+            const { data: subscriptionData } = await supabase
+              .from('subscriptions')
+              .select('*')
+              .eq('student_id', studentId)
+              .eq('month_year', monthYear)
+              .eq('user_id', user.id)
+              .single();
+            
+            if (subscriptionData) {
+              // אם התלמיד "נוכח" - הורדת כניסה מהמנוי
+              if (status === 'נוכח') {
+                const newRemaining = Math.max(0, subscriptionData.entries_remaining - 1);
+                await supabase
+                  .from('subscriptions')
+                  .update({ entries_remaining: newRemaining })
+                  .eq('id', subscriptionData.id)
+                  .eq('user_id', user.id);
+              }
+              
+              // אם התלמיד "לא הגיע" - לא הורדת כניסה (זה כבר עודכן בנוכחות)
+              // המערכת תראה אותו כ-neutral כי הוא לא הגיע
+              
+              // אם התלמיד "לא באי" (הקפאה) - החזרת הכניסה למנוי
+              if (status === 'לא באי') {
+                const newRemaining = Math.min(subscriptionData.total_entries, subscriptionData.entries_remaining + 1);
+                await supabase
+                  .from('subscriptions')
+                  .update({ entries_remaining: newRemaining })
+                  .eq('id', subscriptionData.id)
+                  .eq('user_id', user.id);
+              }
             }
             
             // עדכון סטטוס התלמיד בהתאם לסטטוס הנוכחות

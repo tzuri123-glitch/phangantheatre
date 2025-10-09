@@ -15,8 +15,13 @@ export function getPaymentStatusForSession(
   student: Student,
   session: Session,
   payments: Payment[],
-  subscriptions: Subscription[]
+  subscriptions: Subscription[],
+  attendanceStatus?: 'נוכח' | 'לא הגיע' | 'לא באי' | 'עזב' | ''
 ): PaymentStatus {
+  // אם התלמיד לא הגיע או לא באי - תמיד neutral (לא חייב)
+  if (attendanceStatus === 'לא הגיע' || attendanceStatus === 'לא באי') {
+    return 'neutral';
+  }
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   

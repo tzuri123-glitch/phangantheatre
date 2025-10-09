@@ -157,7 +157,8 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
                         student,
                         session,
                         payments,
-                        subscriptions
+                        subscriptions,
+                        record.status
                       );
                       const statusColor = getStatusColor(paymentStatus);
                       const statusBadge = getStatusBadge(paymentStatus);
