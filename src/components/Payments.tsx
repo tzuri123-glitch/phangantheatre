@@ -241,7 +241,7 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
         {/* חד פעמיים */}
         <Card className="overflow-hidden">
           <div
-            className="p-6 bg-yellow-100 dark:bg-yellow-900/20 cursor-pointer hover:bg-yellow-200 dark:hover:bg-yellow-900/30 transition-colors"
+            className="p-6 bg-rose-200 dark:bg-rose-800/40 cursor-pointer hover:bg-rose-300 dark:hover:bg-rose-700/50 transition-colors"
             onClick={() => setExpandedOneTime(!expandedOneTime)}
           >
             <h3 className="font-semibold text-lg text-foreground mb-1">🎯 תשלומים חד פעמיים</h3>
@@ -286,7 +286,7 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
                         <Button
                           size="sm"
                           variant="outline"
-                          className="bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-900/10 dark:hover:bg-yellow-900/20"
+                          className="bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/10 dark:hover:bg-rose-900/20"
                           onClick={() => openWhatsAppLink(student.parentPhone || student.phone)}
                         >
                           💬 WhatsApp
