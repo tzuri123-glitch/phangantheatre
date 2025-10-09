@@ -12,7 +12,7 @@ const tabs = [
 
 export default function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
   return (
-    <div className="sticky top-[73px] z-40 bg-card/95 backdrop-blur-md shadow-lg border-b border-border/50">
+    <div className="sticky top-[52px] sm:top-[73px] z-40 bg-card/95 backdrop-blur-md shadow-lg border-b border-border/50">
       <div className="flex justify-center gap-2 sm:gap-3 p-2 sm:p-4 overflow-x-auto">
         {tabs.map((tab) => (
           <button
