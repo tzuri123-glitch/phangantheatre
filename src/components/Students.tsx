@@ -57,16 +57,16 @@ export default function Students({ students, payments, onAddStudent, onEditStude
     
     // אם יש קידומת (מתחיל ב-+ או 00)
     if (cleaned.startsWith('+')) {
-      return cleaned;
+      return cleaned.substring(1); // הסרת ה-+ לצורך wa.me
     }
     if (cleaned.startsWith('00')) {
-      return '+' + cleaned.substring(2);
+      return cleaned.substring(2);
     }
     
     // אם אין קידומת - זה מספר ישראלי
     // הסרת 0 מהתחלה אם קיים והוספת קידומת ישראלית
     const withoutLeadingZero = cleaned.startsWith('0') ? cleaned.substring(1) : cleaned;
-    return '+972' + withoutLeadingZero;
+    return '972' + withoutLeadingZero;
   };
 
   const openWhatsApp = (phone: string, studentName: string) => {
