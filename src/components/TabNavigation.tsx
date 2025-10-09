@@ -18,10 +18,10 @@ export default function TabNavigation({ activeTab, onTabChange }: TabNavigationP
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`px-5 py-2.5 rounded-xl font-medium transition-all ${
+            className={`px-5 py-2.5 rounded-xl font-bold text-base transition-all ${
               activeTab === tab.id
-                ? 'bg-primary text-primary-foreground shadow-md'
-                : 'bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground'
+                ? 'bg-magenta text-magenta-foreground shadow-lg scale-105'
+                : 'bg-secondary text-secondary-foreground hover:bg-magenta/20 hover:scale-102'
             }`}
           >
             {tab.label}
