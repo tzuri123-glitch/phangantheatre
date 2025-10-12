@@ -4,6 +4,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Chart from 'chart.js/auto';
 import { formatILS } from '@/lib/utils';
+import { startOfWeek, endOfWeek, eachWeekOfInterval, subWeeks, format, parseISO, isWithinInterval } from 'date-fns';
+import { he } from 'date-fns/locale';
 
 interface DashboardProps {
   students: Student[];
@@ -27,27 +29,35 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
     return acc;
   }, {} as Record<string, number>);
 
-  // חישוב הכנסות שבועיות
-  const getWeekStart = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const day = date.getDay();
-    const diff = date.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
-    const monday = new Date(date.setDate(diff));
-    return monday.toISOString().slice(0, 10);
-  };
-
-  const incomeByWeek = payments.reduce((acc, p) => {
-    const weekStart = getWeekStart(p.date);
-    acc[weekStart] = (acc[weekStart] || 0) + p.amount;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const formatWeekLabel = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    return `${day}/${month}`;
-  };
+  // חישוב הכנסות שבועיות - 8 שבועות אחרונים כולל השבוע הנוכחי
+  const today = new Date();
+  const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // יום שני
+  const eightWeeksAgo = subWeeks(weekStart, 7); // 7 שבועות אחורה + השבוע הנוכחי = 8 שבועות
+  
+  // יצירת מערך של כל השבועות
+  const weeks = eachWeekOfInterval(
+    { start: eightWeeksAgo, end: today },
+    { weekStartsOn: 1 }
+  );
+  
+  // חישוב הכנסות לכל שבוע
+  const weeklyIncomeData = weeks.map(weekStartDate => {
+    const weekEndDate = endOfWeek(weekStartDate, { weekStartsOn: 1 });
+    
+    const weekIncome = payments.reduce((sum, payment) => {
+      const paymentDate = parseISO(payment.date);
+      if (isWithinInterval(paymentDate, { start: weekStartDate, end: weekEndDate })) {
+        return sum + payment.amount;
+      }
+      return sum;
+    }, 0);
+    
+    return {
+      weekStart: weekStartDate,
+      income: weekIncome,
+      label: format(weekStartDate, 'dd/MM', { locale: he })
+    };
+  });
 
   const incomeByType = payments.reduce((acc, p) => {
     acc[p.type] = (acc[p.type] || 0) + p.amount;
@@ -94,15 +104,15 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
       },
     });
 
-    // Weekly chart - weekly income
-    const weeklyLabels = Object.keys(incomeByWeek).sort().slice(-8); // Last 8 weeks
-    const weeklyDisplayLabels = weeklyLabels.map(formatWeekLabel);
-    const weeklyData = weeklyLabels.map((k) => incomeByWeek[k]);
+    // Weekly chart - weekly income (8 last weeks including current week)
+    const weeklyLabels = weeklyIncomeData.map(w => w.label);
+    const weeklyData = weeklyIncomeData.map(w => w.income);
+    const currentWeekIndex = weeklyIncomeData.length - 1;
 
     weeklyChartInstance.current = new Chart(weeklyChartRef.current, {
       type: 'line',
       data: {
-        labels: weeklyDisplayLabels,
+        labels: weeklyLabels,
         datasets: [
           {
             label: 'הכנסות שבועיות',
@@ -112,12 +122,33 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
             borderWidth: 2,
             fill: true,
             tension: 0.4,
+            pointBackgroundColor: weeklyLabels.map((_, i) => 
+              i === currentWeekIndex ? 'hsl(0 84% 60%)' : 'hsl(142 71% 45%)'
+            ),
+            pointBorderColor: weeklyLabels.map((_, i) => 
+              i === currentWeekIndex ? 'hsl(0 84% 60%)' : 'hsl(142 71% 45%)'
+            ),
+            pointRadius: weeklyLabels.map((_, i) => i === currentWeekIndex ? 6 : 3),
+            pointHoverRadius: weeklyLabels.map((_, i) => i === currentWeekIndex ? 8 : 5),
           },
         ],
       },
       options: {
         plugins: {
           legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: (context) => {
+                const index = context[0].dataIndex;
+                const weekData = weeklyIncomeData[index];
+                const weekEnd = endOfWeek(weekData.weekStart, { weekStartsOn: 1 });
+                return `${format(weekData.weekStart, 'dd/MM')} - ${format(weekEnd, 'dd/MM')}`;
+              },
+              label: (context) => {
+                return `הכנסה: ${formatILS(context.parsed.y)}`;
+              }
+            }
+          }
         },
         responsive: true,
         maintainAspectRatio: true,
@@ -206,8 +237,11 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
 
         <Card className="p-6 card-hover bg-card/50 backdrop-blur-sm shadow-lg">
           <h3 className="text-xl font-semibold mb-4 text-foreground flex items-center gap-2">
-            📈 הכנסות שבועיות
+            📈 הכנסות שבועיות (8 שבועות אחרונים)
           </h3>
+          <div className="text-sm text-muted-foreground mb-2">
+            השבוע הנוכחי מסומן באדום • {format(today, 'dd/MM/yyyy', { locale: he })}
+          </div>
           <canvas ref={weeklyChartRef}></canvas>
         </Card>
 
