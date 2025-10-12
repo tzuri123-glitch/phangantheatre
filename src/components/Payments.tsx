@@ -1,4 +1,5 @@
 import { Payment, Student, CLASS_OPTIONS, Session } from '@/types';
+import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -55,39 +56,41 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
       const studentPaymentsList = payments.filter((p) => p.studentId === student.id);
       const totalPaid = studentPaymentsList.reduce((sum, p) => sum + p.amount, 0);
       
-      // חישוב מה התלמיד אמור לשלם - ללא כפל ספירה
-      const monthlyPayments = studentPaymentsList.filter(p => p.type === 'חודשי');
-      const singlePayments = studentPaymentsList.filter(p => p.type === 'חד פעמי');
-      const trialPayments = studentPaymentsList.filter(p => p.type === 'ניסיון');
+      // קבוצת חודשים עם תשלום חודשי
+      const monthsWithMonthlyPayment = new Set<string>();
+      studentPaymentsList
+        .filter(p => p.type === 'חודשי')
+        .forEach(p => {
+          const monthKey = format(parseISO(p.date), 'MM/yyyy');
+          monthsWithMonthlyPayment.add(monthKey);
+        });
       
+      let totalExpected = 0;
       const monthlyPrice = student.isSibling ? 2400 : 2800;
       
-      // אם יש תשלום חודשי, רק הוא נספר (תשלומים חד-פעמיים באותו חודש נחשבים כחלק ממנו)
-      let totalExpected = 0;
-      
-      if (monthlyPayments.length > 0) {
-        // יש תשלום חודשי - נספור רק אותו
-        totalExpected = monthlyPayments.reduce((sum, p) => {
-          const discount = p.discount || 0;
+      studentPaymentsList.forEach((payment) => {
+        const paymentMonth = format(parseISO(payment.date), 'MM/yyyy');
+        const discount = payment.discount || 0;
+        
+        if (payment.type === 'חודשי') {
+          // תשלום חודשי
           const priceAfterDiscount = monthlyPrice * (1 - discount / 100);
-          return sum + priceAfterDiscount;
-        }, 0);
-      } else {
-        // אין תשלום חודשי - נספור חד-פעמיים וניסיון
-        const expectedSingleAmount = singlePayments.reduce((sum, p) => {
-          const discount = p.discount || 0;
-          const priceAfterDiscount = 800 * (1 - discount / 100);
-          return sum + priceAfterDiscount;
-        }, 0);
-        
-        const expectedTrialAmount = trialPayments.reduce((sum, p) => {
-          const discount = p.discount || 0;
-          const priceAfterDiscount = 700 * (1 - discount / 100);
-          return sum + priceAfterDiscount;
-        }, 0);
-        
-        totalExpected = expectedSingleAmount + expectedTrialAmount;
-      }
+          totalExpected += priceAfterDiscount;
+        } else if (payment.type === 'חד פעמי') {
+          // תשלום חד-פעמי נספר רק אם אין תשלום חודשי באותו חודש
+          if (!monthsWithMonthlyPayment.has(paymentMonth)) {
+            const priceAfterDiscount = 800 * (1 - discount / 100);
+            totalExpected += priceAfterDiscount;
+          }
+        } else if (payment.type === 'ניסיון') {
+          // תשלום ניסיון נספר רק אם אין תשלום חודשי באותו חודש
+          if (!monthsWithMonthlyPayment.has(paymentMonth)) {
+            const priceAfterDiscount = 700 * (1 - discount / 100);
+            totalExpected += priceAfterDiscount;
+          }
+        }
+      });
+      
       const balance = totalPaid - totalExpected;
       
       return {
