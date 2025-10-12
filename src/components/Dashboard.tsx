@@ -44,13 +44,40 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
   const weeklyIncomeData = weeks.map(weekStartDate => {
     const weekEndDate = endOfWeek(weekStartDate, { weekStartsOn: 1 });
     
-    const weekIncome = payments.reduce((sum, payment) => {
+    let weekIncome = 0;
+    
+    payments.forEach(payment => {
       const paymentDate = parseISO(payment.date);
-      if (isWithinInterval(paymentDate, { start: weekStartDate, end: weekEndDate })) {
-        return sum + payment.amount;
+      
+      if (payment.type === 'חודשי') {
+        // תשלום חודשי - מתפרס על כל השבועות בחודש
+        const paymentMonthStart = new Date(paymentDate.getFullYear(), paymentDate.getMonth(), 1);
+        const paymentMonthEnd = new Date(paymentDate.getFullYear(), paymentDate.getMonth() + 1, 0);
+        
+        // כל השבועות בחודש של התשלום
+        const monthWeeks = eachWeekOfInterval(
+          { start: paymentMonthStart, end: paymentMonthEnd },
+          { weekStartsOn: 1 }
+        );
+        
+        const weeksInMonth = monthWeeks.length;
+        const weeklyAmount = payment.amount / weeksInMonth;
+        
+        // אם השבוע הנוכחי חופף לחודש של התשלום, נוסיף חלק יחסי
+        const isWeekInPaymentMonth = monthWeeks.some(mw => 
+          mw.getTime() === weekStartDate.getTime()
+        );
+        
+        if (isWeekInPaymentMonth) {
+          weekIncome += weeklyAmount;
+        }
+      } else {
+        // תשלום חד-פעמי או ניסיון - נספר רק בשבוע שבו בוצע
+        if (isWithinInterval(paymentDate, { start: weekStartDate, end: weekEndDate })) {
+          weekIncome += payment.amount;
+        }
       }
-      return sum;
-    }, 0);
+    });
     
     return {
       weekStart: weekStartDate,
