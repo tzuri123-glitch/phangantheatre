@@ -55,30 +55,39 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
       const studentPaymentsList = payments.filter((p) => p.studentId === student.id);
       const totalPaid = studentPaymentsList.reduce((sum, p) => sum + p.amount, 0);
       
-      // חישוב מה התלמיד אמור לשלם
+      // חישוב מה התלמיד אמור לשלם - ללא כפל ספירה
       const monthlyPayments = studentPaymentsList.filter(p => p.type === 'חודשי');
-      const monthlyPrice = student.isSibling ? 2400 : 2800;
-      const expectedMonthlyAmount = monthlyPayments.reduce((sum, p) => {
-        const discount = p.discount || 0;
-        const priceAfterDiscount = monthlyPrice * (1 - discount / 100);
-        return sum + priceAfterDiscount;
-      }, 0);
-      
       const singlePayments = studentPaymentsList.filter(p => p.type === 'חד פעמי');
-      const expectedSingleAmount = singlePayments.reduce((sum, p) => {
-        const discount = p.discount || 0;
-        const priceAfterDiscount = 800 * (1 - discount / 100);
-        return sum + priceAfterDiscount;
-      }, 0);
-      
       const trialPayments = studentPaymentsList.filter(p => p.type === 'ניסיון');
-      const expectedTrialAmount = trialPayments.reduce((sum, p) => {
-        const discount = p.discount || 0;
-        const priceAfterDiscount = 700 * (1 - discount / 100);
-        return sum + priceAfterDiscount;
-      }, 0);
       
-      const totalExpected = expectedMonthlyAmount + expectedSingleAmount + expectedTrialAmount;
+      const monthlyPrice = student.isSibling ? 2400 : 2800;
+      
+      // אם יש תשלום חודשי, רק הוא נספר (תשלומים חד-פעמיים באותו חודש נחשבים כחלק ממנו)
+      let totalExpected = 0;
+      
+      if (monthlyPayments.length > 0) {
+        // יש תשלום חודשי - נספור רק אותו
+        totalExpected = monthlyPayments.reduce((sum, p) => {
+          const discount = p.discount || 0;
+          const priceAfterDiscount = monthlyPrice * (1 - discount / 100);
+          return sum + priceAfterDiscount;
+        }, 0);
+      } else {
+        // אין תשלום חודשי - נספור חד-פעמיים וניסיון
+        const expectedSingleAmount = singlePayments.reduce((sum, p) => {
+          const discount = p.discount || 0;
+          const priceAfterDiscount = 800 * (1 - discount / 100);
+          return sum + priceAfterDiscount;
+        }, 0);
+        
+        const expectedTrialAmount = trialPayments.reduce((sum, p) => {
+          const discount = p.discount || 0;
+          const priceAfterDiscount = 700 * (1 - discount / 100);
+          return sum + priceAfterDiscount;
+        }, 0);
+        
+        totalExpected = expectedSingleAmount + expectedTrialAmount;
+      }
       const balance = totalPaid - totalExpected;
       
       return {
