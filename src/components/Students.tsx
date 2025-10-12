@@ -56,21 +56,42 @@ export default function Students({ students, payments, onAddStudent, onEditStude
 
   const calculateStudentBalance = (studentId: string, student: Student) => {
     const studentPayments = payments.filter(p => p.studentId === studentId);
-    let balance = 0;
     
-    studentPayments.forEach((payment) => {
-      const baseExpectedAmount = 
-        payment.type === 'ניסיון' ? TRIAL_PRICE :
-        payment.type === 'חד פעמי' ? SINGLE_PRICE :
-        student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
-      
-      const discount = payment.discount || 0;
-      const expectedAmount = baseExpectedAmount * (1 - discount / 100);
-      
-      balance += payment.amount - expectedAmount;
-    });
+    const monthlyPayments = studentPayments.filter(p => p.type === 'חודשי');
+    const singlePayments = studentPayments.filter(p => p.type === 'חד פעמי');
+    const trialPayments = studentPayments.filter(p => p.type === 'ניסיון');
     
-    return balance;
+    const totalPaid = studentPayments.reduce((sum, p) => sum + p.amount, 0);
+    
+    // חישוב מה התלמיד אמור לשלם - ללא כפל ספירה
+    let totalExpected = 0;
+    
+    if (monthlyPayments.length > 0) {
+      // יש תשלום חודשי - נספור רק אותו (תשלומים חד-פעמיים באותו חודש נחשבים כחלק ממנו)
+      const monthlyPrice = student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+      totalExpected = monthlyPayments.reduce((sum, p) => {
+        const discount = p.discount || 0;
+        const priceAfterDiscount = monthlyPrice * (1 - discount / 100);
+        return sum + priceAfterDiscount;
+      }, 0);
+    } else {
+      // אין תשלום חודשי - נספור חד-פעמיים וניסיון
+      const expectedSingleAmount = singlePayments.reduce((sum, p) => {
+        const discount = p.discount || 0;
+        const priceAfterDiscount = SINGLE_PRICE * (1 - discount / 100);
+        return sum + priceAfterDiscount;
+      }, 0);
+      
+      const expectedTrialAmount = trialPayments.reduce((sum, p) => {
+        const discount = p.discount || 0;
+        const priceAfterDiscount = TRIAL_PRICE * (1 - discount / 100);
+        return sum + priceAfterDiscount;
+      }, 0);
+      
+      totalExpected = expectedSingleAmount + expectedTrialAmount;
+    }
+    
+    return totalPaid - totalExpected;
   };
 
   const getBalanceColor = (balance: number) => {
