@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import App from "./App.tsx";
 import Auth from "./pages/Auth";
+import StudentAuth from "./pages/StudentAuth";
 import NotFound from "./pages/NotFound";
 import "./index.css";
 
@@ -21,6 +22,7 @@ createRoot(document.getElementById("root")!).render(
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/student-auth" element={<StudentAuth />} />
             <Route path="/" element={<App />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
