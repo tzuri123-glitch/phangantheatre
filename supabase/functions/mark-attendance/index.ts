@@ -216,48 +216,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check monthly subscription
-    const monthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const { data: monthlyPayment } = await adminClient
-      .from('payments')
-      .select('id')
-      .eq('student_id', student.id)
-      .eq('payment_type', 'חודשי')
-      .gte('payment_date', `${monthYear}-01`)
-      .lte('payment_date', `${monthYear}-31`)
-      .limit(1)
-      .single();
-
-    let paymentNote = '';
-    if (!monthlyPayment) {
-      const { data: existingPending } = await adminClient
-        .from('pending_payments')
-        .select('id')
-        .eq('student_id', student.id)
-        .eq('payment_type', 'חד פעמי')
-        .eq('status', 'pending')
-        .gte('created_at', `${today}T00:00:00`)
-        .lte('created_at', `${today}T23:59:59`)
-        .limit(1)
-        .single();
-
-      if (!existingPending) {
-        await adminClient
-          .from('pending_payments')
-          .insert({
-            student_id: student.id,
-            admin_user_id: adminUserId,
-            payment_type: 'חד פעמי',
-            payment_method: 'מזומן',
-            status: 'pending',
-          });
-        paymentNote = '\n💰 נוצר חיוב תשלום חד פעמי';
-      }
-    }
-
     return new Response(JSON.stringify({
       status: 'success',
-      message: `${student.name} ${student.last_name || ''} - נרשמת בהצלחה! ✅${paymentNote}`,
+      message: `${student.name} ${student.last_name || ''} - נרשמת בהצלחה! ✅`,
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
