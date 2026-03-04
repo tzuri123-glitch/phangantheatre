@@ -46,93 +46,92 @@ export default function Index() {
   const [currentSession, setCurrentSession] = useState<Session | null>(null);
 
   // טעינת נתונים מהדטהבייס
+  const loadData = async () => {
+    if (!user) return;
+    const { data: studentsData } = await supabase
+      .from('students')
+      .select('*')
+      .eq('user_id', user.id);
+    
+    const { data: paymentsData } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('user_id', user.id);
+    
+    const { data: sessionsData } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('user_id', user.id);
+    
+    const { data: attendanceData } = await supabase
+      .from('attendance')
+      .select('*')
+      .eq('user_id', user.id);
+    
+    if (studentsData) {
+      const authUserIds = studentsData
+        .map(s => (s as any).auth_user_id)
+        .filter(Boolean);
+      
+      let emailMap: Record<string, string> = {};
+      if (authUserIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, email')
+          .in('id', authUserIds);
+        if (profiles) {
+          profiles.forEach(p => { if (p.email) emailMap[p.id] = p.email; });
+        }
+      }
+
+      setStudents(studentsData.map(s => ({
+        id: s.id,
+        name: s.name,
+        lastName: s.last_name || '',
+        phone: s.phone || '',
+        birthDate: s.birth_date || '',
+        parentName: s.parent_name || '',
+        parentPhone: s.parent_phone || '',
+        isSibling: s.is_sibling || false,
+        siblingId: s.sibling_id || undefined,
+        className: s.class_name,
+        status: s.status as Student['status'],
+        linkedEmail: (s as any).auth_user_id ? emailMap[(s as any).auth_user_id] || '' : undefined,
+      })).sort((a, b) => a.name.localeCompare(b.name, 'he')));
+    }
+    
+    if (paymentsData) {
+      setPayments(paymentsData.map(p => ({
+        id: p.id,
+        studentId: p.student_id,
+        type: p.payment_type as Payment['type'],
+        method: p.payment_method as Payment['method'],
+        date: p.payment_date,
+        amount: Number(p.amount),
+        note: p.note || '',
+        discount: Number(p.discount) || 0
+      })));
+    }
+    
+    if (sessionsData) {
+      setSessions(sessionsData.map(s => {
+        const sessionAttendance = attendanceData?.filter(a => a.session_id === s.id) || [];
+        return {
+          id: s.id,
+          className: s.class_name,
+          date: s.session_date,
+          trial: s.is_trial || false,
+          students: sessionAttendance.map(a => ({
+            studentId: a.student_id,
+            status: a.status as 'נוכח' | 'לא הגיע' | 'לא באי'
+          }))
+        };
+      }));
+    }
+  };
+
   useEffect(() => {
     if (!user) return;
-    
-    const loadData = async () => {
-      const { data: studentsData } = await supabase
-        .from('students')
-        .select('*')
-        .eq('user_id', user.id);
-      
-      const { data: paymentsData } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('user_id', user.id);
-      
-      const { data: sessionsData } = await supabase
-        .from('sessions')
-        .select('*')
-        .eq('user_id', user.id);
-      
-      const { data: attendanceData } = await supabase
-        .from('attendance')
-        .select('*')
-        .eq('user_id', user.id);
-      
-      if (studentsData) {
-        // Get linked emails from profiles
-        const authUserIds = studentsData
-          .map(s => (s as any).auth_user_id)
-          .filter(Boolean);
-        
-        let emailMap: Record<string, string> = {};
-        if (authUserIds.length > 0) {
-          const { data: profiles } = await supabase
-            .from('profiles')
-            .select('id, email')
-            .in('id', authUserIds);
-          if (profiles) {
-            profiles.forEach(p => { if (p.email) emailMap[p.id] = p.email; });
-          }
-        }
-
-        setStudents(studentsData.map(s => ({
-          id: s.id,
-          name: s.name,
-          lastName: s.last_name || '',
-          phone: s.phone || '',
-          birthDate: s.birth_date || '',
-          parentName: s.parent_name || '',
-          parentPhone: s.parent_phone || '',
-          isSibling: s.is_sibling || false,
-          siblingId: s.sibling_id || undefined,
-          className: s.class_name,
-          status: s.status as Student['status'],
-          linkedEmail: (s as any).auth_user_id ? emailMap[(s as any).auth_user_id] || '' : undefined,
-        })).sort((a, b) => a.name.localeCompare(b.name, 'he')));
-      }
-      
-      if (paymentsData) {
-        setPayments(paymentsData.map(p => ({
-          id: p.id,
-          studentId: p.student_id,
-          type: p.payment_type as Payment['type'],
-          method: p.payment_method as Payment['method'],
-          date: p.payment_date,
-          amount: Number(p.amount),
-          note: p.note || '',
-          discount: Number(p.discount) || 0
-        })));
-      }
-      
-      if (sessionsData) {
-        setSessions(sessionsData.map(s => {
-          const sessionAttendance = attendanceData?.filter(a => a.session_id === s.id) || [];
-          return {
-            id: s.id,
-            className: s.class_name,
-            date: s.session_date,
-            trial: s.is_trial || false,
-            students: sessionAttendance.map(a => ({
-              studentId: a.student_id,
-              status: a.status as 'נוכח' | 'לא הגיע' | 'לא באי'
-            }))
-          };
-        }));
-      }
-    };
-    
     loadData();
   }, [user]);
 
@@ -264,7 +263,7 @@ export default function Index() {
       </header>
       <TabNavigation activeTab={tab} onTabChange={setTab} />
       <main className="container mx-auto px-2 sm:px-4">
-        <PendingPayments />
+        <PendingPayments onPaymentApproved={loadData} />
         {tab === 'dashboard' && <Dashboard students={students} payments={payments} onAddStudent={() => { studentFormRef.current = { id: '', name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, siblingId: undefined, className: CLASS_OPTIONS[0], status: 'חדש' }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} />}
         {tab === 'students' && <Students 
           students={students}

@@ -3,8 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { formatILS } from '@/lib/utils';
+import { SINGLE_PRICE, MONTHLY_PRICE, SIBLING_SINGLE_PRICE, SIBLING_MONTHLY_PRICE } from '@/types';
 
 interface PendingPayment {
   id: string;
@@ -16,18 +20,25 @@ interface PendingPayment {
   created_at: string;
   student_name?: string;
   student_last_name?: string;
+  is_sibling?: boolean;
 }
 
-export default function PendingPayments() {
+interface PendingPaymentsProps {
+  onPaymentApproved?: () => void;
+}
+
+export default function PendingPayments({ onPaymentApproved }: PendingPaymentsProps) {
   const { user } = useAuth();
   const [pending, setPending] = useState<PendingPayment[]>([]);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [approveDialog, setApproveDialog] = useState<PendingPayment | null>(null);
+  const [approveAmount, setApproveAmount] = useState(0);
+  const [approveNote, setApproveNote] = useState('');
 
   useEffect(() => {
     if (!user) return;
     loadPending();
 
-    // Realtime listener for new requests
     const channel = supabase
       .channel('pending-payments-admin')
       .on('postgres_changes', {
@@ -37,13 +48,13 @@ export default function PendingPayments() {
         filter: `admin_user_id=eq.${user.id}`,
       }, (payload) => {
         const newReq = payload.new as any;
-        // Load student name
-        supabase.from('students').select('name, last_name').eq('id', newReq.student_id).single()
+        supabase.from('students').select('name, last_name, is_sibling').eq('id', newReq.student_id).single()
           .then(({ data }) => {
             setPending(prev => [{
               ...newReq,
               student_name: data?.name || '',
               student_last_name: data?.last_name || '',
+              is_sibling: data?.is_sibling || false,
             }, ...prev]);
             toast.info(`📩 בקשת תשלום חדשה מ-${data?.name || 'תלמיד'} ${data?.last_name || ''}`);
           });
@@ -57,7 +68,7 @@ export default function PendingPayments() {
     if (!user) return;
     const { data } = await supabase
       .from('pending_payments')
-      .select('*, students(name, last_name)')
+      .select('*, students(name, last_name, is_sibling)')
       .eq('admin_user_id', user.id)
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
@@ -67,36 +78,52 @@ export default function PendingPayments() {
         ...p,
         student_name: p.students?.name || '',
         student_last_name: p.students?.last_name || '',
+        is_sibling: p.students?.is_sibling || false,
       })));
     }
   };
 
-  const handleApprove = async (payment: PendingPayment) => {
-    if (!user) return;
-    setProcessing(payment.id);
+  const openApproveDialog = (payment: PendingPayment) => {
+    // Calculate expected price
+    const isSib = payment.is_sibling;
+    let expectedPrice = 0;
+    if (payment.payment_type === 'חד פעמי') {
+      expectedPrice = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
+    } else if (payment.payment_type === 'חודשי') {
+      expectedPrice = isSib ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+    }
+    
+    setApproveAmount(payment.amount || expectedPrice);
+    setApproveNote('');
+    setApproveDialog(payment);
+  };
+
+  const handleConfirmApprove = async () => {
+    if (!user || !approveDialog) return;
+    setProcessing(approveDialog.id);
 
     try {
-      // Update pending payment status
       await supabase
         .from('pending_payments')
-        .update({ status: 'approved', resolved_at: new Date().toISOString() })
-        .eq('id', payment.id);
+        .update({ status: 'approved', resolved_at: new Date().toISOString(), amount: approveAmount })
+        .eq('id', approveDialog.id);
 
-      // Create actual payment record
       await supabase
         .from('payments')
         .insert({
           user_id: user.id,
-          student_id: payment.student_id,
-          payment_type: payment.payment_type,
-          payment_method: payment.payment_method,
+          student_id: approveDialog.student_id,
+          payment_type: approveDialog.payment_type,
+          payment_method: approveDialog.payment_method,
           payment_date: new Date().toISOString().slice(0, 10),
-          amount: payment.amount || 0,
-          note: 'אושר מבקשת תלמיד',
+          amount: approveAmount,
+          note: approveNote || 'אושר מבקשת תלמיד',
         });
 
-      setPending(prev => prev.filter(p => p.id !== payment.id));
-      toast.success(`תשלום של ${payment.student_name} ${payment.student_last_name} אושר!`);
+      setPending(prev => prev.filter(p => p.id !== approveDialog.id));
+      toast.success(`תשלום של ${approveDialog.student_name} ${approveDialog.student_last_name} אושר — ${formatILS(approveAmount)}`);
+      setApproveDialog(null);
+      onPaymentApproved?.();
     } catch {
       toast.error('שגיאה באישור תשלום');
     } finally {
@@ -123,47 +150,137 @@ export default function PendingPayments() {
     }
   };
 
-  if (pending.length === 0) return null;
+  // Calculate balance indicator
+  const getBalanceInfo = () => {
+    if (!approveDialog) return null;
+    const isSib = approveDialog.is_sibling;
+    let expectedPrice = 0;
+    if (approveDialog.payment_type === 'חד פעמי') {
+      expectedPrice = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
+    } else if (approveDialog.payment_type === 'חודשי') {
+      expectedPrice = isSib ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+    }
+    const diff = approveAmount - expectedPrice;
+    return { expectedPrice, diff };
+  };
+
+  if (pending.length === 0 && !approveDialog) return null;
+
+  const balanceInfo = getBalanceInfo();
 
   return (
-    <Card className="p-4 mb-4 border-yellow-300 bg-yellow-50/50">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-xl">🔔</span>
-        <h3 className="font-bold text-foreground">בקשות תשלום ממתינות ({pending.length})</h3>
-      </div>
-      <div className="space-y-2">
-        {pending.map((p) => (
-          <div key={p.id} className="flex items-center justify-between bg-white rounded-lg p-3 shadow-sm border">
-            <div>
-              <span className="font-medium">{p.student_name} {p.student_last_name}</span>
-              <span className="text-muted-foreground text-sm mr-2">
-                – {p.payment_type} ({p.payment_method})
-              </span>
-              <span className="text-xs text-muted-foreground block">
-                {new Date(p.created_at).toLocaleString('he-IL')}
-              </span>
+    <>
+      {pending.length > 0 && (
+        <Card className="p-4 mb-4 border-yellow-300 bg-yellow-50/50 dark:bg-yellow-900/10">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xl">🔔</span>
+            <h3 className="font-bold text-foreground">בקשות תשלום ממתינות ({pending.length})</h3>
+          </div>
+          <div className="space-y-2">
+            {pending.map((p) => (
+              <div key={p.id} className="flex items-center justify-between bg-background rounded-lg p-3 shadow-sm border">
+                <div>
+                  <span className="font-medium">{p.student_name} {p.student_last_name}</span>
+                  {p.is_sibling && <span className="text-xs text-primary mr-1">👫</span>}
+                  <span className="text-muted-foreground text-sm mr-2">
+                    – {p.payment_type} ({p.payment_method})
+                  </span>
+                  <span className="text-xs text-muted-foreground block">
+                    {new Date(p.created_at).toLocaleString('he-IL')}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => openApproveDialog(p)}
+                    disabled={processing === p.id}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    ✅ אשר
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => handleReject(p)}
+                    disabled={processing === p.id}
+                  >
+                    ❌ דחה
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Approve dialog with amount input */}
+      <Dialog open={!!approveDialog} onOpenChange={(open) => { if (!open) setApproveDialog(null); }}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>אישור תשלום — {approveDialog?.student_name} {approveDialog?.student_last_name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              סוג: <strong>{approveDialog?.payment_type}</strong> | אמצעי: <strong>{approveDialog?.payment_method}</strong>
+              {approveDialog?.is_sibling && <span className="text-primary mr-2">👫 תלמיד אח/אחות — מחיר מוזל</span>}
             </div>
-            <div className="flex gap-2">
+            
+            {balanceInfo && (
+              <div className="text-sm bg-muted rounded-lg px-3 py-2">
+                מחיר צפוי: <strong>{formatILS(balanceInfo.expectedPrice)}</strong>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>סכום שהתקבל בפועל</Label>
+              <Input
+                type="number"
+                value={approveAmount}
+                onChange={(e) => setApproveAmount(Number(e.target.value))}
+                min={0}
+              />
+            </div>
+
+            {balanceInfo && balanceInfo.diff !== 0 && (
+              <div className={`text-sm font-medium rounded-lg px-3 py-2 ${
+                balanceInfo.diff > 0 
+                  ? 'text-green-700 bg-green-50 dark:text-green-300 dark:bg-green-900/30' 
+                  : 'text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-900/30'
+              }`}>
+                {balanceInfo.diff > 0 
+                  ? `💰 זכות של ${formatILS(balanceInfo.diff)} תירשם לתלמיד`
+                  : `⚠️ חוב של ${formatILS(Math.abs(balanceInfo.diff))} יירשם לתלמיד`
+                }
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>הערה (אופציונלי)</Label>
+              <Input
+                value={approveNote}
+                onChange={(e) => setApproveNote(e.target.value)}
+                placeholder="אושר מבקשת תלמיד"
+              />
+            </div>
+
+            <div className="flex gap-3">
               <Button
-                size="sm"
-                onClick={() => handleApprove(p)}
-                disabled={processing === p.id}
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="flex-1"
+                onClick={handleConfirmApprove}
+                disabled={!!processing}
               >
-                ✅ אשר
+                ✅ אשר תשלום — {formatILS(approveAmount)}
               </Button>
               <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => handleReject(p)}
-                disabled={processing === p.id}
+                variant="outline"
+                onClick={() => setApproveDialog(null)}
               >
-                ❌ דחה
+                ביטול
               </Button>
             </div>
           </div>
-        ))}
-      </div>
-    </Card>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
