@@ -712,27 +712,77 @@ export default function StudentPortal() {
                   <h3 className="text-lg font-bold text-foreground mb-4">🔒 שינוי סיסמה</h3>
                   <div className="space-y-3">
                     <div>
+                      <label className="block text-xs font-medium mb-1 text-foreground">סיסמה נוכחית</label>
+                      <div className="relative">
+                        <Input
+                          type={showNewPassword ? 'text' : 'password'}
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          placeholder="הכנס סיסמה נוכחית"
+                        />
+                      </div>
+                    </div>
+                    <div>
                       <label className="block text-xs font-medium mb-1 text-foreground">סיסמה חדשה</label>
-                      <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="הכנס סיסמה חדשה" />
+                      <div className="relative">
+                        <Input
+                          type={showNewPassword ? 'text' : 'password'}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="הכנס סיסמה חדשה"
+                          className="pl-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
                       <p className="text-xs text-muted-foreground mt-1">לפחות 8 תווים, אות גדולה אחת באנגלית ומספר אחד</p>
                     </div>
                     <div>
                       <label className="block text-xs font-medium mb-1 text-foreground">אישור סיסמה חדשה</label>
-                      <Input type="password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} placeholder="הכנס סיסמה פעם נוספת" />
+                      <div className="relative">
+                        <Input
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          value={confirmNewPassword}
+                          onChange={(e) => setConfirmNewPassword(e.target.value)}
+                          placeholder="הכנס סיסמה פעם נוספת"
+                          className="pl-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
                     </div>
                     <Button
                       className="w-full"
-                      disabled={changingPassword || !newPassword}
+                      disabled={changingPassword || !newPassword || !currentPassword}
                       onClick={async () => {
+                        if (!currentPassword) { toast.error('יש להזין את הסיסמה הנוכחית'); return; }
                         if (newPassword.length < 8) { toast.error('הסיסמה חייבת להכיל לפחות 8 תווים'); return; }
                         if (!/[A-Z]/.test(newPassword)) { toast.error('הסיסמה חייבת להכיל לפחות אות גדולה אחת באנגלית'); return; }
                         if (!/[0-9]/.test(newPassword)) { toast.error('הסיסמה חייבת להכיל לפחות מספר אחד'); return; }
                         if (newPassword !== confirmNewPassword) { toast.error('הסיסמאות אינן תואמות'); return; }
                         setChangingPassword(true);
                         try {
+                          // Re-authenticate first to refresh session
+                          const { error: signInError } = await supabase.auth.signInWithPassword({
+                            email: user?.email || '',
+                            password: currentPassword,
+                          });
+                          if (signInError) throw new Error('הסיסמה הנוכחית שגויה');
+
                           const { error } = await supabase.auth.updateUser({ password: newPassword });
                           if (error) throw error;
                           toast.success('הסיסמה שונתה בהצלחה! 🔐');
+                          setCurrentPassword('');
                           setNewPassword('');
                           setConfirmNewPassword('');
                         } catch (err: any) {
