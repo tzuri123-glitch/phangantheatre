@@ -276,6 +276,7 @@ export type Database = {
           parent_name: string | null
           parent_phone: string | null
           phone: string | null
+          profile_photo_url: string | null
           sibling_id: string | null
           status: string | null
           user_id: string
@@ -292,6 +293,7 @@ export type Database = {
           parent_name?: string | null
           parent_phone?: string | null
           phone?: string | null
+          profile_photo_url?: string | null
           sibling_id?: string | null
           status?: string | null
           user_id: string
@@ -308,6 +310,7 @@ export type Database = {
           parent_name?: string | null
           parent_phone?: string | null
           phone?: string | null
+          profile_photo_url?: string | null
           sibling_id?: string | null
           status?: string | null
           user_id?: string

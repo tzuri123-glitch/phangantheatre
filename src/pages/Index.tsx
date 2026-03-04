@@ -99,6 +99,7 @@ export default function Index() {
         className: s.class_name,
         status: (s.status === 'חדש' || s.status === 'לא פעיל' ? 'פעיל' : s.status) as Student['status'],
         linkedEmail: (s as any).auth_user_id ? emailMap[(s as any).auth_user_id] || '' : undefined,
+        profilePhotoUrl: (s as any).profile_photo_url || undefined,
       })).sort((a, b) => a.name.localeCompare(b.name, 'he')));
     }
     

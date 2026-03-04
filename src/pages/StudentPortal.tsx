@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Camera } from 'lucide-react';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -29,6 +31,7 @@ interface StudentRecord {
   birth_date: string | null;
   parent_name: string | null;
   parent_phone: string | null;
+  profile_photo_url: string | null;
 }
 
 interface AttendanceRecord {
@@ -71,6 +74,7 @@ export default function StudentPortal() {
   const [editParentName, setEditParentName] = useState('');
   const [editParentPhone, setEditParentPhone] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   // Payment dialog
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -346,6 +350,38 @@ export default function StudentPortal() {
     }
   };
 
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !student) return;
+    
+    setUploadingPhoto(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${student.id}/profile.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('profile-photos')
+        .upload(filePath, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('profile-photos').getPublicUrl(filePath);
+      const photoUrl = data.publicUrl + '?t=' + Date.now();
+
+      const { error: updateError } = await supabase
+        .from('students')
+        .update({ profile_photo_url: photoUrl })
+        .eq('id', student.id);
+      if (updateError) throw updateError;
+
+      setStudent({ ...student, profile_photo_url: photoUrl });
+      toast.success('התמונה עודכנה בהצלחה! 📸');
+    } catch (err: any) {
+      toast.error('שגיאה בהעלאת תמונה: ' + err.message);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   const statusMap: Record<string, string> = {
     'נוכח': 'bg-green-100 text-green-800',
     'לא הגיע': 'bg-red-100 text-red-800',
@@ -456,9 +492,30 @@ export default function StudentPortal() {
           <>
             <Card className="p-4 sm:p-6 mb-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">{student.name} {student.last_name}</h2>
-                  <p className="text-muted-foreground">{student.class_name}</p>
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <Avatar className="h-14 w-14 border-2 border-primary/20">
+                      <AvatarImage src={student.profile_photo_url || undefined} alt={student.name} />
+                      <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">
+                        {student.name?.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <label className="absolute -bottom-1 -left-1 bg-primary text-primary-foreground rounded-full p-1 cursor-pointer hover:bg-primary/80 transition-colors shadow-md">
+                      <Camera size={12} />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="user"
+                        className="hidden"
+                        onChange={handlePhotoUpload}
+                        disabled={uploadingPhoto}
+                      />
+                    </label>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-foreground">{student.name} {student.last_name}</h2>
+                    <p className="text-muted-foreground">{student.class_name}</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">{student.status === 'חדש' ? 'פעיל' : (student.status || 'פעיל')}</Badge>
@@ -467,6 +524,7 @@ export default function StudentPortal() {
                   </Button>
                 </div>
               </div>
+              {uploadingPhoto && <p className="text-xs text-muted-foreground mt-2 text-center">מעלה תמונה...</p>}
             </Card>
 
             {/* Pending payments banner */}
