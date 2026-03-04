@@ -461,7 +461,7 @@ export default function StudentPortal() {
                   <p className="text-muted-foreground">{student.class_name}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline">{student.status || 'פעיל'}</Badge>
+                  <Badge variant="outline">{student.status === 'חדש' ? 'פעיל' : (student.status || 'פעיל')}</Badge>
                   <Button size="sm" onClick={() => setShowPaymentDialog(true)} className="bg-gradient-to-l from-primary to-primary-hover text-white">
                     💰 שלם
                   </Button>
