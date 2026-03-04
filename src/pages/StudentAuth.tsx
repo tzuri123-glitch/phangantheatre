@@ -33,6 +33,7 @@ export default function StudentAuth() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -75,6 +76,9 @@ export default function StudentAuth() {
         }
         if (!selectedClass) {
           throw new Error('יש לבחור קבוצה');
+        }
+        if (!acceptedTerms) {
+          throw new Error('יש לאשר את התקנון ומדיניות הפרטיות');
         }
 
         // 1. Sign up (student record will be created after email confirmation + login)
@@ -307,7 +311,21 @@ export default function StudentAuth() {
             </>
           )}
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          {isSignUp && (
+            <div className="flex items-start gap-2 mt-2">
+              <Checkbox
+                id="acceptTerms"
+                checked={acceptedTerms}
+                onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                className="mt-0.5"
+              />
+              <label htmlFor="acceptTerms" className="text-xs text-muted-foreground cursor-pointer leading-relaxed">
+                קראתי ואני מסכים/ה ל<a href="/terms" target="_blank" className="text-primary hover:underline">תקנון ותנאי השימוש</a> ול<a href="/privacy" target="_blank" className="text-primary hover:underline">מדיניות הפרטיות</a>
+              </label>
+            </div>
+          )}
+
+          <Button type="submit" className="w-full" disabled={loading || (isSignUp && !acceptedTerms)}>
             {loading ? 'טוען...' : isSignUp ? 'הירשם' : 'התחבר'}
           </Button>
         </form>
