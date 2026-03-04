@@ -61,7 +61,7 @@ export default function StudentAuth() {
           throw new Error('יש למלא את שם התלמיד');
         }
 
-        // 1. Sign up
+        // 1. Sign up (student record will be created after email confirmation + login)
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
@@ -73,13 +73,15 @@ export default function StudentAuth() {
         });
         if (signUpError) throw signUpError;
 
-        // 2. Get session token
         const session = signUpData.session;
         if (!session) {
-          throw new Error('ההרשמה הצליחה אך לא התקבל טוקן. נסה להתחבר.');
+          // Email confirmation required
+          toast({ title: 'נשלח אליך אימייל לאימות. לאחר האימות, התחבר והשלם את ההרשמה.' });
+          setIsSignUp(false);
+          return;
         }
 
-        // 3. Create student record via edge function
+        // If auto-confirm is on, create student record immediately
         const { data: result, error: fnError } = await supabase.functions.invoke('register-student', {
           body: {
             studentName: studentName.trim(),
