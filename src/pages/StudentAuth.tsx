@@ -36,17 +36,11 @@ export default function StudentAuth() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Load existing students for sibling selection
   useEffect(() => {
     if (isSibling) {
       const loadStudents = async () => {
-        // Use a public-facing approach - we'll load after signup via edge function
-        // For now, search by last name hint
-        const { data } = await supabase
-          .from('students')
-          .select('id, name, last_name')
-          .order('name');
-        if (data) setExistingStudents(data);
+        const { data, error } = await supabase.functions.invoke('list-siblings');
+        if (!error && data?.students) setExistingStudents(data.students);
       };
       loadStudents();
     }
@@ -339,7 +333,7 @@ export default function StudentAuth() {
           )}
         </div>
 
-        <div className="mt-6 pt-4 border-t border-border text-center">
+        <div className="mt-6 pt-4 border-t border-border text-center space-y-2">
           <button
             type="button"
             onClick={() => navigate('/auth')}
@@ -347,6 +341,10 @@ export default function StudentAuth() {
           >
             כניסת מנהלים
           </button>
+          <div className="flex justify-center gap-4">
+            <a href="/terms" className="text-xs text-muted-foreground hover:underline">תקנון</a>
+            <a href="/privacy" className="text-xs text-muted-foreground hover:underline">מדיניות פרטיות</a>
+          </div>
         </div>
       </Card>
     </div>
