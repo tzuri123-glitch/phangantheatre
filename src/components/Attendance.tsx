@@ -167,7 +167,16 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
                       return (
                         <TableRow key={record.studentId} className={statusColor}>
                           <TableCell className="font-medium">
-                            {getStudentName(record.studentId)}
+                            <div className="flex items-center gap-2">
+                              {student.profilePhotoUrl ? (
+                                <img src={student.profilePhotoUrl} alt={student.name} className="w-8 h-8 rounded-full object-cover" />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
+                                  {student.name.charAt(0)}
+                                </div>
+                              )}
+                              {getStudentName(record.studentId)}
+                            </div>
                           </TableCell>
                           <TableCell>{student.className}</TableCell>
                           <TableCell>{session.date}</TableCell>
