@@ -227,7 +227,7 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
 
       {/* Approve dialog with amount input */}
       <Dialog open={!!approveDialog} onOpenChange={(open) => { if (!open) setApproveDialog(null); }}>
-        <DialogContent className="max-w-md" dir="rtl">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
             <DialogTitle>אישור תשלום — {approveDialog?.student_name} {approveDialog?.student_last_name}</DialogTitle>
           </DialogHeader>
