@@ -7,7 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Camera } from 'lucide-react';
+import { Camera, Eye, EyeOff } from 'lucide-react';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -79,6 +79,8 @@ export default function StudentPortal() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Payment dialog
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -504,12 +506,12 @@ export default function StudentPortal() {
                         {student.name?.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <label className="absolute -bottom-1 -left-1 bg-primary text-primary-foreground rounded-full p-1 cursor-pointer hover:bg-primary/80 transition-colors shadow-md">
-                      <Camera size={12} />
+                    <label className="absolute -bottom-1 -left-1 bg-primary text-primary-foreground rounded-full p-1.5 sm:p-1 cursor-pointer hover:bg-primary/80 transition-colors shadow-md z-10">
+                      <Camera size={14} className="sm:w-3 sm:h-3" />
                       <input
                         type="file"
                         accept="image/*"
-                        capture="user"
+                        capture="environment"
                         className="hidden"
                         onChange={handlePhotoUpload}
                         disabled={uploadingPhoto}
