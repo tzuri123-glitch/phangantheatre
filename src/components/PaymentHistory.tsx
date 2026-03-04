@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatILS } from '@/lib/utils';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 interface AuditEntry {
   id: string;
@@ -16,6 +17,15 @@ interface AuditEntry {
   old_data: any;
   new_data: any;
   created_at: string;
+}
+
+interface PendingPaymentRequest {
+  id: string;
+  payment_type: string;
+  payment_method: string;
+  status: string;
+  created_at: string;
+  resolved_at: string | null;
 }
 
 interface PaymentHistoryProps {
@@ -27,10 +37,15 @@ interface PaymentHistoryProps {
   onDeletePayment: (paymentId: string) => void;
 }
 
+type HistoryTab = 'payments' | 'requests' | 'audit';
+
 export default function PaymentHistory({ student, payments, open, onClose, onEditPayment, onDeletePayment }: PaymentHistoryProps) {
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
-  const [showAudit, setShowAudit] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<PendingPaymentRequest[]>([]);
+  const [activeTab, setActiveTab] = useState<HistoryTab>('payments');
   const [loadingAudit, setLoadingAudit] = useState(false);
+  const [loadingRequests, setLoadingRequests] = useState(false);
+  const [deletingRequestId, setDeletingRequestId] = useState<string | null>(null);
 
   const studentPayments = payments.filter(p => p.studentId === student.id);
 
@@ -41,23 +56,50 @@ export default function PaymentHistory({ student, payments, open, onClose, onEdi
       .select('*')
       .eq('student_id', student.id)
       .order('created_at', { ascending: false });
-    
+
     if (data) setAuditLog(data as AuditEntry[]);
     setLoadingAudit(false);
   };
 
+  const loadPendingRequests = async () => {
+    setLoadingRequests(true);
+    const { data } = await supabase
+      .from('pending_payments')
+      .select('id, payment_type, payment_method, status, created_at, resolved_at')
+      .eq('student_id', student.id)
+      .order('created_at', { ascending: false });
+
+    if (data) setPendingRequests(data as PendingPaymentRequest[]);
+    setLoadingRequests(false);
+  };
+
   useEffect(() => {
-    if (open && showAudit) {
-      loadAuditLog();
-    }
-  }, [open, showAudit, student.id]);
+    if (!open) return;
+    if (activeTab === 'audit') loadAuditLog();
+    if (activeTab === 'requests') loadPendingRequests();
+  }, [open, activeTab, student.id]);
 
   const getActionBadge = (action: string) => {
     switch (action) {
-      case 'INSERT': return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">הוספה</Badge>;
-      case 'UPDATE': return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">עריכה</Badge>;
-      case 'DELETE': return <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">מחיקה</Badge>;
-      default: return <Badge>{action}</Badge>;
+      case 'INSERT': return <Badge>הוספה</Badge>;
+      case 'UPDATE': return <Badge variant="secondary">עריכה</Badge>;
+      case 'DELETE': return <Badge variant="destructive">מחיקה</Badge>;
+      default: return <Badge variant="outline">{action}</Badge>;
+    }
+  };
+
+  const getRequestStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Badge variant="secondary">ממתין לאישור</Badge>;
+      case 'approved':
+        return <Badge>אושר</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive">נדחה</Badge>;
+      case 'deleted_by_admin':
+        return <Badge variant="outline">נמחק ע"י מנהל</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
 
@@ -84,8 +126,31 @@ export default function PaymentHistory({ student, payments, open, onClose, onEdi
     return '';
   };
 
+  const handleDeleteRequest = async (request: PendingPaymentRequest) => {
+    if (!confirm('למחוק את בקשת התשלום הזו? הפעולה לא מוחקת תשלום מאושר.')) return;
+
+    setDeletingRequestId(request.id);
+    const resolvedAt = new Date().toISOString();
+
+    const { error } = await supabase
+      .from('pending_payments')
+      .update({ status: 'deleted_by_admin', resolved_at: resolvedAt })
+      .eq('id', request.id)
+      .eq('student_id', student.id);
+
+    if (error) {
+      toast.error('שגיאה במחיקת בקשה');
+      setDeletingRequestId(null);
+      return;
+    }
+
+    setPendingRequests(prev => prev.map(p => p.id === request.id ? { ...p, status: 'deleted_by_admin', resolved_at: resolvedAt } : p));
+    toast.success('הבקשה הוסרה מתצוגת התלמיד');
+    setDeletingRequestId(null);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) { onClose(); setShowAudit(false); } }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { onClose(); setActiveTab('payments'); } }}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle>💳 תשלומים — {student.name} {student.lastName}</DialogTitle>
@@ -93,22 +158,29 @@ export default function PaymentHistory({ student, payments, open, onClose, onEdi
 
         <div className="flex gap-2 mb-4">
           <Button
-            variant={!showAudit ? 'default' : 'outline'}
+            variant={activeTab === 'payments' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => setShowAudit(false)}
+            onClick={() => setActiveTab('payments')}
           >
             תשלומים ({studentPayments.length})
           </Button>
           <Button
-            variant={showAudit ? 'default' : 'outline'}
+            variant={activeTab === 'requests' ? 'default' : 'outline'}
             size="sm"
-            onClick={() => { setShowAudit(true); loadAuditLog(); }}
+            onClick={() => setActiveTab('requests')}
+          >
+            בקשות תשלום
+          </Button>
+          <Button
+            variant={activeTab === 'audit' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('audit')}
           >
             📋 יומן שינויים
           </Button>
         </div>
 
-        {!showAudit ? (
+        {activeTab === 'payments' && (
           <>
             {studentPayments.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">אין תשלומים לתלמיד זה</div>
@@ -157,7 +229,56 @@ export default function PaymentHistory({ student, payments, open, onClose, onEdi
               </Table>
             )}
           </>
-        ) : (
+        )}
+
+        {activeTab === 'requests' && (
+          <>
+            <p className="text-xs text-muted-foreground mb-3">מחיקת בקשה כאן מסירה אותה מהאזור האישי של התלמיד — בלי למחוק תשלום מאושר.</p>
+            {loadingRequests ? (
+              <div className="text-center text-muted-foreground py-8">טוען בקשות...</div>
+            ) : pendingRequests.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8">אין בקשות תשלום לתלמיד זה</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-right">תאריך בקשה</TableHead>
+                    <TableHead className="text-right">סוג</TableHead>
+                    <TableHead className="text-right">אמצעי</TableHead>
+                    <TableHead className="text-right">סטטוס</TableHead>
+                    <TableHead className="text-right">פעולות</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pendingRequests.map((request) => (
+                    <TableRow key={request.id}>
+                      <TableCell>{format(new Date(request.created_at), 'dd/MM/yyyy HH:mm', { locale: he })}</TableCell>
+                      <TableCell>{request.payment_type}</TableCell>
+                      <TableCell>{request.payment_method}</TableCell>
+                      <TableCell>{getRequestStatusBadge(request.status)}</TableCell>
+                      <TableCell>
+                        {request.status === 'deleted_by_admin' ? (
+                          <span className="text-xs text-muted-foreground">נמחק</span>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDeleteRequest(request)}
+                            disabled={deletingRequestId === request.id}
+                          >
+                            מחק בקשה
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </>
+        )}
+
+        {activeTab === 'audit' && (
           <>
             {loadingAudit ? (
               <div className="text-center text-muted-foreground py-8">טוען יומן...</div>
@@ -187,3 +308,4 @@ export default function PaymentHistory({ student, payments, open, onClose, onEdi
     </Dialog>
   );
 }
+
