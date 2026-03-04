@@ -9,8 +9,9 @@ import logo from '@/assets/logo.png';
 export default function MarkAttendance() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'no-student' | 'already' | 'not-auth'>('loading');
+  const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'no-student' | 'no-class' | 'already' | 'not-auth'>('loading');
   const [message, setMessage] = useState('');
+  const [schedule, setSchedule] = useState('');
 
   useEffect(() => {
     if (authLoading) return;
@@ -32,6 +33,13 @@ export default function MarkAttendance() {
 
         if (data.error === 'no-student') {
           setStatus('no-student');
+          return;
+        }
+
+        if (data.error === 'no-class-now') {
+          setStatus('no-class');
+          setMessage(data.message);
+          setSchedule(data.schedule || '');
           return;
         }
 
@@ -95,6 +103,22 @@ export default function MarkAttendance() {
           <div className="space-y-4">
             <div className="text-6xl">👋</div>
             <h2 className="text-xl font-bold text-primary">{message}</h2>
+            <Button onClick={() => navigate('/')} variant="outline" className="w-full">
+              חזור לדף הראשי
+            </Button>
+          </div>
+        )}
+
+        {status === 'no-class' && (
+          <div className="space-y-4">
+            <div className="text-6xl">📅</div>
+            <h2 className="text-xl font-bold text-foreground">{message}</h2>
+            {schedule && (
+              <div className="bg-accent/50 rounded-lg p-4 text-right">
+                <p className="font-semibold text-sm text-foreground mb-2">לוח השיעורים שלך:</p>
+                <p className="text-sm text-muted-foreground whitespace-pre-line">{schedule}</p>
+              </div>
+            )}
             <Button onClick={() => navigate('/')} variant="outline" className="w-full">
               חזור לדף הראשי
             </Button>
