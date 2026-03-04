@@ -306,14 +306,14 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
         <Card className="p-4 sm:p-6 card-hover backdrop-blur-sm">
           <div className="space-y-2">
             <div>
-              <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground">זכויות לתלמידים</h3>
-              <p className="text-lg sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+              <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground">אני חייב לתלמידים</h3>
+              <p className="text-lg sm:text-2xl font-bold text-red-600 dark:text-red-400">
                 {formatILS(balanceSummary.totalCredits)}
               </p>
             </div>
             <div>
-              <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground">חובות מתלמידים</h3>
-              <p className="text-lg sm:text-2xl font-bold text-red-600 dark:text-red-400">
+              <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground">תלמידים חייבים לי</h3>
+              <p className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400">
                 {formatILS(balanceSummary.totalDebts)}
               </p>
             </div>
