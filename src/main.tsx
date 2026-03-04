@@ -8,6 +8,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import App from "./App.tsx";
 import Auth from "./pages/Auth";
 import StudentAuth from "./pages/StudentAuth";
+import ScanAttendance from "./pages/ScanAttendance";
 import NotFound from "./pages/NotFound";
 import "./index.css";
 
@@ -23,6 +24,7 @@ createRoot(document.getElementById("root")!).render(
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/student-auth" element={<StudentAuth />} />
+            <Route path="/scan/:sessionId" element={<ScanAttendance />} />
             <Route path="/" element={<App />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

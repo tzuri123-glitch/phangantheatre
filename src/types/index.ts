@@ -10,6 +10,7 @@ export interface Student {
   siblingId?: string;
   className: string;
   status: 'חדש' | 'פעיל' | 'בהקפאה' | 'לא פעיל';
+  linkedEmail?: string;
 }
 
 export interface Payment {

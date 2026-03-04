@@ -12,10 +12,12 @@ import {
 } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { getPaymentStatusForSession, getStatusColor, getStatusBadge } from '@/lib/paymentStatus';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface AttendanceProps {
   sessions: Session[];
@@ -32,6 +34,7 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
   const { user } = useAuth();
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({});
   const [sessionSearchQueries, setSessionSearchQueries] = useState<Record<string, string>>({});
+  const [showQrDialog, setShowQrDialog] = useState<string | null>(null);
   const subscriptions: any[] = [];
 
   const toggleSession = (sessionId: string) => {
@@ -64,9 +67,11 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
     <div className="space-y-4 sm:space-y-6 p-2 sm:p-6">
       <div className="flex justify-between items-center">
         <h2 className="text-xl sm:text-3xl font-bold text-foreground">נוכחות</h2>
-        <Button onClick={onCreateSession} size="sm" className="bg-magenta hover:bg-magenta-hover text-magenta-foreground text-xs sm:text-base px-3 sm:px-4">
-          ➕ יצירת שיעור
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={onCreateSession} size="sm" className="bg-magenta hover:bg-magenta-hover text-magenta-foreground text-xs sm:text-base px-3 sm:px-4">
+            ➕ יצירת שיעור
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -81,6 +86,17 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
                 {session.trial && ' (שיעור ניסיון)'}
               </span>
               <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowQrDialog(session.id);
+                  }}
+                  title="הצג QR לנוכחות"
+                >
+                  📱
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -186,6 +202,32 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
           </Card>
         ))}
       </div>
+
+      {/* QR Code Dialog */}
+      <Dialog open={!!showQrDialog} onOpenChange={(open) => { if (!open) setShowQrDialog(null); }}>
+        <DialogContent className="max-w-sm text-center" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>QR Code לנוכחות</DialogTitle>
+          </DialogHeader>
+          {showQrDialog && (
+            <div className="space-y-4">
+              <p className="text-muted-foreground text-sm">
+                התלמידים סורקים את הקוד הזה בכניסה לשיעור
+              </p>
+              <div className="flex justify-center p-4 bg-white rounded-xl">
+                <QRCodeSVG
+                  value={`${window.location.origin}/scan/${showQrDialog}`}
+                  size={250}
+                  level="H"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground break-all">
+                {window.location.origin}/scan/{showQrDialog}
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

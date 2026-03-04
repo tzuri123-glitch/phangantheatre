@@ -7,6 +7,7 @@ import Dashboard from '@/components/Dashboard';
 import Students from '@/components/Students';
 import Payments from '@/components/Payments';
 import Attendance from '@/components/Attendance';
+import AdminSettings from '@/components/AdminSettings';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -69,6 +70,22 @@ export default function Index() {
         .eq('user_id', user.id);
       
       if (studentsData) {
+        // Get linked emails from profiles
+        const authUserIds = studentsData
+          .map(s => (s as any).auth_user_id)
+          .filter(Boolean);
+        
+        let emailMap: Record<string, string> = {};
+        if (authUserIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, email')
+            .in('id', authUserIds);
+          if (profiles) {
+            profiles.forEach(p => { if (p.email) emailMap[p.id] = p.email; });
+          }
+        }
+
         setStudents(studentsData.map(s => ({
           id: s.id,
           name: s.name,
@@ -80,7 +97,8 @@ export default function Index() {
           isSibling: s.is_sibling || false,
           siblingId: s.sibling_id || undefined,
           className: s.class_name,
-          status: s.status as Student['status']
+          status: s.status as Student['status'],
+          linkedEmail: (s as any).auth_user_id ? emailMap[(s as any).auth_user_id] || '' : undefined,
         })).sort((a, b) => a.name.localeCompare(b.name, 'he')));
       }
       
@@ -393,6 +411,7 @@ export default function Index() {
             toast.success('תלמיד הוסר מהשיעור!');
           }}
         />}
+        {tab === 'settings' && <AdminSettings />}
       </main>
 
       <Dialog open={showStudentModal} onOpenChange={(open) => { if (!open) { setShowStudentModal(false); setEditingStudent(null); } }}>
@@ -439,6 +458,16 @@ export default function Index() {
             )}
             <div className="space-y-2"><Label>שיוך חוג</Label><Select value={editingStudent.className} onValueChange={(v) => setEditingStudent({ ...editingStudent, className: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CLASS_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>סטטוס</Label><Select value={editingStudent.status} onValueChange={(v: Student['status']) => setEditingStudent({ ...editingStudent, status: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="חדש">חדש</SelectItem><SelectItem value="פעיל">פעיל</SelectItem><SelectItem value="בהקפאה">בהקפאה</SelectItem><SelectItem value="לא פעיל">לא פעיל</SelectItem></SelectContent></Select></div>
+            <div className="space-y-2">
+              <Label>קישור לחשבון תלמיד (אימייל)</Label>
+              <Input 
+                type="email" 
+                placeholder="אימייל התלמיד/הורה שנרשם למערכת" 
+                value={editingStudent.linkedEmail || ''} 
+                onChange={(e) => setEditingStudent({ ...editingStudent, linkedEmail: e.target.value })} 
+              />
+              <p className="text-xs text-muted-foreground">הזן את האימייל שבו התלמיד/הורה נרשם לאזור האישי</p>
+            </div>
             <div className="flex gap-3">
               <Button 
                 className="flex-1" 
@@ -546,6 +575,19 @@ export default function Index() {
                     setStudents((prev) => prev.map((s) => s.id === editingStudent.id ? editingStudent : s).sort((a, b) => a.name.localeCompare(b.name, 'he'))); 
                     toast.success('תלמיד עודכן!');
                   }
+                  
+                  // Link student to auth user if email provided
+                  if (editingStudent.linkedEmail) {
+                    const { data: linkResult, error: linkError } = await supabase.functions.invoke('link-student', {
+                      body: { email: editingStudent.linkedEmail, studentId: savedStudentId }
+                    });
+                    if (linkError || linkResult?.error) {
+                      toast.error(linkResult?.message || 'שגיאה בקישור חשבון');
+                    } else {
+                      toast.success('חשבון קושר בהצלחה!');
+                    }
+                  }
+                  
                   setShowStudentModal(false); 
                   setEditingStudent(null);
                   // מעבר לעמוד תשלומים והוספת תשלום
@@ -668,6 +710,20 @@ export default function Index() {
                     setStudents((prev) => prev.map((s) => s.id === editingStudent.id ? editingStudent : s)); 
                     toast.success('תלמיד עודכן!'); 
                   }
+                  
+                  // Link student to auth user if email provided
+                  const studentIdToLink = editingStudent.id || '';
+                  if (editingStudent.linkedEmail && studentIdToLink) {
+                    const { data: linkResult, error: linkError } = await supabase.functions.invoke('link-student', {
+                      body: { email: editingStudent.linkedEmail, studentId: studentIdToLink }
+                    });
+                    if (linkError || linkResult?.error) {
+                      toast.error(linkResult?.message || 'שגיאה בקישור חשבון');
+                    } else {
+                      toast.success('חשבון קושר בהצלחה!');
+                    }
+                  }
+                  
                   setShowStudentModal(false); 
                   setEditingStudent(null); 
                 }}
