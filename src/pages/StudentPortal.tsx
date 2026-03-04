@@ -221,6 +221,8 @@ export default function StudentPortal() {
   const [regParentName, setRegParentName] = useState('');
   const [regParentLastName, setRegParentLastName] = useState('');
   const [regParentPhone, setRegParentPhone] = useState('');
+  const [regStudentPhone, setRegStudentPhone] = useState('');
+  const [regBirthDate, setRegBirthDate] = useState('');
   const [regIsSibling, setRegIsSibling] = useState(false);
   const [regSiblingId, setRegSiblingId] = useState('');
   const [existingStudents, setExistingStudents] = useState<{ id: string; name: string; last_name: string | null }[]>([]);
@@ -237,7 +239,11 @@ export default function StudentPortal() {
 
   const handleCompleteRegistration = async () => {
     if (!regName.trim() || !regParentName.trim() || !regParentLastName.trim() || !regParentPhone.trim()) {
-      toast.error('יש למלא את כל השדות');
+      toast.error('יש למלא את כל השדות המסומנים בכוכבית');
+      return;
+    }
+    if (!regBirthDate) {
+      toast.error('יש למלא תאריך לידה');
       return;
     }
     if (!regClass) {
@@ -252,6 +258,8 @@ export default function StudentPortal() {
           parentName: regParentName.trim(),
           parentLastName: regParentLastName.trim(),
           parentPhone: regParentPhone.trim(),
+          studentPhone: regStudentPhone.trim() || null,
+          birthDate: regBirthDate || null,
           siblingId: regIsSibling && regSiblingId ? regSiblingId : null,
           className: regClass,
         },
@@ -341,6 +349,14 @@ export default function StudentPortal() {
                 <div>
                   <label className="block text-xs font-medium mb-1 text-foreground">שם התלמיד *</label>
                   <Input value={regName} onChange={(e) => setRegName(e.target.value)} placeholder="שם התלמיד" />
+                </div>
+                <div className="mt-3">
+                  <label className="block text-xs font-medium mb-1 text-foreground">תאריך לידה *</label>
+                  <Input type="date" value={regBirthDate} onChange={(e) => setRegBirthDate(e.target.value)} />
+                </div>
+                <div className="mt-3">
+                  <label className="block text-xs font-medium mb-1 text-foreground">טלפון תלמיד</label>
+                  <Input type="tel" value={regStudentPhone} onChange={(e) => setRegStudentPhone(e.target.value)} placeholder="טלפון התלמיד (לא חובה)" />
                 </div>
                 <div className="mt-3">
                   <label className="block text-xs font-medium mb-2 text-foreground">בחר קבוצה *</label>

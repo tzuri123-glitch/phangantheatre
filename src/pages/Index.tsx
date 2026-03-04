@@ -97,7 +97,7 @@ export default function Index() {
         isSibling: s.is_sibling || false,
         siblingId: s.sibling_id || undefined,
         className: s.class_name,
-        status: s.status as Student['status'],
+        status: (s.status === 'חדש' || s.status === 'לא פעיל' ? 'פעיל' : s.status) as Student['status'],
         linkedEmail: (s as any).auth_user_id ? emailMap[(s as any).auth_user_id] || '' : undefined,
       })).sort((a, b) => a.name.localeCompare(b.name, 'he')));
     }
@@ -266,12 +266,12 @@ export default function Index() {
       <TabNavigation activeTab={tab} onTabChange={setTab} />
       <main className="container mx-auto px-2 sm:px-4">
         <PendingPayments onPaymentApproved={loadData} />
-        {tab === 'dashboard' && <Dashboard students={students} payments={payments} onAddStudent={() => { studentFormRef.current = { id: '', name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, siblingId: undefined, className: CLASS_OPTIONS[0], status: 'חדש' }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} />}
+        {tab === 'dashboard' && <Dashboard students={students} payments={payments} onAddStudent={() => { studentFormRef.current = { id: '', name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, siblingId: undefined, className: CLASS_OPTIONS[0], status: 'פעיל' }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} />}
         {tab === 'students' && <Students 
           students={students}
           payments={payments.map(p => ({ studentId: p.studentId, amount: p.amount, type: p.type, discount: p.discount || 0, date: p.date }))}
           onAddStudent={() => {
-            studentFormRef.current = { id: '', name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, siblingId: undefined, className: CLASS_OPTIONS[0], status: 'חדש' }; 
+            studentFormRef.current = { id: '', name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, siblingId: undefined, className: CLASS_OPTIONS[0], status: 'פעיל' }; 
             setEditingStudent(studentFormRef.current); 
             setShowStudentModal(true); 
           }} 
@@ -384,7 +384,7 @@ export default function Index() {
             
             // עדכון סטטוס התלמיד בהתאם לסטטוס הנוכחות
             if (status === 'לא באי' || status === 'עזב') {
-              const newStatus = status === 'לא באי' ? 'בהקפאה' : 'לא פעיל';
+              const newStatus = 'בהקפאה' as const;
               
               const { error: studentError } = await supabase
                 .from('students')
@@ -476,7 +476,7 @@ export default function Index() {
               </div>
             )}
             <div className="space-y-2"><Label>שיוך חוג</Label><Select value={editingStudent.className} onValueChange={(v) => setEditingStudent({ ...editingStudent, className: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CLASS_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}</SelectContent></Select></div>
-            <div className="space-y-2"><Label>סטטוס</Label><Select value={editingStudent.status} onValueChange={(v: Student['status']) => setEditingStudent({ ...editingStudent, status: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="חדש">חדש</SelectItem><SelectItem value="פעיל">פעיל</SelectItem><SelectItem value="בהקפאה">בהקפאה</SelectItem><SelectItem value="לא פעיל">לא פעיל</SelectItem></SelectContent></Select></div>
+            <div className="space-y-2"><Label>סטטוס</Label><Select value={editingStudent.status} onValueChange={(v: Student['status']) => setEditingStudent({ ...editingStudent, status: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="פעיל">פעיל</SelectItem><SelectItem value="בהקפאה">בהקפאה</SelectItem></SelectContent></Select></div>
             <div className="space-y-2">
               <Label>קישור לחשבון תלמיד (אימייל)</Label>
               <Input 
