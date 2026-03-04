@@ -131,24 +131,39 @@ Deno.serve(async (req) => {
       .single();
 
     if (!session) {
+      // Use upsert to handle race conditions - unique constraint prevents duplicates
       const { data: newSession, error: sessionError } = await adminClient
         .from('sessions')
-        .insert({
+        .upsert({
           user_id: adminUserId,
           session_date: today,
           class_name: student.class_name,
           is_trial: false,
-        })
+        }, { onConflict: 'user_id,session_date,class_name' })
         .select('id')
         .single();
 
       if (sessionError || !newSession) {
-        return new Response(JSON.stringify({ error: 'session-error', message: 'שגיאה ביצירת שיעור' }), {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        // Try to fetch it if upsert failed (another request already created it)
+        const { data: existingSession } = await adminClient
+          .from('sessions')
+          .select('id')
+          .eq('user_id', adminUserId)
+          .eq('session_date', today)
+          .eq('class_name', student.class_name)
+          .limit(1)
+          .single();
+
+        if (!existingSession) {
+          return new Response(JSON.stringify({ error: 'session-error', message: 'שגיאה ביצירת שיעור' }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        session = existingSession;
+      } else {
+        session = newSession;
       }
-      session = newSession;
     }
 
     // Check if already marked

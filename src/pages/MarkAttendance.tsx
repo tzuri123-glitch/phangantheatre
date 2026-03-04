@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,6 +12,7 @@ export default function MarkAttendance() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'no-student' | 'no-class' | 'already' | 'not-auth'>('loading');
   const [message, setMessage] = useState('');
   const [schedule, setSchedule] = useState('');
+  const calledRef = useRef(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -20,6 +21,9 @@ export default function MarkAttendance() {
       setStatus('not-auth');
       return;
     }
+
+    if (calledRef.current) return;
+    calledRef.current = true;
 
     const markAttendance = async () => {
       try {
