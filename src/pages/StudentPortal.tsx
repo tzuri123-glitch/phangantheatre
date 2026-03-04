@@ -49,13 +49,16 @@ interface PaymentRecord {
   payment_type: string;
   payment_method: string;
   note: string | null;
+  payment_proof_url: string | null;
 }
 
 interface PendingPayment {
   id: string;
   payment_type: string;
+  payment_method: string;
   status: string;
   created_at: string;
+  payment_proof_url: string | null;
 }
 
 export default function StudentPortal() {
@@ -91,7 +94,8 @@ export default function StudentPortal() {
   const [selectedPaymentType, setSelectedPaymentType] = useState<string>('');
   const [promptPayUrl, setPromptPayUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [viewingProofUrl, setViewingProofUrl] = useState<string | null>(null);
   useEffect(() => {
     if (!user) return;
 
@@ -126,11 +130,11 @@ export default function StudentPortal() {
       // Payments
       const { data: paymentsData } = await supabase
         .from('payments')
-        .select('id, amount, payment_date, payment_type, payment_method, note')
+        .select('id, amount, payment_date, payment_type, payment_method, note, payment_proof_url')
         .eq('student_id', studentData.id)
         .order('payment_date', { ascending: false });
 
-      if (paymentsData) setPayments(paymentsData);
+      if (paymentsData) setPayments(paymentsData as PaymentRecord[]);
 
       // Pending payments
       const { data: pendingData } = await supabase
@@ -202,6 +206,7 @@ export default function StudentPortal() {
           payment_type: newPayment.payment_type,
           payment_method: newPayment.payment_method,
           note: newPayment.note,
+          payment_proof_url: newPayment.payment_proof_url,
         }, ...prev]);
       })
       .subscribe();
@@ -235,6 +240,53 @@ export default function StudentPortal() {
       setShowPaymentDialog(false);
       setPaymentMethod(null);
       setSelectedPaymentType('');
+    } catch (error: any) {
+      toast.error('שגיאה: ' + error.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handlePromptPayPaymentRequest = async () => {
+    if (!student || !selectedPaymentType || !proofFile) {
+      toast.error('בחר סוג תשלום והעלה צילום מסך');
+      return;
+    }
+    setSubmitting(true);
+
+    try {
+      // Upload proof image
+      const fileExt = proofFile.name.split('.').pop();
+      const filePath = `${student.id}/${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from('payment-proofs')
+        .upload(filePath, proofFile, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from('payment-proofs').getPublicUrl(filePath);
+      const proofUrl = urlData.publicUrl;
+
+      // Create pending payment with proof
+      const { data, error } = await supabase
+        .from('pending_payments')
+        .insert({
+          student_id: student.id,
+          admin_user_id: student.user_id,
+          payment_type: selectedPaymentType,
+          payment_method: 'סקאן',
+          payment_proof_url: proofUrl,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setPendingPayments(prev => [data as PendingPayment, ...prev]);
+      toast.success('אישור התשלום נשלח למנהל! ⏳');
+      setShowPaymentDialog(false);
+      setPaymentMethod(null);
+      setSelectedPaymentType('');
+      setProofFile(null);
     } catch (error: any) {
       toast.error('שגיאה: ' + error.message);
     } finally {
@@ -602,6 +654,7 @@ export default function StudentPortal() {
                         <TableRow>
                           <TableHead className="text-right">תאריך</TableHead>
                           <TableHead className="text-right">סוג</TableHead>
+                          <TableHead className="text-right">אישור</TableHead>
                           <TableHead className="text-right">סטטוס</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -612,6 +665,16 @@ export default function StudentPortal() {
                             <TableRow key={p.id}>
                               <TableCell>{new Date(p.created_at).toLocaleDateString('he-IL')}</TableCell>
                               <TableCell>{p.payment_type}</TableCell>
+                              <TableCell>
+                                {p.payment_proof_url ? (
+                                  <img
+                                    src={p.payment_proof_url}
+                                    alt="אישור"
+                                    className="w-10 h-10 rounded object-cover cursor-pointer hover:opacity-80"
+                                    onClick={() => setViewingProofUrl(p.payment_proof_url)}
+                                  />
+                                ) : '-'}
+                              </TableCell>
                               <TableCell><Badge className={s.className} variant="outline">{s.label}</Badge></TableCell>
                             </TableRow>
                           );
@@ -631,17 +694,28 @@ export default function StudentPortal() {
                         <TableHead className="text-right">סוג</TableHead>
                         <TableHead className="text-right">שיטה</TableHead>
                         <TableHead className="text-right">סכום</TableHead>
+                        <TableHead className="text-right">אישור</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {payments.length === 0 ? (
-                        <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">אין תשלומים מאושרים עדיין</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">אין תשלומים מאושרים עדיין</TableCell></TableRow>
                       ) : payments.map((p) => (
                         <TableRow key={p.id}>
                           <TableCell>{p.payment_date}</TableCell>
                           <TableCell>{p.payment_type}</TableCell>
                           <TableCell>{p.payment_method}</TableCell>
                           <TableCell>฿{p.amount}</TableCell>
+                          <TableCell>
+                            {p.payment_proof_url ? (
+                              <img
+                                src={p.payment_proof_url}
+                                alt="אישור"
+                                className="w-10 h-10 rounded object-cover cursor-pointer hover:opacity-80"
+                                onClick={() => setViewingProofUrl(p.payment_proof_url)}
+                              />
+                            ) : '-'}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -897,21 +971,81 @@ export default function StudentPortal() {
             <div className="space-y-4 text-center">
               <div className="text-4xl">📱</div>
               <h3 className="font-bold text-lg">PromptPay</h3>
-              <p className="text-muted-foreground text-sm">סרוק את הקוד או הורד את התמונה לביצוע העברה</p>
-              {promptPayUrl ? (
+              <p className="text-muted-foreground text-sm">סרוק את הקוד, בצע העברה ולאחר מכן העלה צילום מסך של האישור</p>
+              {promptPayUrl && (
                 <div className="space-y-3">
                   <img src={promptPayUrl} alt="PromptPay QR" className="mx-auto max-w-[250px] rounded-lg shadow-lg" />
                   <a href={promptPayUrl} download="promptpay-qr.png" className="inline-block">
                     <Button variant="outline" size="sm">📥 הורד תמונה</Button>
                   </a>
                 </div>
-              ) : (
+              )}
+              {!promptPayUrl && (
                 <div className="p-4 bg-muted rounded-lg">
                   <p className="text-muted-foreground">קוד PromptPay עדיין לא הוגדר. פנה למנהל.</p>
                 </div>
               )}
-              <Button variant="ghost" onClick={() => setPaymentMethod(null)} className="w-full">← חזור</Button>
+
+              <div className="border-t border-border pt-4 space-y-3 text-right">
+                <h4 className="font-bold text-sm">לאחר התשלום:</h4>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium">סוג תשלום</label>
+                  <Select value={selectedPaymentType} onValueChange={setSelectedPaymentType}>
+                    <SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="חד פעמי">חד פעמי</SelectItem>
+                      <SelectItem value="חודשי">חודשי (מנוי)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium">העלה צילום מסך של אישור התשלום</label>
+                  <label className="block">
+                    <div className={`border-2 border-dashed rounded-lg p-4 cursor-pointer transition-colors ${proofFile ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-border hover:border-primary'}`}>
+                      {proofFile ? (
+                        <div className="flex items-center gap-2 justify-center">
+                          <span className="text-green-600">✅</span>
+                          <span className="text-sm font-medium">{proofFile.name}</span>
+                          <button type="button" onClick={(e) => { e.preventDefault(); setProofFile(null); }} className="text-destructive text-xs hover:underline">הסר</button>
+                        </div>
+                      ) : (
+                        <div className="text-center">
+                          <span className="text-2xl">📷</span>
+                          <p className="text-sm text-muted-foreground mt-1">לחץ לבחירת תמונה מהגלריה</p>
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+                      />
+                    </div>
+                  </label>
+                </div>
+                <Button
+                  className="w-full"
+                  onClick={handlePromptPayPaymentRequest}
+                  disabled={submitting || !selectedPaymentType || !proofFile}
+                >
+                  {submitting ? 'שולח...' : '📤 שלח אישור תשלום למנהל'}
+                </Button>
+              </div>
+              <Button variant="ghost" onClick={() => { setPaymentMethod(null); setProofFile(null); }} className="w-full">← חזור</Button>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment proof viewer dialog */}
+      <Dialog open={!!viewingProofUrl} onOpenChange={(open) => { if (!open) setViewingProofUrl(null); }}>
+        <DialogContent className="max-w-md p-2" dir="rtl">
+          {viewingProofUrl && (
+            <img
+              src={viewingProofUrl}
+              alt="אישור תשלום"
+              className="w-full max-h-[70vh] object-contain rounded-lg"
+            />
           )}
         </DialogContent>
       </Dialog>

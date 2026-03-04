@@ -18,6 +18,7 @@ interface PendingPayment {
   amount: number | null;
   status: string;
   created_at: string;
+  payment_proof_url: string | null;
   student_name?: string;
   student_last_name?: string;
   is_sibling?: boolean;
@@ -34,7 +35,7 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
   const [approveDialog, setApproveDialog] = useState<PendingPayment | null>(null);
   const [approveAmount, setApproveAmount] = useState(0);
   const [approveNote, setApproveNote] = useState('');
-
+  const [viewingProofUrl, setViewingProofUrl] = useState<string | null>(null);
   useEffect(() => {
     if (!user) return;
     loadPending();
@@ -118,6 +119,7 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
           payment_date: new Date().toISOString().slice(0, 10),
           amount: approveAmount,
           note: approveNote || 'אושר מבקשת תלמיד',
+          payment_proof_url: approveDialog.payment_proof_url || null,
         });
 
       setPending(prev => prev.filter(p => p.id !== approveDialog.id));
@@ -179,15 +181,25 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
           <div className="space-y-2">
             {pending.map((p) => (
               <div key={p.id} className="flex items-center justify-between bg-background rounded-lg p-3 shadow-sm border">
-                <div>
-                  <span className="font-medium">{p.student_name} {p.student_last_name}</span>
-                  {p.is_sibling && <span className="text-xs text-primary mr-1">👫</span>}
-                  <span className="text-muted-foreground text-sm mr-2">
-                    – {p.payment_type} ({p.payment_method})
-                  </span>
-                  <span className="text-xs text-muted-foreground block">
-                    {new Date(p.created_at).toLocaleString('he-IL')}
-                  </span>
+                <div className="flex items-center gap-3">
+                  {p.payment_proof_url && (
+                    <img
+                      src={p.payment_proof_url}
+                      alt="אישור"
+                      className="w-12 h-12 rounded object-cover cursor-pointer hover:opacity-80 border"
+                      onClick={() => setViewingProofUrl(p.payment_proof_url)}
+                    />
+                  )}
+                  <div>
+                    <span className="font-medium">{p.student_name} {p.student_last_name}</span>
+                    {p.is_sibling && <span className="text-xs text-primary mr-1">👫</span>}
+                    <span className="text-muted-foreground text-sm mr-2">
+                      – {p.payment_type} ({p.payment_method})
+                    </span>
+                    <span className="text-xs text-muted-foreground block">
+                      {new Date(p.created_at).toLocaleString('he-IL')}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -224,6 +236,18 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
               סוג: <strong>{approveDialog?.payment_type}</strong> | אמצעי: <strong>{approveDialog?.payment_method}</strong>
               {approveDialog?.is_sibling && <span className="text-primary mr-2">👫 תלמיד אח/אחות — מחיר מוזל</span>}
             </div>
+
+            {approveDialog?.payment_proof_url && (
+              <div className="space-y-1">
+                <Label>אישור תשלום מהתלמיד:</Label>
+                <img
+                  src={approveDialog.payment_proof_url}
+                  alt="אישור תשלום"
+                  className="w-full max-h-[200px] object-contain rounded-lg border cursor-pointer hover:opacity-80"
+                  onClick={() => setViewingProofUrl(approveDialog.payment_proof_url)}
+                />
+              </div>
+            )}
             
             {balanceInfo && (
               <div className="text-sm bg-muted rounded-lg px-3 py-2">
@@ -279,6 +303,19 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment proof viewer */}
+      <Dialog open={!!viewingProofUrl} onOpenChange={(open) => { if (!open) setViewingProofUrl(null); }}>
+        <DialogContent className="max-w-md p-2" dir="rtl">
+          {viewingProofUrl && (
+            <img
+              src={viewingProofUrl}
+              alt="אישור תשלום"
+              className="w-full max-h-[70vh] object-contain rounded-lg"
+            />
+          )}
         </DialogContent>
       </Dialog>
     </>
