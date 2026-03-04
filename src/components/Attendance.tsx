@@ -68,6 +68,14 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
       <div className="flex justify-between items-center">
         <h2 className="text-xl sm:text-3xl font-bold text-foreground">נוכחות</h2>
         <div className="flex gap-2">
+          <Button
+            onClick={() => window.open('/print-qr', '_blank')}
+            size="sm"
+            variant="outline"
+            className="text-xs sm:text-base px-3 sm:px-4"
+          >
+            🖨️ QR להדפסה
+          </Button>
           <Button onClick={onCreateSession} size="sm" className="bg-magenta hover:bg-magenta-hover text-magenta-foreground text-xs sm:text-base px-3 sm:px-4">
             ➕ יצירת שיעור
           </Button>

@@ -7,7 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Camera, Eye, EyeOff } from 'lucide-react';
+import { Camera, Eye, EyeOff, ScanLine } from 'lucide-react';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -18,6 +18,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import logo from '@/assets/logo.png';
+import QrScanner from '@/components/QrScanner';
 import { toast } from 'sonner';
 
 interface StudentRecord {
@@ -76,6 +77,7 @@ export default function StudentPortal() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [viewingPhoto, setViewingPhoto] = useState(false);
+  const [showQrScanner, setShowQrScanner] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
@@ -529,6 +531,9 @@ export default function StudentPortal() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">{student.status === 'חדש' ? 'פעיל' : (student.status || 'פעיל')}</Badge>
+                  <Button size="sm" onClick={() => setShowQrScanner(true)} className="bg-gradient-to-l from-green-600 to-green-500 text-white">
+                    <ScanLine size={16} /> נוכחות
+                  </Button>
                   <Button size="sm" onClick={() => setShowPaymentDialog(true)} className="bg-gradient-to-l from-primary to-primary-hover text-white">
                     💰 שלם
                   </Button>
@@ -836,6 +841,21 @@ export default function StudentPortal() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* QR Scanner */}
+      <QrScanner
+        open={showQrScanner}
+        onClose={() => setShowQrScanner(false)}
+        onScan={(url) => {
+          setShowQrScanner(false);
+          if (url.includes('/mark-attendance') || url.includes('/scan/')) {
+            const path = new URL(url).pathname;
+            window.location.href = path;
+          } else {
+            toast.error('קוד QR לא תקין');
+          }
+        }}
+      />
 
       {/* Payment Dialog */}
       <Dialog open={showPaymentDialog} onOpenChange={(open) => { if (!open) { setShowPaymentDialog(false); setPaymentMethod(null); setSelectedPaymentType(''); } }}>
