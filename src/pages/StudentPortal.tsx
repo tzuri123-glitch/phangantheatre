@@ -198,6 +198,7 @@ export default function StudentPortal() {
   const [regSiblingId, setRegSiblingId] = useState('');
   const [existingStudents, setExistingStudents] = useState<{ id: string; name: string; last_name: string | null }[]>([]);
   const [registering, setRegistering] = useState(false);
+  const [regClass, setRegClass] = useState('');
 
   useEffect(() => {
     if (!student && !loading && regIsSibling) {
@@ -212,6 +213,10 @@ export default function StudentPortal() {
       toast.error('יש למלא את כל השדות');
       return;
     }
+    if (!regClass) {
+      toast.error('יש לבחור קבוצה');
+      return;
+    }
     setRegistering(true);
     try {
       const { data: result, error: fnError } = await supabase.functions.invoke('register-student', {
@@ -221,6 +226,7 @@ export default function StudentPortal() {
           parentLastName: regParentLastName.trim(),
           parentPhone: regParentPhone.trim(),
           siblingId: regIsSibling && regSiblingId ? regSiblingId : null,
+          className: regClass,
         },
       });
       if (fnError) throw fnError;
@@ -308,6 +314,19 @@ export default function StudentPortal() {
                 <div>
                   <label className="block text-xs font-medium mb-1 text-foreground">שם התלמיד *</label>
                   <Input value={regName} onChange={(e) => setRegName(e.target.value)} placeholder="שם התלמיד" />
+                </div>
+                <div className="mt-3">
+                  <label className="block text-xs font-medium mb-2 text-foreground">בחר קבוצה *</label>
+                  <div className="flex gap-3">
+                    <button type="button" onClick={() => setRegClass('תיאטרון 7-9')}
+                      className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${regClass === 'תיאטרון 7-9' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
+                      🎭 גילאי 7-9
+                    </button>
+                    <button type="button" onClick={() => setRegClass('תיאטרון 10-14')}
+                      className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${regClass === 'תיאטרון 10-14' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
+                      🎭 גילאי 10-14
+                    </button>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 mt-3">
                   <Checkbox id="regSibling" checked={regIsSibling} onCheckedChange={(checked) => { setRegIsSibling(checked === true); if (!checked) setRegSiblingId(''); }} />

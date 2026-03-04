@@ -25,6 +25,7 @@ export default function StudentAuth() {
   const [parentPhone, setParentPhone] = useState('');
   const [studentName, setStudentName] = useState('');
   const [isSibling, setIsSibling] = useState(false);
+  const [selectedClass, setSelectedClass] = useState('');
   const [siblingId, setSiblingId] = useState('');
   const [existingStudents, setExistingStudents] = useState<ExistingStudent[]>([]);
   const [loading, setLoading] = useState(false);
@@ -60,6 +61,9 @@ export default function StudentAuth() {
         if (!studentName.trim()) {
           throw new Error('יש למלא את שם התלמיד');
         }
+        if (!selectedClass) {
+          throw new Error('יש לבחור קבוצה');
+        }
 
         // 1. Sign up (student record will be created after email confirmation + login)
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -89,6 +93,7 @@ export default function StudentAuth() {
             parentLastName: parentLastName.trim(),
             parentPhone: parentPhone.trim(),
             siblingId: isSibling && siblingId ? siblingId : null,
+            className: selectedClass,
           },
         });
 
@@ -200,6 +205,20 @@ export default function StudentAuth() {
                     required
                     placeholder="שם התלמיד"
                   />
+                </div>
+
+                <div className="mt-3">
+                  <label className="block text-xs font-medium mb-2 text-foreground">בחר קבוצה *</label>
+                  <div className="flex gap-3">
+                    <button type="button" onClick={() => setSelectedClass('תיאטרון 7-9')}
+                      className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${selectedClass === 'תיאטרון 7-9' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
+                      🎭 גילאי 7-9
+                    </button>
+                    <button type="button" onClick={() => setSelectedClass('תיאטרון 10-14')}
+                      className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${selectedClass === 'תיאטרון 10-14' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
+                      🎭 גילאי 10-14
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2 mt-3">
