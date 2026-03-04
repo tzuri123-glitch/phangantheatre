@@ -113,7 +113,9 @@ export default function StudentPortal() {
         .eq('student_id', studentData.id)
         .order('created_at', { ascending: false });
 
-      if (pendingData) setPendingPayments(pendingData);
+      if (pendingData) {
+        setPendingPayments((pendingData as PendingPayment[]).filter(p => p.status !== 'deleted_by_admin'));
+      }
 
       // PromptPay QR
       const { data: files } = await supabase.storage
@@ -143,8 +145,17 @@ export default function StudentPortal() {
         table: 'pending_payments',
         filter: `student_id=eq.${student.id}`,
       }, (payload) => {
-        const updated = payload.new as any;
-        setPendingPayments(prev => prev.map(p => p.id === updated.id ? updated : p));
+        const updated = payload.new as PendingPayment;
+        setPendingPayments(prev => {
+          if (updated.status === 'deleted_by_admin') {
+            return prev.filter(p => p.id !== updated.id);
+          }
+
+          const exists = prev.some(p => p.id === updated.id);
+          if (!exists) return [updated, ...prev];
+
+          return prev.map(p => p.id === updated.id ? updated : p);
+        });
         if (updated.status === 'approved') {
           toast.success('התשלום שלך אושר! ✅');
         } else if (updated.status === 'rejected') {
