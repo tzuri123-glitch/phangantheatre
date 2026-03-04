@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -187,6 +189,52 @@ export default function StudentPortal() {
     }
   };
 
+  // Registration completion form state
+  const [regName, setRegName] = useState('');
+  const [regParentName, setRegParentName] = useState('');
+  const [regParentLastName, setRegParentLastName] = useState('');
+  const [regParentPhone, setRegParentPhone] = useState('');
+  const [regIsSibling, setRegIsSibling] = useState(false);
+  const [regSiblingId, setRegSiblingId] = useState('');
+  const [existingStudents, setExistingStudents] = useState<{ id: string; name: string; last_name: string | null }[]>([]);
+  const [registering, setRegistering] = useState(false);
+
+  useEffect(() => {
+    if (!student && !loading && regIsSibling) {
+      supabase.from('students').select('id, name, last_name').order('name').then(({ data }) => {
+        if (data) setExistingStudents(data);
+      });
+    }
+  }, [regIsSibling, student, loading]);
+
+  const handleCompleteRegistration = async () => {
+    if (!regName.trim() || !regParentName.trim() || !regParentLastName.trim() || !regParentPhone.trim()) {
+      toast.error('יש למלא את כל השדות');
+      return;
+    }
+    setRegistering(true);
+    try {
+      const { data: result, error: fnError } = await supabase.functions.invoke('register-student', {
+        body: {
+          studentName: regName.trim(),
+          parentName: regParentName.trim(),
+          parentLastName: regParentLastName.trim(),
+          parentPhone: regParentPhone.trim(),
+          siblingId: regIsSibling && regSiblingId ? regSiblingId : null,
+        },
+      });
+      if (fnError) throw fnError;
+      if (result?.error) throw new Error(result.error);
+      toast.success('הפרטים נשמרו בהצלחה!');
+      // Reload to fetch student data
+      window.location.reload();
+    } catch (err: any) {
+      toast.error('שגיאה: ' + err.message);
+    } finally {
+      setRegistering(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -231,11 +279,59 @@ export default function StudentPortal() {
 
       <div className="container mx-auto px-2 sm:px-4 py-4">
         {!student ? (
-          <Card className="p-8 text-center">
-            <div className="text-6xl mb-4">⏳</div>
-            <h2 className="text-xl font-bold text-foreground mb-2">הפרופיל שלך בהכנה</h2>
-            <p className="text-muted-foreground">הפרטים שלך נשלחו למנהל. תוכל לגשת לאזור האישי ברגע שתשובץ לכיתה.</p>
-            <p className="text-muted-foreground text-sm mt-2">האימייל שלך: {user?.email}</p>
+          <Card className="p-6 sm:p-8 max-w-md mx-auto">
+            <div className="text-center mb-6">
+              <div className="text-5xl mb-3">📝</div>
+              <h2 className="text-xl font-bold text-foreground mb-1">השלם את ההרשמה</h2>
+              <p className="text-muted-foreground text-sm">מלא את הפרטים הבאים כדי להשלים את ההרשמה</p>
+            </div>
+            <div className="space-y-4" dir="rtl">
+              <div className="border-b border-border pb-4">
+                <h3 className="text-sm font-bold text-foreground mb-3">👨‍👩‍👧 פרטי הורה</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium mb-1 text-foreground">שם פרטי *</label>
+                    <Input value={regParentName} onChange={(e) => setRegParentName(e.target.value)} placeholder="שם ההורה" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1 text-foreground">שם משפחה *</label>
+                    <Input value={regParentLastName} onChange={(e) => setRegParentLastName(e.target.value)} placeholder="שם משפחה" />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <label className="block text-xs font-medium mb-1 text-foreground">טלפון *</label>
+                  <Input type="tel" value={regParentPhone} onChange={(e) => setRegParentPhone(e.target.value)} placeholder="050-1234567" />
+                </div>
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-foreground mb-3">🎭 פרטי התלמיד</h3>
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-foreground">שם התלמיד *</label>
+                  <Input value={regName} onChange={(e) => setRegName(e.target.value)} placeholder="שם התלמיד" />
+                </div>
+                <div className="flex items-center gap-2 mt-3">
+                  <Checkbox id="regSibling" checked={regIsSibling} onCheckedChange={(checked) => { setRegIsSibling(checked === true); if (!checked) setRegSiblingId(''); }} />
+                  <label htmlFor="regSibling" className="text-sm text-foreground cursor-pointer">אח/אחות של תלמיד קיים</label>
+                </div>
+                {regIsSibling && (
+                  <div className="mt-3">
+                    <label className="block text-xs font-medium mb-1 text-foreground">בחר את האח/אחות</label>
+                    <Select value={regSiblingId} onValueChange={setRegSiblingId}>
+                      <SelectTrigger><SelectValue placeholder="בחר תלמיד קיים" /></SelectTrigger>
+                      <SelectContent>
+                        {existingStudents.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>{s.name} {s.last_name || ''}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+              <Button className="w-full" onClick={handleCompleteRegistration} disabled={registering}>
+                {registering ? 'שומר...' : 'השלם הרשמה'}
+              </Button>
+            </div>
+            <p className="text-muted-foreground text-xs mt-4 text-center">האימייל שלך: {user?.email}</p>
           </Card>
         ) : (
           <>
