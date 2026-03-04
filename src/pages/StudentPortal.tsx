@@ -309,8 +309,8 @@ export default function StudentPortal() {
 
   useEffect(() => {
     if (!student && !loading && regIsSibling) {
-      supabase.from('students').select('id, name, last_name').order('name').then(({ data }) => {
-        if (data) setExistingStudents(data);
+      supabase.functions.invoke('list-siblings').then(({ data, error }) => {
+        if (!error && data?.students) setExistingStudents(data.students);
       });
     }
   }, [regIsSibling, student, loading]);
