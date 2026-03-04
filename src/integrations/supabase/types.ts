@@ -170,6 +170,7 @@ export type Database = {
           created_at: string | null
           id: string
           payment_method: string
+          payment_proof_url: string | null
           payment_type: string
           resolved_at: string | null
           status: string
@@ -181,6 +182,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           payment_method?: string
+          payment_proof_url?: string | null
           payment_type: string
           resolved_at?: string | null
           status?: string
@@ -192,6 +194,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           payment_method?: string
+          payment_proof_url?: string | null
           payment_type?: string
           resolved_at?: string | null
           status?: string

@@ -112,7 +112,8 @@ export default function Index() {
         date: p.payment_date,
         amount: Number(p.amount),
         note: p.note || '',
-        discount: Number(p.discount) || 0
+        discount: Number(p.discount) || 0,
+        proofUrl: p.payment_proof_url || null,
       })));
     }
     
