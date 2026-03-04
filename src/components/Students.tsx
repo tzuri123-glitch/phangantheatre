@@ -12,6 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card } from '@/components/ui/card';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useState } from 'react';
 import { Users, MessageCircle, Copy, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
@@ -29,6 +30,7 @@ interface StudentsProps {
 export default function Students({ students, payments, onAddStudent, onEditStudent, onDeleteStudent, onViewPayments }: StudentsProps) {
   const [expandedClasses, setExpandedClasses] = useState<Record<string, boolean>>({});
   const [classSearchQueries, setClassSearchQueries] = useState<Record<string, string>>({});
+  const [viewingPhoto, setViewingPhoto] = useState<{ url: string; name: string } | null>(null);
 
   const toggleClass = (className: string) => {
     setExpandedClasses((prev) => ({
@@ -286,7 +288,14 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                           <TableRow key={student.id}>
                             <TableCell className="font-medium">
                               <div className="flex items-center gap-2">
-                                <Avatar className="h-8 w-8">
+                                <Avatar
+                                  className={`h-8 w-8 ${student.profilePhotoUrl ? 'cursor-pointer hover:ring-2 hover:ring-primary transition-all' : ''}`}
+                                  onClick={() => {
+                                    if (student.profilePhotoUrl) {
+                                      setViewingPhoto({ url: student.profilePhotoUrl, name: `${student.name} ${student.lastName}` });
+                                    }
+                                  }}
+                                >
                                   <AvatarImage src={student.profilePhotoUrl || undefined} alt={student.name} />
                                   <AvatarFallback className="bg-primary/10 text-primary text-xs">
                                     {student.name?.charAt(0)}
@@ -412,6 +421,22 @@ export default function Students({ students, payments, onAddStudent, onEditStude
           );
         })}
       </div>
+
+      {/* Photo viewer dialog */}
+      <Dialog open={!!viewingPhoto} onOpenChange={() => setViewingPhoto(null)}>
+        <DialogContent className="max-w-md p-2" dir="rtl">
+          {viewingPhoto && (
+            <div className="text-center">
+              <img
+                src={viewingPhoto.url}
+                alt={viewingPhoto.name}
+                className="w-full max-h-[70vh] object-contain rounded-lg"
+              />
+              <p className="mt-3 font-bold text-foreground text-lg">{viewingPhoto.name}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
