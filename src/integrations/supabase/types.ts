@@ -130,6 +130,50 @@ export type Database = {
           },
         ]
       }
+      pending_payments: {
+        Row: {
+          admin_user_id: string
+          amount: number | null
+          created_at: string | null
+          id: string
+          payment_method: string
+          payment_type: string
+          resolved_at: string | null
+          status: string
+          student_id: string
+        }
+        Insert: {
+          admin_user_id: string
+          amount?: number | null
+          created_at?: string | null
+          id?: string
+          payment_method?: string
+          payment_type: string
+          resolved_at?: string | null
+          status?: string
+          student_id: string
+        }
+        Update: {
+          admin_user_id?: string
+          amount?: number | null
+          created_at?: string | null
+          id?: string
+          payment_method?: string
+          payment_type?: string
+          resolved_at?: string | null
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_payments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null

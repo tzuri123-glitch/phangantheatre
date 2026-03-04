@@ -4,14 +4,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import logo from '@/assets/logo.png';
 import { toast } from 'sonner';
 
@@ -21,6 +22,7 @@ interface StudentRecord {
   last_name: string | null;
   class_name: string;
   status: string | null;
+  user_id: string; // admin who owns this student
 }
 
 interface AttendanceRecord {
@@ -37,7 +39,13 @@ interface PaymentRecord {
   payment_type: string;
   payment_method: string;
   note: string | null;
-  payment_proof_url: string | null;
+}
+
+interface PendingPayment {
+  id: string;
+  payment_type: string;
+  status: string;
+  created_at: string;
 }
 
 export default function StudentPortal() {
@@ -45,20 +53,21 @@ export default function StudentPortal() {
   const [student, setStudent] = useState<StudentRecord | null>(null);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
   const [activeTab, setActiveTab] = useState<'attendance' | 'payments'>('attendance');
   const [loading, setLoading] = useState(true);
 
-  // Payment dialog state
+  // Payment dialog
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'promptpay' | null>(null);
+  const [selectedPaymentType, setSelectedPaymentType] = useState<string>('');
   const [promptPayUrl, setPromptPayUrl] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!user) return;
 
     const load = async () => {
-      // Get linked student record
       const { data: studentData } = await supabase
         .from('students')
         .select('*')
@@ -71,9 +80,9 @@ export default function StudentPortal() {
         return;
       }
 
-      setStudent(studentData);
+      setStudent(studentData as any);
 
-      // Get attendance with session info
+      // Attendance
       const { data: attendanceData } = await supabase
         .from('attendance')
         .select('id, session_id, status, sessions(session_date, class_name, is_trial)')
@@ -82,35 +91,37 @@ export default function StudentPortal() {
 
       if (attendanceData) {
         setAttendance(attendanceData.map((a: any) => ({
-          id: a.id,
-          session_id: a.session_id,
-          status: a.status,
-          session: a.sessions,
+          id: a.id, session_id: a.session_id, status: a.status, session: a.sessions,
         })));
       }
 
-      // Get payments
+      // Payments
       const { data: paymentsData } = await supabase
         .from('payments')
-        .select('id, amount, payment_date, payment_type, payment_method, note, payment_proof_url')
+        .select('id, amount, payment_date, payment_type, payment_method, note')
         .eq('student_id', studentData.id)
         .order('payment_date', { ascending: false });
 
-      if (paymentsData) {
-        setPayments(paymentsData);
-      }
+      if (paymentsData) setPayments(paymentsData);
 
-      // Get PromptPay QR image
+      // Pending payments
+      const { data: pendingData } = await supabase
+        .from('pending_payments')
+        .select('*')
+        .eq('student_id', studentData.id)
+        .order('created_at', { ascending: false });
+
+      if (pendingData) setPendingPayments(pendingData);
+
+      // PromptPay QR
       const { data: files } = await supabase.storage
         .from('admin-settings')
         .list('', { limit: 10 });
 
-      const promptPayFile = files?.find(f => f.name.startsWith('promptpay'));
-      if (promptPayFile) {
-        const { data: urlData } = supabase.storage
-          .from('admin-settings')
-          .getPublicUrl(promptPayFile.name);
-        setPromptPayUrl(urlData.publicUrl);
+      const ppFile = files?.find(f => f.name.startsWith('promptpay'));
+      if (ppFile) {
+        const { data } = supabase.storage.from('admin-settings').getPublicUrl(ppFile.name);
+        setPromptPayUrl(data.publicUrl);
       }
 
       setLoading(false);
@@ -119,30 +130,60 @@ export default function StudentPortal() {
     load();
   }, [user]);
 
-  const handleCashPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.[0] || !user || !student) return;
-    const file = e.target.files[0];
-    setUploading(true);
+  // Realtime for pending payment updates
+  useEffect(() => {
+    if (!student) return;
+    const channel = supabase
+      .channel('pending-payments-student')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'pending_payments',
+        filter: `student_id=eq.${student.id}`,
+      }, (payload) => {
+        const updated = payload.new as any;
+        setPendingPayments(prev => prev.map(p => p.id === updated.id ? updated : p));
+        if (updated.status === 'approved') {
+          toast.success('התשלום שלך אושר! ✅');
+        } else if (updated.status === 'rejected') {
+          toast.error('התשלום שלך נדחה ❌');
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [student]);
+
+  const handleCashPaymentRequest = async () => {
+    if (!student || !selectedPaymentType) {
+      toast.error('בחר סוג תשלום');
+      return;
+    }
+    setSubmitting(true);
 
     try {
-      const fileName = `${user.id}/${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from('payment-proofs')
-        .upload(fileName, file);
+      const { data, error } = await supabase
+        .from('pending_payments')
+        .insert({
+          student_id: student.id,
+          admin_user_id: student.user_id,
+          payment_type: selectedPaymentType,
+          payment_method: 'מזומן',
+        })
+        .select()
+        .single();
 
-      if (uploadError) throw uploadError;
+      if (error) throw error;
 
-      const { data: urlData } = supabase.storage
-        .from('payment-proofs')
-        .getPublicUrl(fileName);
-
-      toast.success('תמונת הוכחה הועלתה בהצלחה! המנהל יאשר את התשלום.');
+      setPendingPayments(prev => [data, ...prev]);
+      toast.success('בקשת תשלום נשלחה למנהל! ⏳');
       setShowPaymentDialog(false);
       setPaymentMethod(null);
+      setSelectedPaymentType('');
     } catch (error: any) {
-      toast.error('שגיאה בהעלאת התמונה: ' + error.message);
+      toast.error('שגיאה: ' + error.message);
     } finally {
-      setUploading(false);
+      setSubmitting(false);
     }
   };
 
@@ -166,6 +207,12 @@ export default function StudentPortal() {
     'עזב': 'bg-gray-100 text-gray-800',
   };
 
+  const pendingStatusMap: Record<string, { label: string; className: string }> = {
+    'pending': { label: 'ממתין לאישור', className: 'bg-yellow-100 text-yellow-800' },
+    'approved': { label: 'אושר ✅', className: 'bg-green-100 text-green-800' },
+    'rejected': { label: 'נדחה ❌', className: 'bg-red-100 text-red-800' },
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/10 to-background" dir="rtl">
       <header className="bg-card/80 backdrop-blur-md border-b border-border shadow-md sticky top-0 z-50">
@@ -176,11 +223,7 @@ export default function StudentPortal() {
               האזור האישי שלי
             </h1>
           </div>
-          <Button
-            onClick={signOut}
-            size="sm"
-            className="bg-gradient-to-l from-magenta to-magenta-hover text-white font-bold text-xs sm:text-lg px-3 sm:px-8"
-          >
+          <Button onClick={signOut} size="sm" className="bg-gradient-to-l from-magenta to-magenta-hover text-white font-bold text-xs sm:text-lg px-3 sm:px-8">
             התנתק
           </Button>
         </div>
@@ -203,26 +246,27 @@ export default function StudentPortal() {
                   <p className="text-muted-foreground">{student.class_name}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-sm">
-                    {student.status || 'פעיל'}
-                  </Badge>
-                  <Button
-                    size="sm"
-                    onClick={() => setShowPaymentDialog(true)}
-                    className="bg-gradient-to-l from-primary to-primary-hover text-white"
-                  >
+                  <Badge variant="outline">{student.status || 'פעיל'}</Badge>
+                  <Button size="sm" onClick={() => setShowPaymentDialog(true)} className="bg-gradient-to-l from-primary to-primary-hover text-white">
                     💰 שלם
                   </Button>
                 </div>
               </div>
             </Card>
 
+            {/* Pending payments banner */}
+            {pendingPayments.filter(p => p.status === 'pending').length > 0 && (
+              <Card className="p-3 mb-4 bg-yellow-50 border-yellow-200">
+                <p className="text-sm font-medium text-yellow-800">
+                  ⏳ יש לך {pendingPayments.filter(p => p.status === 'pending').length} בקשות תשלום ממתינות לאישור המנהל
+                </p>
+              </Card>
+            )}
+
             {/* Tab navigation */}
             <div className="flex justify-center gap-2 sm:gap-3 mb-4">
               {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                   className={`px-3 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-base transition-all duration-300 whitespace-nowrap ${
                     activeTab === tab.id
                       ? 'bg-gradient-to-l from-magenta to-magenta-hover text-white shadow-xl scale-105 glow-magenta'
@@ -234,7 +278,6 @@ export default function StudentPortal() {
               ))}
             </div>
 
-            {/* Attendance tab */}
             {activeTab === 'attendance' && (
               <Card className="overflow-hidden">
                 <Table>
@@ -247,154 +290,135 @@ export default function StudentPortal() {
                   </TableHeader>
                   <TableBody>
                     {attendance.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
-                          אין רשומות נוכחות עדיין
-                        </TableCell>
+                      <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">אין רשומות נוכחות עדיין</TableCell></TableRow>
+                    ) : attendance.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell>{r.session?.session_date || '-'}</TableCell>
+                        <TableCell>{r.session?.class_name || '-'}</TableCell>
+                        <TableCell><Badge className={statusMap[r.status] || ''} variant="outline">{r.status}</Badge></TableCell>
                       </TableRow>
-                    ) : (
-                      attendance.map((record) => (
-                        <TableRow key={record.id}>
-                          <TableCell>{record.session?.session_date || '-'}</TableCell>
-                          <TableCell>{record.session?.class_name || '-'}</TableCell>
-                          <TableCell>
-                            <Badge className={statusMap[record.status] || ''} variant="outline">
-                              {record.status}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
+                    ))}
                   </TableBody>
                 </Table>
               </Card>
             )}
 
-            {/* Payments tab */}
             {activeTab === 'payments' && (
-              <Card className="overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-right">תאריך</TableHead>
-                      <TableHead className="text-right">סוג</TableHead>
-                      <TableHead className="text-right">שיטה</TableHead>
-                      <TableHead className="text-right">סכום</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {payments.length === 0 ? (
+              <div className="space-y-4">
+                {/* Pending payment requests */}
+                {pendingPayments.length > 0 && (
+                  <Card className="overflow-hidden">
+                    <div className="p-3 bg-accent border-b"><h3 className="font-bold text-sm">בקשות תשלום</h3></div>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-right">תאריך</TableHead>
+                          <TableHead className="text-right">סוג</TableHead>
+                          <TableHead className="text-right">סטטוס</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {pendingPayments.map((p) => {
+                          const s = pendingStatusMap[p.status] || { label: p.status, className: '' };
+                          return (
+                            <TableRow key={p.id}>
+                              <TableCell>{new Date(p.created_at).toLocaleDateString('he-IL')}</TableCell>
+                              <TableCell>{p.payment_type}</TableCell>
+                              <TableCell><Badge className={s.className} variant="outline">{s.label}</Badge></TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </Card>
+                )}
+
+                {/* Approved payments */}
+                <Card className="overflow-hidden">
+                  <div className="p-3 bg-accent border-b"><h3 className="font-bold text-sm">תשלומים מאושרים</h3></div>
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                          אין רשומות תשלום עדיין
-                        </TableCell>
+                        <TableHead className="text-right">תאריך</TableHead>
+                        <TableHead className="text-right">סוג</TableHead>
+                        <TableHead className="text-right">שיטה</TableHead>
+                        <TableHead className="text-right">סכום</TableHead>
                       </TableRow>
-                    ) : (
-                      payments.map((p) => (
+                    </TableHeader>
+                    <TableBody>
+                      {payments.length === 0 ? (
+                        <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">אין תשלומים מאושרים עדיין</TableCell></TableRow>
+                      ) : payments.map((p) => (
                         <TableRow key={p.id}>
                           <TableCell>{p.payment_date}</TableCell>
                           <TableCell>{p.payment_type}</TableCell>
                           <TableCell>{p.payment_method}</TableCell>
                           <TableCell>฿{p.amount}</TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </Card>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Card>
+              </div>
             )}
           </>
         )}
       </div>
 
       {/* Payment Dialog */}
-      <Dialog open={showPaymentDialog} onOpenChange={(open) => { if (!open) { setShowPaymentDialog(false); setPaymentMethod(null); } }}>
+      <Dialog open={showPaymentDialog} onOpenChange={(open) => { if (!open) { setShowPaymentDialog(false); setPaymentMethod(null); setSelectedPaymentType(''); } }}>
         <DialogContent className="max-w-md" dir="rtl">
-          <DialogHeader>
-            <DialogTitle>בחר אמצעי תשלום</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>בחר אמצעי תשלום</DialogTitle></DialogHeader>
 
           {!paymentMethod ? (
             <div className="space-y-3">
-              <Button
-                className="w-full h-16 text-lg"
-                variant="outline"
-                onClick={() => setPaymentMethod('cash')}
-              >
+              <Button className="w-full h-16 text-lg" variant="outline" onClick={() => setPaymentMethod('cash')}>
                 💵 תשלום במזומן
               </Button>
-              <Button
-                className="w-full h-16 text-lg"
-                variant="outline"
-                onClick={() => setPaymentMethod('promptpay')}
-              >
+              <Button className="w-full h-16 text-lg" variant="outline" onClick={() => setPaymentMethod('promptpay')}>
                 📱 PromptPay
               </Button>
             </div>
           ) : paymentMethod === 'cash' ? (
-            <div className="space-y-4 text-center">
-              <div className="text-4xl">📸</div>
-              <h3 className="font-bold text-lg">צלם את העברת הכסף</h3>
-              <p className="text-muted-foreground text-sm">
-                צלם תמונה של העברת המזומן למנהל כהוכחת תשלום
+            <div className="space-y-4">
+              <div className="text-center text-4xl">💵</div>
+              <h3 className="font-bold text-lg text-center">דיווח תשלום במזומן</h3>
+              <p className="text-muted-foreground text-sm text-center">
+                בחר סוג תשלום ושלח בקשה למנהל. התשלום ייכנס לתוקף רק לאחר אישור המנהל.
               </p>
               <div className="space-y-2">
-                <Label htmlFor="cash-photo" className="cursor-pointer">
-                  <div className="border-2 border-dashed border-primary/50 rounded-xl p-8 hover:bg-accent/50 transition-colors">
-                    <div className="text-4xl mb-2">📷</div>
-                    <p className="text-sm text-primary font-medium">
-                      {uploading ? 'מעלה...' : 'לחץ כאן לצלם או לבחור תמונה'}
-                    </p>
-                  </div>
-                </Label>
-                <input
-                  id="cash-photo"
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={handleCashPhotoUpload}
-                  disabled={uploading}
-                />
+                <label className="block text-sm font-medium">סוג תשלום</label>
+                <Select value={selectedPaymentType} onValueChange={setSelectedPaymentType}>
+                  <SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="חד פעמי">חד פעמי</SelectItem>
+                    <SelectItem value="חודשי">חודשי (מנוי)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <Button variant="ghost" onClick={() => setPaymentMethod(null)} className="w-full">
-                ← חזור
+              <Button className="w-full" onClick={handleCashPaymentRequest} disabled={submitting || !selectedPaymentType}>
+                {submitting ? 'שולח...' : 'שלח בקשת תשלום למנהל'}
               </Button>
+              <Button variant="ghost" onClick={() => setPaymentMethod(null)} className="w-full">← חזור</Button>
             </div>
           ) : (
             <div className="space-y-4 text-center">
               <div className="text-4xl">📱</div>
               <h3 className="font-bold text-lg">PromptPay</h3>
-              <p className="text-muted-foreground text-sm">
-                סרוק את הקוד או הורד את התמונה לביצוע העברה
-              </p>
+              <p className="text-muted-foreground text-sm">סרוק את הקוד או הורד את התמונה לביצוע העברה</p>
               {promptPayUrl ? (
                 <div className="space-y-3">
-                  <img
-                    src={promptPayUrl}
-                    alt="PromptPay QR"
-                    className="mx-auto max-w-[250px] rounded-lg shadow-lg"
-                  />
-                  <a
-                    href={promptPayUrl}
-                    download="promptpay-qr.png"
-                    className="inline-block"
-                  >
-                    <Button variant="outline" size="sm">
-                      📥 הורד תמונה
-                    </Button>
+                  <img src={promptPayUrl} alt="PromptPay QR" className="mx-auto max-w-[250px] rounded-lg shadow-lg" />
+                  <a href={promptPayUrl} download="promptpay-qr.png" className="inline-block">
+                    <Button variant="outline" size="sm">📥 הורד תמונה</Button>
                   </a>
                 </div>
               ) : (
                 <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-muted-foreground">
-                    קוד PromptPay עדיין לא הוגדר. פנה למנהל.
-                  </p>
+                  <p className="text-muted-foreground">קוד PromptPay עדיין לא הוגדר. פנה למנהל.</p>
                 </div>
               )}
-              <Button variant="ghost" onClick={() => setPaymentMethod(null)} className="w-full">
-                ← חזור
-              </Button>
+              <Button variant="ghost" onClick={() => setPaymentMethod(null)} className="w-full">← חזור</Button>
             </div>
           )}
         </DialogContent>
