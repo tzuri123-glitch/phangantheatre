@@ -11,6 +11,7 @@ export interface Student {
   className: string;
   status: 'פעיל' | 'בהקפאה';
   linkedEmail?: string;
+  profilePhotoUrl?: string;
 }
 
 export interface Payment {

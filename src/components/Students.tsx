@@ -1,6 +1,7 @@
 import { Student, CLASS_OPTIONS } from '@/types';
 import { format, isSameMonth, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import {
   Table,
@@ -284,6 +285,12 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                           <TableRow key={student.id}>
                             <TableCell className="font-medium">
                               <div className="flex items-center gap-2">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarImage src={student.profilePhotoUrl || undefined} alt={student.name} />
+                                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                                    {student.name?.charAt(0)}
+                                  </AvatarFallback>
+                                </Avatar>
                                 {student.name}
                                   {(
                                     student.phone || student.parentPhone
