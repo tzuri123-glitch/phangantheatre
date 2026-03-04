@@ -9,6 +9,8 @@ import App from "./App.tsx";
 import Auth from "./pages/Auth";
 import StudentAuth from "./pages/StudentAuth";
 import ScanAttendance from "./pages/ScanAttendance";
+import MarkAttendance from "./pages/MarkAttendance";
+import PrintAttendanceQr from "./pages/PrintAttendanceQr";
 import NotFound from "./pages/NotFound";
 import "./index.css";
 
@@ -25,6 +27,8 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/auth" element={<Auth />} />
             <Route path="/student-auth" element={<StudentAuth />} />
             <Route path="/scan/:sessionId" element={<ScanAttendance />} />
+            <Route path="/mark-attendance" element={<MarkAttendance />} />
+            <Route path="/print-qr" element={<PrintAttendanceQr />} />
             <Route path="/" element={<App />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
