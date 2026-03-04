@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
     }
 
     // Check schedule - use Israel timezone
-    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
     const currentSlot = findCurrentSession(student.class_name, now);
 
     if (!currentSlot) {
