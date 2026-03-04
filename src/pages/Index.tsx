@@ -8,6 +8,7 @@ import Students from '@/components/Students';
 import Payments from '@/components/Payments';
 import Attendance from '@/components/Attendance';
 import AdminSettings from '@/components/AdminSettings';
+import PendingPayments from '@/components/PendingPayments';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -247,7 +248,8 @@ export default function Index() {
         </div>
       </header>
       <TabNavigation activeTab={tab} onTabChange={setTab} />
-      <main>
+      <main className="container mx-auto px-2 sm:px-4">
+        <PendingPayments />
         {tab === 'dashboard' && <Dashboard students={students} payments={payments} onAddStudent={() => { studentFormRef.current = { id: '', name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, siblingId: undefined, className: CLASS_OPTIONS[0], status: 'חדש' }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} />}
         {tab === 'students' && <Students 
           students={students}
