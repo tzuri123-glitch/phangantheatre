@@ -170,27 +170,43 @@ export default function Index() {
     let balance = 0;
     
     studentPayments.forEach((payment) => {
+      if (payment.type === 'סגירת יתרה') {
+        // סגירת יתרה לא מייצרת חוב/זכות חדש - הסכום הוא מה שהתקבל בפועל
+        balance += payment.amount;
+        return;
+      }
       const baseExpectedAmount = 
         payment.type === 'חד פעמי' ? (student.isSibling ? 500 : SINGLE_PRICE) :
         student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
       
-      // חישוב סכום צפוי אחרי הנחה
       const discount = payment.discount || 0;
       const expectedAmount = baseExpectedAmount * (1 - discount / 100);
       
-      // יתרה = סכום ששולם - סכום צפוי
-      // אם חיובי = זכות, אם שלילי = חוב
       balance += payment.amount - expectedAmount;
     });
     
     // חישוב סכום התשלום הנוכחי
     let baseAmount = 0;
     let note = '';
+
+    if (type === 'סגירת יתרה') {
+      // סגירת יתרה: מציג את היתרה הנוכחית ומאפשר להזין סכום חופשי
+      if (balance > 0) {
+        note = `זכות נוכחית: ${formatILS(balance)} — הזן סכום שלילי להחזר`;
+        baseAmount = 0;
+      } else if (balance < 0) {
+        note = `חוב נוכחי: ${formatILS(Math.abs(balance))} — הזן את הסכום שהתקבל`;
+        baseAmount = Math.abs(balance);
+      } else {
+        note = 'אין יתרה פתוחה';
+        baseAmount = 0;
+      }
+      return { amount: baseAmount, note };
+    }
     
     if (type === 'חד פעמי') {
       baseAmount = student.isSibling ? 500 : SINGLE_PRICE;
     } else if (type === 'חודשי') {
-      // קיזוז תשלומי חד-פעמי באותו חודש של התשלום הנוכחי
       const singles = payments.filter((p) => {
         if (p.studentId !== studentId) return false;
         if (p.type !== 'חד פעמי') return false;
@@ -217,7 +233,6 @@ export default function Index() {
       note = note ? `${note} | חוב: ${formatILS(Math.abs(balance))}` : `חוב: ${formatILS(Math.abs(balance))}`;
     }
 
-    // Debug: עוזר לאתר חישוב שגוי
     try {
       const dbgPrev = payments
         .filter((p) => p.studentId === studentId)
@@ -821,6 +836,7 @@ export default function Index() {
                 return <>
                   <SelectItem value="חד פעמי">חד פעמי (฿{isSib ? '500' : '700'})</SelectItem>
                   <SelectItem value="חודשי">חודשי (฿{isSib ? '3,200' : '4,000'})</SelectItem>
+                  <SelectItem value="סגירת יתרה">סגירת יתרה (השלמת חוב / החזר זכות)</SelectItem>
                 </>;
               })()}
             </SelectContent></Select></div>
@@ -853,7 +869,7 @@ export default function Index() {
               <Input type="number" value={paymentForm.amount} onChange={(e) => setPaymentForm({ ...paymentForm, amount: Number(e.target.value) })} />
               <p className="text-xs text-muted-foreground">אם התלמיד שילם יותר מהמחיר, הזן את הסכום שקיבלת. הזכות תירשם אוטומטית.</p>
             </div>
-            {paymentForm.amount > 0 && paymentForm.type && paymentForm.studentId && (() => {
+            {paymentForm.amount > 0 && paymentForm.type && paymentForm.type !== 'סגירת יתרה' && paymentForm.studentId && (() => {
               const selectedStudent = students.find(s => s.id === paymentForm.studentId);
               if (!selectedStudent) return null;
               const basePrice = paymentForm.type === 'חד פעמי'
@@ -862,9 +878,9 @@ export default function Index() {
               const discountedPrice = basePrice * (1 - (paymentForm.discount || 0) / 100);
               const diff = paymentForm.amount - discountedPrice;
               if (diff > 0) {
-                return <div className="text-sm font-medium text-green-700 bg-green-50 rounded-lg px-3 py-2">💰 זכות של ฿{diff} תירשם לתלמיד</div>;
+                return <div className="text-sm font-medium text-green-700 bg-green-50 dark:text-green-300 dark:bg-green-900/30 rounded-lg px-3 py-2">💰 זכות של ฿{diff} תירשם לתלמיד</div>;
               } else if (diff < 0) {
-                return <div className="text-sm font-medium text-red-700 bg-red-50 rounded-lg px-3 py-2">⚠️ חוב של ฿{Math.abs(diff)} יירשם לתלמיד</div>;
+                return <div className="text-sm font-medium text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-900/30 rounded-lg px-3 py-2">⚠️ חוב של ฿{Math.abs(diff)} יירשם לתלמיד</div>;
               }
               return null;
             })()}

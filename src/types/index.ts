@@ -16,7 +16,7 @@ export interface Student {
 export interface Payment {
   id: string;
   studentId: string;
-  type: 'חד פעמי' | 'חודשי';
+  type: 'חד פעמי' | 'חודשי' | 'סגירת יתרה';
   method: 'מזומן' | 'סקאן';
   date: string;
   amount: number;
