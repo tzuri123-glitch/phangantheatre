@@ -144,7 +144,6 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
                     <TableRow>
                       <TableHead className="text-right">תלמיד</TableHead>
                       <TableHead className="text-right">סטטוס תשלום</TableHead>
-                      <TableHead className="text-right">סטטוס נוכחות</TableHead>
                       <TableHead className="text-right">פעולות</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -170,26 +169,6 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
                           </TableCell>
                           <TableCell>
                             {statusBadge && <Badge variant="outline">{statusBadge}</Badge>}
-                          </TableCell>
-                          <TableCell>
-                            <Select
-                              value={record.status || undefined}
-                              onValueChange={(v) => {
-                                if (v && v !== '') {
-                                  onUpdateAttendance(session.id, record.studentId, v as 'נוכח' | 'לא הגיע' | 'לא באי' | 'עזב');
-                                }
-                              }}
-                            >
-                              <SelectTrigger className="w-32">
-                                <SelectValue placeholder="בחר" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="נוכח">נוכח</SelectItem>
-                                <SelectItem value="לא הגיע">לא הגיע</SelectItem>
-                                <SelectItem value="לא באי">לא באי (הקפאה)</SelectItem>
-                                <SelectItem value="עזב">עזב</SelectItem>
-                              </SelectContent>
-                            </Select>
                           </TableCell>
                           <TableCell>
                             <Button
