@@ -66,7 +66,7 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
         });
       
       let totalExpected = 0;
-      const monthlyPrice = student.isSibling ? 2400 : 2800;
+      const monthlyPrice = student.isSibling ? 3200 : 4000;
       
       studentPaymentsList.forEach((payment) => {
         const paymentMonth = format(parseISO(payment.date), 'MM/yyyy');
@@ -79,13 +79,14 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
         } else if (payment.type === 'חד פעמי') {
           // תשלום חד-פעמי נספר רק אם אין תשלום חודשי באותו חודש
           if (!monthsWithMonthlyPayment.has(paymentMonth)) {
-            const priceAfterDiscount = 800 * (1 - discount / 100);
+            const singlePrice = student.isSibling ? 500 : 600;
+            const priceAfterDiscount = singlePrice * (1 - discount / 100);
             totalExpected += priceAfterDiscount;
           }
         } else if (payment.type === 'ניסיון') {
           // תשלום ניסיון נספר רק אם אין תשלום חודשי באותו חודש
           if (!monthsWithMonthlyPayment.has(paymentMonth)) {
-            const priceAfterDiscount = 700 * (1 - discount / 100);
+            const priceAfterDiscount = 600 * (1 - discount / 100);
             totalExpected += priceAfterDiscount;
           }
         }

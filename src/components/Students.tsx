@@ -50,10 +50,11 @@ export default function Students({ students, payments, onAddStudent, onEditStude
     });
   };
 
-  const MONTHLY_PRICE = 2800;
-  const SIBLING_MONTHLY_PRICE = 2400;
-  const SINGLE_PRICE = 800;
-  const TRIAL_PRICE = 700;
+  const MONTHLY_PRICE = 4000;
+  const SIBLING_MONTHLY_PRICE = 3200;
+  const SINGLE_PRICE = 600;
+  const SIBLING_SINGLE_PRICE = 500;
+  const TRIAL_PRICE = 600;
 
   const calculateStudentBalance = (studentId: string, student: Student) => {
     const studentPayments = payments.filter(p => p.studentId === studentId);
@@ -83,7 +84,8 @@ export default function Students({ students, payments, onAddStudent, onEditStude
       } else if (payment.type === 'חד פעמי') {
         // תשלום חד-פעמי נספר רק אם אין תשלום חודשי באותו חודש
         if (!monthsWithMonthlyPayment.has(paymentMonth)) {
-          const priceAfterDiscount = SINGLE_PRICE * (1 - discount / 100);
+          const singlePrice = student.isSibling ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
+          const priceAfterDiscount = singlePrice * (1 - discount / 100);
           totalExpected += priceAfterDiscount;
         }
       } else if (payment.type === 'ניסיון') {

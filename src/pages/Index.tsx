@@ -153,7 +153,7 @@ export default function Index() {
     studentPayments.forEach((payment) => {
       const baseExpectedAmount = 
         payment.type === 'ניסיון' ? TRIAL_PRICE :
-        payment.type === 'חד פעמי' ? SINGLE_PRICE :
+        payment.type === 'חד פעמי' ? (student.isSibling ? 500 : SINGLE_PRICE) :
         student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
       
       // חישוב סכום צפוי אחרי הנחה
@@ -172,7 +172,7 @@ export default function Index() {
     if (type === 'ניסיון') {
       baseAmount = TRIAL_PRICE;
     } else if (type === 'חד פעמי') {
-      baseAmount = SINGLE_PRICE;
+      baseAmount = student.isSibling ? 500 : SINGLE_PRICE;
     } else if (type === 'חודשי') {
       // קיזוז תשלומי ניסיון/חד-פעמי באותו חודש של התשלום הנוכחי
       const singles = payments.filter((p) => {
@@ -345,43 +345,8 @@ export default function Index() {
               return;
             }
             
-            // ניהול מנויים
-            const sessionDate = new Date(session.date);
-            const monthYear = `${String(sessionDate.getMonth() + 1).padStart(2, '0')}/${sessionDate.getFullYear()}`;
-            
-            // קבלת המנוי של התלמיד לחודש הרלוונטי
-            const { data: subscriptionData } = await supabase
-              .from('subscriptions')
-              .select('*')
-              .eq('student_id', studentId)
-              .eq('month_year', monthYear)
-              .eq('user_id', user.id)
-              .single();
-            
-            if (subscriptionData) {
-              // אם התלמיד "נוכח" - הורדת כניסה מהמנוי
-              if (status === 'נוכח') {
-                const newRemaining = Math.max(0, subscriptionData.entries_remaining - 1);
-                await supabase
-                  .from('subscriptions')
-                  .update({ entries_remaining: newRemaining })
-                  .eq('id', subscriptionData.id)
-                  .eq('user_id', user.id);
-              }
-              
-              // אם התלמיד "לא הגיע" - לא הורדת כניסה (זה כבר עודכן בנוכחות)
-              // המערכת תראה אותו כ-neutral כי הוא לא הגיע
-              
-              // אם התלמיד "לא באי" (הקפאה) - החזרת הכניסה למנוי
-              if (status === 'לא באי') {
-                const newRemaining = Math.min(subscriptionData.total_entries, subscriptionData.entries_remaining + 1);
-                await supabase
-                  .from('subscriptions')
-                  .update({ entries_remaining: newRemaining })
-                  .eq('id', subscriptionData.id)
-                  .eq('user_id', user.id);
-              }
-            }
+            // Subscription logic removed - monthly is flat price
+
             
             // עדכון סטטוס התלמיד בהתאם לסטטוס הנוכחות
             if (status === 'לא באי' || status === 'עזב') {
@@ -794,7 +759,7 @@ export default function Index() {
                 const calc = calcPayment(paymentForm.studentId, v, paymentForm.date);
                 setPaymentForm(prev => ({ ...prev, type: v, amount: calc.amount, note: calc.note }));
               }
-            }}><SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger><SelectContent><SelectItem value="ניסיון">ניסיון (700 ₪)</SelectItem><SelectItem value="חד פעמי">חד פעמי (800 ₪)</SelectItem><SelectItem value="חודשי">חודשי</SelectItem></SelectContent></Select></div>
+            }}><SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger><SelectContent><SelectItem value="ניסיון">ניסיון (฿600)</SelectItem><SelectItem value="חד פעמי">חד פעמי (฿600 / אחים ฿500)</SelectItem><SelectItem value="חודשי">חודשי (฿4,000 / אחים ฿3,200)</SelectItem></SelectContent></Select></div>
             <div className="space-y-2"><Label>אמצעי תשלום</Label><Select value={paymentForm.method} onValueChange={(v: 'מזומן' | 'סקאן') => setPaymentForm({ ...paymentForm, method: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="מזומן">מזומן</SelectItem><SelectItem value="סקאן">סקאן</SelectItem></SelectContent></Select></div>
             <div className="space-y-2"><Label>תאריך</Label><Input type="date" value={paymentForm.date} onChange={(e) => { 
               setPaymentForm({ ...paymentForm, date: e.target.value }); 
