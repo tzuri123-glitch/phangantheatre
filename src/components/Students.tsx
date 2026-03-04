@@ -52,9 +52,8 @@ export default function Students({ students, payments, onAddStudent, onEditStude
 
   const MONTHLY_PRICE = 4000;
   const SIBLING_MONTHLY_PRICE = 3200;
-  const SINGLE_PRICE = 600;
+  const SINGLE_PRICE = 700;
   const SIBLING_SINGLE_PRICE = 500;
-  const TRIAL_PRICE = 600;
 
   const calculateStudentBalance = (studentId: string, student: Student) => {
     const studentPayments = payments.filter(p => p.studentId === studentId);
@@ -88,13 +87,7 @@ export default function Students({ students, payments, onAddStudent, onEditStude
           const priceAfterDiscount = singlePrice * (1 - discount / 100);
           totalExpected += priceAfterDiscount;
         }
-      } else if (payment.type === 'ניסיון') {
-        // תשלום ניסיון נספר רק אם אין תשלום חודשי באותו חודש
-        if (!monthsWithMonthlyPayment.has(paymentMonth)) {
-          const priceAfterDiscount = TRIAL_PRICE * (1 - discount / 100);
-          totalExpected += priceAfterDiscount;
         }
-      }
     });
     
     return totalPaid - totalExpected;
