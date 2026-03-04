@@ -32,31 +32,7 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
   const { user } = useAuth();
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({});
   const [sessionSearchQueries, setSessionSearchQueries] = useState<Record<string, string>>({});
-  const [subscriptions, setSubscriptions] = useState<any[]>([]);
-
-  // Load subscriptions
-  useEffect(() => {
-    if (!user) return;
-    
-    const loadSubscriptions = async () => {
-      const { data } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', user.id);
-      
-      if (data) {
-        setSubscriptions(data.map(s => ({
-          id: s.id,
-          studentId: s.student_id,
-          monthYear: s.month_year,
-          totalEntries: s.total_entries,
-          entriesRemaining: s.entries_remaining
-        })));
-      }
-    };
-    
-    loadSubscriptions();
-  }, [user]);
+  const subscriptions: any[] = [];
 
   const toggleSession = (sessionId: string) => {
     setExpandedSessions((prev) => ({
