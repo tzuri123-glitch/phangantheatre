@@ -21,9 +21,10 @@ interface StudentsProps {
   onAddStudent: () => void;
   onEditStudent: (student: Student) => void;
   onDeleteStudent: (studentId: string) => void;
+  onViewPayments?: (student: Student) => void;
 }
 
-export default function Students({ students, payments, onAddStudent, onEditStudent, onDeleteStudent }: StudentsProps) {
+export default function Students({ students, payments, onAddStudent, onEditStudent, onDeleteStudent, onViewPayments }: StudentsProps) {
   const [expandedClasses, setExpandedClasses] = useState<Record<string, boolean>>({});
   const [classSearchQueries, setClassSearchQueries] = useState<Record<string, string>>({});
 
@@ -343,6 +344,16 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                             </TableCell>
                             <TableCell>
                               <div className="flex gap-2">
+                                {onViewPayments && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => onViewPayments(student)}
+                                    title="תשלומים ויומן"
+                                  >
+                                    💳
+                                  </Button>
+                                )}
                                 <Button
                                   variant="outline"
                                   size="sm"

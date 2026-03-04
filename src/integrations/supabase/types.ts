@@ -63,6 +63,39 @@ export type Database = {
           },
         ]
       }
+      payment_audit_log: {
+        Row: {
+          action: string
+          changed_by: string
+          created_at: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          payment_id: string
+          student_id: string
+        }
+        Insert: {
+          action: string
+          changed_by: string
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          payment_id: string
+          student_id: string
+        }
+        Update: {
+          action?: string
+          changed_by?: string
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          payment_id?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
