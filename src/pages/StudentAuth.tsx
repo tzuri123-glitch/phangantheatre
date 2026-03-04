@@ -318,7 +318,7 @@ export default function StudentAuth() {
           </Button>
         </form>
 
-        <div className="mt-4 text-center">
+        <div className="mt-4 text-center space-y-2">
           <button
             type="button"
             onClick={() => setIsSignUp(!isSignUp)}
@@ -326,6 +326,17 @@ export default function StudentAuth() {
           >
             {isSignUp ? 'כבר יש לך חשבון? התחבר' : 'אין לך חשבון? הירשם'}
           </button>
+          {!isSignUp && (
+            <div>
+              <button
+                type="button"
+                onClick={() => navigate('/reset-password')}
+                className="text-sm text-muted-foreground hover:underline"
+              >
+                שכחתי סיסמה
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="mt-6 pt-4 border-t border-border text-center">
