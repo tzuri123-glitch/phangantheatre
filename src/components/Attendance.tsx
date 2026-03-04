@@ -143,6 +143,8 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
                   <TableHeader>
                     <TableRow>
                       <TableHead className="text-right">תלמיד</TableHead>
+                      <TableHead className="text-right">כיתה</TableHead>
+                      <TableHead className="text-right">תאריך</TableHead>
                       <TableHead className="text-right">סטטוס תשלום</TableHead>
                       <TableHead className="text-right">פעולות</TableHead>
                     </TableRow>
@@ -167,6 +169,8 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
                           <TableCell className="font-medium">
                             {getStudentName(record.studentId)}
                           </TableCell>
+                          <TableCell>{student.className}</TableCell>
+                          <TableCell>{session.date}</TableCell>
                           <TableCell>
                             {statusBadge && <Badge variant="outline">{statusBadge}</Badge>}
                           </TableCell>
