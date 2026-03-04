@@ -136,6 +136,25 @@ export default function Index() {
   useEffect(() => {
     if (!user) return;
     loadData();
+
+    // Realtime: auto-refresh when attendance or sessions change
+    const channel = supabase
+      .channel('admin-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'attendance',
+        filter: `user_id=eq.${user.id}`,
+      }, () => { loadData(); })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'sessions',
+        filter: `user_id=eq.${user.id}`,
+      }, () => { loadData(); })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
 
   function calcPayment(studentId: string, type: string, date: string) {
