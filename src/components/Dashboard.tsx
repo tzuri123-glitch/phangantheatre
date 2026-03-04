@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Student, Payment } from '@/types';
+import { Student, Payment, SINGLE_PRICE, SIBLING_SINGLE_PRICE, MONTHLY_PRICE, SIBLING_MONTHLY_PRICE } from '@/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Chart from 'chart.js/auto';
@@ -22,6 +22,49 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
   const pieChartInstance = useRef<Chart | null>(null);
 
   const totalIncome = payments.reduce((sum, p) => sum + p.amount, 0);
+
+  // חישוב חובות וזכויות לכל התלמידים
+  const balanceSummary = (() => {
+    let totalExpected = 0;
+    
+    // Group payments by student
+    const studentIds = [...new Set(payments.map(p => p.studentId))];
+    
+    studentIds.forEach(studentId => {
+      const student = students.find(s => s.id === studentId);
+      const studentPayments = payments.filter(p => p.studentId === studentId);
+      
+      // Months with monthly payment (to skip one-time in those months)
+      const monthsWithMonthly = new Set<string>();
+      studentPayments.filter(p => p.type === 'חודשי').forEach(p => {
+        monthsWithMonthly.add(p.date.slice(0, 7));
+      });
+      
+      studentPayments.forEach(payment => {
+        if (payment.type === 'סגירת יתרה') return; // no expected amount
+        
+        const isSib = student?.isSibling || false;
+        const discount = payment.discount || 0;
+        
+        if (payment.type === 'חודשי') {
+          const base = isSib ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+          totalExpected += base * (1 - discount / 100);
+        } else if (payment.type === 'חד פעמי') {
+          const paymentMonth = payment.date.slice(0, 7);
+          if (!monthsWithMonthly.has(paymentMonth)) {
+            const base = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
+            totalExpected += base * (1 - discount / 100);
+          }
+        }
+      });
+    });
+    
+    const totalCredits = Math.max(totalIncome - totalExpected, 0);
+    const totalDebts = Math.max(totalExpected - totalIncome, 0);
+    const netIncome = totalIncome - totalCredits;
+    
+    return { totalExpected, totalCredits, totalDebts, netIncome };
+  })();
 
   const incomeByMonth = payments.reduce((acc, p) => {
     const monthKey = p.date.slice(0, 7);
@@ -238,19 +281,43 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
         </Button>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="p-6 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 card-hover backdrop-blur-sm">
-          <h3 className="text-lg font-semibold text-muted-foreground mb-2">סה"כ תלמידים</h3>
-          <p className="text-5xl font-bold bg-gradient-to-l from-primary to-primary-glow bg-clip-text text-transparent">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="p-4 sm:p-6 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 card-hover backdrop-blur-sm">
+          <h3 className="text-sm sm:text-lg font-semibold text-muted-foreground mb-1 sm:mb-2">סה"כ תלמידים</h3>
+          <p className="text-3xl sm:text-5xl font-bold bg-gradient-to-l from-primary to-primary-glow bg-clip-text text-transparent">
             {students.length}
           </p>
         </Card>
         
-        <Card className="p-6 bg-gradient-to-br from-magenta/10 via-magenta/5 to-transparent border-magenta/20 card-hover backdrop-blur-sm">
-          <h3 className="text-lg font-semibold text-muted-foreground mb-2">סה"כ הכנסות</h3>
-          <p className="text-5xl font-bold bg-gradient-to-l from-magenta to-magenta-glow bg-clip-text text-transparent">
+        <Card className="p-4 sm:p-6 bg-gradient-to-br from-magenta/10 via-magenta/5 to-transparent border-magenta/20 card-hover backdrop-blur-sm">
+          <h3 className="text-sm sm:text-lg font-semibold text-muted-foreground mb-1 sm:mb-2">ברוטו</h3>
+          <p className="text-2xl sm:text-4xl font-bold bg-gradient-to-l from-magenta to-magenta-glow bg-clip-text text-transparent">
             {formatILS(totalIncome)}
           </p>
+        </Card>
+
+        <Card className="p-4 sm:p-6 bg-gradient-to-br from-green-500/10 via-green-500/5 to-transparent border-green-500/20 card-hover backdrop-blur-sm">
+          <h3 className="text-sm sm:text-lg font-semibold text-muted-foreground mb-1 sm:mb-2">נטו</h3>
+          <p className="text-2xl sm:text-4xl font-bold text-green-600 dark:text-green-400">
+            {formatILS(balanceSummary.netIncome)}
+          </p>
+        </Card>
+
+        <Card className="p-4 sm:p-6 card-hover backdrop-blur-sm">
+          <div className="space-y-2">
+            <div>
+              <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground">זכויות לתלמידים</h3>
+              <p className="text-lg sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                {formatILS(balanceSummary.totalCredits)}
+              </p>
+            </div>
+            <div>
+              <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground">חובות מתלמידים</h3>
+              <p className="text-lg sm:text-2xl font-bold text-red-600 dark:text-red-400">
+                {formatILS(balanceSummary.totalDebts)}
+              </p>
+            </div>
+          </div>
         </Card>
       </div>
 
