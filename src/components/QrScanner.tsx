@@ -13,9 +13,13 @@ export default function QrScanner({ open, onClose, onScan }: QrScannerProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<string>('qr-reader-' + Date.now());
+  const scannedRef = useRef(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      scannedRef.current = false;
+      return;
+    }
 
     let cancelled = false;
     const startScanner = async () => {
@@ -27,12 +31,13 @@ export default function QrScanner({ open, onClose, onScan }: QrScannerProps) {
           { facingMode: 'environment' },
           { fps: 10, qrbox: { width: 250, height: 250 } },
           (decodedText) => {
-            if (!cancelled) {
-              scanner.stop().catch(() => {});
-              onScan(decodedText);
-            }
+            // Prevent multiple fires
+            if (cancelled || scannedRef.current) return;
+            scannedRef.current = true;
+            scanner.stop().catch(() => {});
+            onScan(decodedText);
           },
-          () => {} // ignore errors during scanning
+          () => {}
         );
       } catch (err: any) {
         if (!cancelled) {
@@ -41,7 +46,6 @@ export default function QrScanner({ open, onClose, onScan }: QrScannerProps) {
       }
     };
 
-    // Small delay to ensure DOM element exists
     const timeout = setTimeout(startScanner, 300);
 
     return () => {
