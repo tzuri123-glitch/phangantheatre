@@ -9,6 +9,7 @@ import Payments from '@/components/Payments';
 import Attendance from '@/components/Attendance';
 import AdminSettings from '@/components/AdminSettings';
 import PendingPayments from '@/components/PendingPayments';
+import PaymentHistory from '@/components/PaymentHistory';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,6 +45,7 @@ export default function Index() {
   const [showSessionForm, setShowSessionForm] = useState(false);
   const [sessionForm, setSessionForm] = useState<{ className: string; date: string; trial: boolean }>({ className: CLASS_OPTIONS[0], date: new Date().toISOString().slice(0, 10), trial: false });
   const [currentSession, setCurrentSession] = useState<Session | null>(null);
+  const [paymentHistoryStudent, setPaymentHistoryStudent] = useState<Student | null>(null);
 
   // טעינת נתונים מהדטהבייס
   const loadData = async () => {
@@ -292,6 +294,7 @@ export default function Index() {
             setStudents(prev => prev.filter(s => s.id !== studentId));
             toast.success('תלמיד נמחק!');
           }}
+          onViewPayments={(student) => setPaymentHistoryStudent(student)}
         />}
         {tab === 'payments' && <Payments 
           payments={payments} 
@@ -1095,6 +1098,36 @@ export default function Index() {
           </div>}
         </DialogContent>
       </Dialog>
+
+      {paymentHistoryStudent && (
+        <PaymentHistory
+          student={paymentHistoryStudent}
+          payments={payments}
+          open={!!paymentHistoryStudent}
+          onClose={() => setPaymentHistoryStudent(null)}
+          onEditPayment={(payment) => {
+            setPaymentHistoryStudent(null);
+            setEditingPayment(payment);
+            setPaymentForm({
+              studentId: payment.studentId,
+              type: payment.type,
+              method: payment.method,
+              date: payment.date,
+              amount: payment.amount,
+              note: payment.note,
+              discount: payment.discount || 0,
+            });
+            setShowPaymentModal(true);
+          }}
+          onDeletePayment={async (paymentId) => {
+            if (!user) return;
+            const { error } = await supabase.from('payments').delete().eq('id', paymentId).eq('user_id', user.id);
+            if (error) { toast.error('שגיאה במחיקת תשלום'); return; }
+            setPayments(prev => prev.filter(p => p.id !== paymentId));
+            toast.success('תשלום נמחק (נרשם ביומן)');
+          }}
+        />
+      )}
     </div>
   );
 }
