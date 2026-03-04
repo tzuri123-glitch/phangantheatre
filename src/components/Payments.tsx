@@ -72,12 +72,12 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
         const paymentMonth = format(parseISO(payment.date), 'MM/yyyy');
         const discount = payment.discount || 0;
         
-        if (payment.type === 'חודשי') {
-          // תשלום חודשי
+        if (payment.type === 'סגירת יתרה') {
+          // סגירת יתרה לא מייצרת צפי - הסכום הוא מה שהתקבל
+        } else if (payment.type === 'חודשי') {
           const priceAfterDiscount = monthlyPrice * (1 - discount / 100);
           totalExpected += priceAfterDiscount;
         } else if (payment.type === 'חד פעמי') {
-          // תשלום חד-פעמי נספר רק אם אין תשלום חודשי באותו חודש
           if (!monthsWithMonthlyPayment.has(paymentMonth)) {
             const singlePrice = student.isSibling ? 500 : 600;
             const priceAfterDiscount = singlePrice * (1 - discount / 100);
