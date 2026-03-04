@@ -18,12 +18,38 @@ const CLASS_SCHEDULE: Record<string, { day: number; startHour: number; startMin:
   ],
 };
 
-function findCurrentSession(className: string, now: Date): { startHour: number; startMin: number } | null {
+function getBangkokTimeInfo(): { dayOfWeek: number; hour: number; minute: number; date: string; timeLabel: string } {
+  const formatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Bangkok',
+    weekday: 'short',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(new Date());
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+
+  const weekdayMap: Record<string, number> = {
+    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+  };
+
+  const dayOfWeek = weekdayMap[get('weekday')] ?? -1;
+  const hour = Number(get('hour'));
+  const minute = Number(get('minute'));
+  const date = `${get('year')}-${get('month')}-${get('day')}`;
+
+  return { dayOfWeek, hour, minute, date, timeLabel: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}` };
+}
+
+function findCurrentSession(className: string, dayOfWeek: number, hour: number, minute: number): { startHour: number; startMin: number } | null {
   const schedule = CLASS_SCHEDULE[className];
   if (!schedule) return null;
 
-  const dayOfWeek = now.getDay();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const currentMinutes = hour * 60 + minute;
 
   for (const slot of schedule) {
     if (slot.day !== dayOfWeek) continue;
@@ -101,9 +127,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check schedule - use Israel timezone
-    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
-    const currentSlot = findCurrentSession(student.class_name, now);
+    // Check schedule - Bangkok timezone (server-safe calculation)
+    const bangkokTime = getBangkokTimeInfo();
+    const currentSlot = findCurrentSession(
+      student.class_name,
+      bangkokTime.dayOfWeek,
+      bangkokTime.hour,
+      bangkokTime.minute,
+    );
 
     if (!currentSlot) {
       const scheduleInfo = getNextClassInfo(student.class_name);
@@ -111,6 +142,7 @@ Deno.serve(async (req) => {
         error: 'no-class-now',
         message: `אין שיעור כרגע עבור ${student.class_name}`,
         schedule: scheduleInfo,
+        current_time: bangkokTime.timeLabel,
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -118,7 +150,7 @@ Deno.serve(async (req) => {
     }
 
     const adminUserId = student.user_id;
-    const today = now.toISOString().slice(0, 10);
+    const today = bangkokTime.date;
 
     // Find or create today's session
     let { data: session } = await adminClient
