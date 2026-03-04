@@ -75,6 +75,10 @@ export default function StudentPortal() {
   const [editParentPhone, setEditParentPhone] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
 
   // Payment dialog
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -700,6 +704,46 @@ export default function StudentPortal() {
                     </div>
                   </div>
                 )}
+
+                {/* Password change section */}
+                <Card className="p-4 sm:p-6 mt-4">
+                  <h3 className="text-lg font-bold text-foreground mb-4">🔒 שינוי סיסמה</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium mb-1 text-foreground">סיסמה חדשה</label>
+                      <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="הכנס סיסמה חדשה" />
+                      <p className="text-xs text-muted-foreground mt-1">לפחות 8 תווים, אות גדולה אחת באנגלית ומספר אחד</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1 text-foreground">אישור סיסמה חדשה</label>
+                      <Input type="password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} placeholder="הכנס סיסמה פעם נוספת" />
+                    </div>
+                    <Button
+                      className="w-full"
+                      disabled={changingPassword || !newPassword}
+                      onClick={async () => {
+                        if (newPassword.length < 8) { toast.error('הסיסמה חייבת להכיל לפחות 8 תווים'); return; }
+                        if (!/[A-Z]/.test(newPassword)) { toast.error('הסיסמה חייבת להכיל לפחות אות גדולה אחת באנגלית'); return; }
+                        if (!/[0-9]/.test(newPassword)) { toast.error('הסיסמה חייבת להכיל לפחות מספר אחד'); return; }
+                        if (newPassword !== confirmNewPassword) { toast.error('הסיסמאות אינן תואמות'); return; }
+                        setChangingPassword(true);
+                        try {
+                          const { error } = await supabase.auth.updateUser({ password: newPassword });
+                          if (error) throw error;
+                          toast.success('הסיסמה שונתה בהצלחה! 🔐');
+                          setNewPassword('');
+                          setConfirmNewPassword('');
+                        } catch (err: any) {
+                          toast.error('שגיאה: ' + err.message);
+                        } finally {
+                          setChangingPassword(false);
+                        }
+                      }}
+                    >
+                      {changingPassword ? 'משנה...' : 'שנה סיסמה'}
+                    </Button>
+                  </div>
+                </Card>
               </Card>
             )}
           </>

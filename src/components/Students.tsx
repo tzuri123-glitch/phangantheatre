@@ -13,8 +13,9 @@ import {
 } from '@/components/ui/table';
 import { Card } from '@/components/ui/card';
 import { useState } from 'react';
-import { Users, MessageCircle, Copy } from 'lucide-react';
+import { Users, MessageCircle, Copy, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface StudentsProps {
   students: Student[];
@@ -355,6 +356,26 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                                     title="תשלומים ויומן"
                                   >
                                     💳
+                                  </Button>
+                                 )}
+                                {student.linkedEmail && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={async () => {
+                                      try {
+                                        const { error } = await supabase.functions.invoke('reset-student-password', {
+                                          body: { studentEmail: student.linkedEmail },
+                                        });
+                                        if (error) throw error;
+                                        toast.success(`מייל איפוס סיסמה נשלח ל-${student.linkedEmail}`);
+                                      } catch (err: any) {
+                                        toast.error('שגיאה: ' + err.message);
+                                      }
+                                    }}
+                                    title="שלח מייל איפוס סיסמה"
+                                  >
+                                    <KeyRound size={14} />
                                   </Button>
                                 )}
                                 <Button
