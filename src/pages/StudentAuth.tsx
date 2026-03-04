@@ -19,6 +19,7 @@ export default function StudentAuth() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   // Registration fields
   const [parentName, setParentName] = useState('');
   const [parentLastName, setParentLastName] = useState('');
@@ -54,6 +55,20 @@ export default function StudentAuth() {
 
     try {
       if (isSignUp) {
+        // Password validation
+        if (password.length < 8) {
+          throw new Error('הסיסמה חייבת להכיל לפחות 8 תווים');
+        }
+        if (!/[A-Z]/.test(password)) {
+          throw new Error('הסיסמה חייבת להכיל לפחות אות גדולה אחת באנגלית');
+        }
+        if (!/[0-9]/.test(password)) {
+          throw new Error('הסיסמה חייבת להכיל לפחות מספר אחד');
+        }
+        if (password !== confirmPassword) {
+          throw new Error('הסיסמאות אינן תואמות');
+        }
+
         // Validate registration fields
         if (!parentName.trim() || !parentLastName.trim() || !parentPhone.trim()) {
           throw new Error('יש למלא את כל פרטי ההורה');
@@ -154,10 +169,29 @@ export default function StudentAuth() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={6}
+              minLength={8}
               placeholder="הכנס סיסמה"
             />
+            {isSignUp && (
+              <p className="text-xs text-muted-foreground mt-1">
+                הסיסמה חייבת להכיל לפחות 8 תווים, אות גדולה אחת באנגלית ומספר אחד
+              </p>
+            )}
           </div>
+
+          {isSignUp && (
+            <div>
+              <label className="block text-sm font-medium mb-1 text-foreground">אישור סיסמה</label>
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={8}
+                placeholder="הכנס סיסמה פעם נוספת"
+              />
+            </div>
+          )}
 
           {isSignUp && (
             <>

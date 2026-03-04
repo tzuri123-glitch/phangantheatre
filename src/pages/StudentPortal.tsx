@@ -24,7 +24,11 @@ interface StudentRecord {
   last_name: string | null;
   class_name: string;
   status: string | null;
-  user_id: string; // admin who owns this student
+  user_id: string;
+  phone: string | null;
+  birth_date: string | null;
+  parent_name: string | null;
+  parent_phone: string | null;
 }
 
 interface AttendanceRecord {
@@ -56,8 +60,17 @@ export default function StudentPortal() {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
-  const [activeTab, setActiveTab] = useState<'attendance' | 'payments'>('attendance');
+  const [activeTab, setActiveTab] = useState<'attendance' | 'payments' | 'profile'>('attendance');
   const [loading, setLoading] = useState(true);
+
+  // Profile editing
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editBirthDate, setEditBirthDate] = useState('');
+  const [editParentName, setEditParentName] = useState('');
+  const [editParentPhone, setEditParentPhone] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
 
   // Payment dialog
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -287,7 +300,51 @@ export default function StudentPortal() {
   const tabs = [
     { id: 'attendance' as const, label: 'נוכחות' },
     { id: 'payments' as const, label: 'תשלומים' },
+    { id: 'profile' as const, label: 'הפרטים שלי' },
   ];
+
+  const openEditProfile = () => {
+    if (student) {
+      setEditName(student.name || '');
+      setEditPhone(student.phone || '');
+      setEditBirthDate(student.birth_date || '');
+      setEditParentName(student.parent_name || '');
+      setEditParentPhone(student.parent_phone || '');
+    }
+    setShowEditProfile(true);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!student) return;
+    setSavingProfile(true);
+    try {
+      const { error } = await supabase
+        .from('students')
+        .update({
+          name: editName.trim(),
+          phone: editPhone.trim() || null,
+          birth_date: editBirthDate || null,
+          parent_name: editParentName.trim() || null,
+          parent_phone: editParentPhone.trim() || null,
+        })
+        .eq('id', student.id);
+      if (error) throw error;
+      setStudent({
+        ...student,
+        name: editName.trim(),
+        phone: editPhone.trim() || null,
+        birth_date: editBirthDate || null,
+        parent_name: editParentName.trim() || null,
+        parent_phone: editParentPhone.trim() || null,
+      });
+      setShowEditProfile(false);
+      toast.success('הפרטים עודכנו בהצלחה!');
+    } catch (err: any) {
+      toast.error('שגיאה: ' + err.message);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   const statusMap: Record<string, string> = {
     'נוכח': 'bg-green-100 text-green-800',
@@ -518,6 +575,74 @@ export default function StudentPortal() {
                   </Table>
                 </Card>
               </div>
+            )}
+
+            {activeTab === 'profile' && (
+              <Card className="p-4 sm:p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-foreground">הפרטים שלי</h3>
+                  {!showEditProfile && (
+                    <Button size="sm" variant="outline" onClick={openEditProfile}>✏️ ערוך</Button>
+                  )}
+                </div>
+                {!showEditProfile ? (
+                  <div className="space-y-3">
+                    <div className="flex justify-between border-b border-border pb-2">
+                      <span className="text-muted-foreground text-sm">שם התלמיד</span>
+                      <span className="font-medium text-foreground">{student.name} {student.last_name}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-border pb-2">
+                      <span className="text-muted-foreground text-sm">קבוצה</span>
+                      <span className="font-medium text-foreground">{student.class_name}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-border pb-2">
+                      <span className="text-muted-foreground text-sm">תאריך לידה</span>
+                      <span className="font-medium text-foreground">{student.birth_date || 'לא הוזן'}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-border pb-2">
+                      <span className="text-muted-foreground text-sm">טלפון תלמיד</span>
+                      <span className="font-medium text-foreground">{student.phone || 'לא הוזן'}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-border pb-2">
+                      <span className="text-muted-foreground text-sm">שם הורה</span>
+                      <span className="font-medium text-foreground">{student.parent_name || 'לא הוזן'}</span>
+                    </div>
+                    <div className="flex justify-between pb-2">
+                      <span className="text-muted-foreground text-sm">טלפון הורה</span>
+                      <span className="font-medium text-foreground">{student.parent_phone || 'לא הוזן'}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium mb-1 text-foreground">שם התלמיד</label>
+                      <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1 text-foreground">תאריך לידה</label>
+                      <Input type="date" value={editBirthDate} onChange={(e) => setEditBirthDate(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1 text-foreground">טלפון תלמיד</label>
+                      <Input type="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="לא חובה" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1 text-foreground">שם הורה</label>
+                      <Input value={editParentName} onChange={(e) => setEditParentName(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1 text-foreground">טלפון הורה</label>
+                      <Input type="tel" value={editParentPhone} onChange={(e) => setEditParentPhone(e.target.value)} />
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <Button onClick={handleSaveProfile} disabled={savingProfile} className="flex-1">
+                        {savingProfile ? 'שומר...' : 'שמור שינויים'}
+                      </Button>
+                      <Button variant="outline" onClick={() => setShowEditProfile(false)} className="flex-1">ביטול</Button>
+                    </div>
+                  </div>
+                )}
+              </Card>
             )}
           </>
         )}
