@@ -151,6 +151,22 @@ export default function StudentPortal() {
           toast.error('התשלום שלך נדחה ❌');
         }
       })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'payments',
+        filter: `student_id=eq.${student.id}`,
+      }, (payload) => {
+        const newPayment = payload.new as any;
+        setPayments(prev => [{
+          id: newPayment.id,
+          amount: newPayment.amount,
+          payment_date: newPayment.payment_date,
+          payment_type: newPayment.payment_type,
+          payment_method: newPayment.payment_method,
+          note: newPayment.note,
+        }, ...prev]);
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
