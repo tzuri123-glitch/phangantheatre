@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Student, Payment, Session, CLASS_OPTIONS, MONTHLY_PRICE, SIBLING_MONTHLY_PRICE, SINGLE_PRICE, TRIAL_PRICE } from '@/types';
+import { Student, Payment, Session, CLASS_OPTIONS, MONTHLY_PRICE, SIBLING_MONTHLY_PRICE, SINGLE_PRICE } from '@/types';
 import { getPaymentStatusForSession, getStatusColor, getStatusBadge } from '@/lib/paymentStatus';
 import { Badge } from '@/components/ui/badge';
 import TabNavigation from '@/components/TabNavigation';
@@ -152,7 +152,6 @@ export default function Index() {
     
     studentPayments.forEach((payment) => {
       const baseExpectedAmount = 
-        payment.type === 'ניסיון' ? TRIAL_PRICE :
         payment.type === 'חד פעמי' ? (student.isSibling ? 500 : SINGLE_PRICE) :
         student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
       
@@ -169,15 +168,13 @@ export default function Index() {
     let baseAmount = 0;
     let note = '';
     
-    if (type === 'ניסיון') {
-      baseAmount = TRIAL_PRICE;
-    } else if (type === 'חד פעמי') {
+    if (type === 'חד פעמי') {
       baseAmount = student.isSibling ? 500 : SINGLE_PRICE;
     } else if (type === 'חודשי') {
-      // קיזוז תשלומי ניסיון/חד-פעמי באותו חודש של התשלום הנוכחי
+      // קיזוז תשלומי חד-פעמי באותו חודש של התשלום הנוכחי
       const singles = payments.filter((p) => {
         if (p.studentId !== studentId) return false;
-        if (!(p.type === 'ניסיון' || p.type === 'חד פעמי')) return false;
+        if (p.type !== 'חד פעמי') return false;
         const pd = parseDate(p.date);
         if (isNaN(pd.getTime()) || isNaN(currDate.getTime())) {
           return p.date.slice(0, 7) === date.slice(0, 7);
@@ -759,7 +756,7 @@ export default function Index() {
                 const calc = calcPayment(paymentForm.studentId, v, paymentForm.date);
                 setPaymentForm(prev => ({ ...prev, type: v, amount: calc.amount, note: calc.note }));
               }
-            }}><SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger><SelectContent><SelectItem value="ניסיון">ניסיון (฿600)</SelectItem><SelectItem value="חד פעמי">חד פעמי (฿600 / אחים ฿500)</SelectItem><SelectItem value="חודשי">חודשי (฿4,000 / אחים ฿3,200)</SelectItem></SelectContent></Select></div>
+            }}><SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger><SelectContent><SelectItem value="חד פעמי">חד פעמי (฿700 / אחים ฿500)</SelectItem><SelectItem value="חודשי">חודשי (฿4,000 / אחים ฿3,200)</SelectItem></SelectContent></Select></div>
             <div className="space-y-2"><Label>אמצעי תשלום</Label><Select value={paymentForm.method} onValueChange={(v: 'מזומן' | 'סקאן') => setPaymentForm({ ...paymentForm, method: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="מזומן">מזומן</SelectItem><SelectItem value="סקאן">סקאן</SelectItem></SelectContent></Select></div>
             <div className="space-y-2"><Label>תאריך</Label><Input type="date" value={paymentForm.date} onChange={(e) => { 
               setPaymentForm({ ...paymentForm, date: e.target.value }); 
@@ -979,24 +976,6 @@ export default function Index() {
                       status: status
                     });
                   
-                  // אם זה ניסיון והתלמיד נוכח, צור תשלום
-                  if (currentSession.trial && status === 'נוכח' && !payments.some((p) => p.studentId === studentId && p.type === 'ניסיון' && p.date === currentSession.date)) {
-                    const { amount, note } = calcPayment(studentId, 'ניסיון', currentSession.date);
-                    await supabase
-                      .from('payments')
-                      .insert({
-                        user_id: user.id,
-                        student_id: studentId,
-                        payment_type: 'ניסיון',
-                        payment_method: 'מזומן',
-                        payment_date: currentSession.date,
-                        amount,
-                        note,
-                        discount: 0
-                      });
-                    
-                    setPayments((prev) => [...prev, { id: crypto.randomUUID(), studentId, type: 'ניסיון', method: 'מזומן', date: currentSession.date, amount, note, discount: 0 }]);
-                  }
                 }
                 
                 setSessions((prev) => [...prev, { ...currentSession, id: sessionData.id }]);

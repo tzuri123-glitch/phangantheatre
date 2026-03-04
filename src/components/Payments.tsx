@@ -83,12 +83,6 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
             const priceAfterDiscount = singlePrice * (1 - discount / 100);
             totalExpected += priceAfterDiscount;
           }
-        } else if (payment.type === 'ניסיון') {
-          // תשלום ניסיון נספר רק אם אין תשלום חודשי באותו חודש
-          if (!monthsWithMonthlyPayment.has(paymentMonth)) {
-            const priceAfterDiscount = 600 * (1 - discount / 100);
-            totalExpected += priceAfterDiscount;
-          }
         }
       });
       

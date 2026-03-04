@@ -15,7 +15,7 @@ export interface Student {
 export interface Payment {
   id: string;
   studentId: string;
-  type: 'ניסיון' | 'חד פעמי' | 'חודשי';
+  type: 'חד פעמי' | 'חודשי';
   method: 'מזומן' | 'סקאן';
   date: string;
   amount: number;
@@ -45,6 +45,5 @@ export const CLASS_OPTIONS = [
 
 export const MONTHLY_PRICE = 4000;
 export const SIBLING_MONTHLY_PRICE = 3200;
-export const SINGLE_PRICE = 600;
+export const SINGLE_PRICE = 700;
 export const SIBLING_SINGLE_PRICE = 500;
-export const TRIAL_PRICE = 600;

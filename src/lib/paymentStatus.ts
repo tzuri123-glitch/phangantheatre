@@ -33,8 +33,8 @@ export function getPaymentStatusForSession(
   console.log('📅 Today:', format(today, 'yyyy-MM-dd'));
   
   // Check if trial lesson
-  if (student.status === 'חדש' && session.trial) {
-    console.log('✅ Trial lesson');
+  if (student.status === 'חדש') {
+    console.log('✅ New student');
     return 'trial';
   }
   
@@ -49,12 +49,12 @@ export function getPaymentStatusForSession(
   console.log('💳 Active subscription:', activeSubscription);
   
 // Check payments in range (one-time or trial)
-const studentPayments = payments.filter(p => p.studentId === student.id && (p.type === 'חד פעמי' || p.type === 'ניסיון' || p.type === 'חודשי'));
+const studentPayments = payments.filter(p => p.studentId === student.id && (p.type === 'חד פעמי' || p.type === 'חודשי'));
 console.log('💰 Student payments:', studentPayments.map(p => ({ type: p.type, date: p.date, amount: p.amount, discount: p.discount })));
 
 // One-time and trial payments cover ONLY the specific session date, not a range
 const hasOneTimeOrTrialPayment = payments.some(payment => {
-  if (payment.studentId !== student.id || (payment.type !== 'חד פעמי' && payment.type !== 'ניסיון')) {
+  if (payment.studentId !== student.id || payment.type !== 'חד פעמי') {
     return false;
   }
   
@@ -66,7 +66,7 @@ const hasOneTimeOrTrialPayment = payments.some(payment => {
   if (!isExactMatch) return false;
   
   // Check if payment amount is sufficient or has 100% discount
-  const requiredAmount = payment.type === 'ניסיון' ? 600 : (student.isSibling ? 500 : 600);
+  const requiredAmount = student.isSibling ? 500 : 700;
   const effectiveAmount = payment.amount * (1 - (payment.discount || 0) / 100);
   const isFullDiscount = payment.discount === 100;
   const isPaidEnough = effectiveAmount >= requiredAmount || isFullDiscount;
