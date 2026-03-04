@@ -75,6 +75,7 @@ export default function StudentPortal() {
   const [editParentPhone, setEditParentPhone] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [viewingPhoto, setViewingPhoto] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
@@ -500,7 +501,10 @@ export default function StudentPortal() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    <Avatar className="h-14 w-14 border-2 border-primary/20">
+                    <Avatar
+                      className={`h-14 w-14 border-2 border-primary/20 ${student.profile_photo_url ? 'cursor-pointer hover:ring-2 hover:ring-primary transition-all' : ''}`}
+                      onClick={() => { if (student.profile_photo_url) setViewingPhoto(true); }}
+                    >
                       <AvatarImage src={student.profile_photo_url || undefined} alt={student.name} />
                       <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">
                         {student.name?.charAt(0)}
@@ -801,6 +805,37 @@ export default function StudentPortal() {
           </>
         )}
       </div>
+
+      {/* Photo viewer dialog */}
+      <Dialog open={viewingPhoto} onOpenChange={setViewingPhoto}>
+        <DialogContent className="max-w-md p-2" dir="rtl">
+          {student?.profile_photo_url && (
+            <div className="text-center">
+              <img
+                src={student.profile_photo_url}
+                alt={student.name}
+                className="w-full max-h-[70vh] object-contain rounded-lg"
+              />
+              <p className="mt-3 font-bold text-foreground text-lg">{student.name} {student.last_name}</p>
+              <label className="mt-3 inline-block">
+                <Button variant="outline" size="sm" disabled={uploadingPhoto} asChild>
+                  <span className="cursor-pointer">
+                    📷 {uploadingPhoto ? 'מעלה...' : 'שנה תמונה'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={(e) => { handlePhotoUpload(e); setViewingPhoto(false); }}
+                      disabled={uploadingPhoto}
+                    />
+                  </span>
+                </Button>
+              </label>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Payment Dialog */}
       <Dialog open={showPaymentDialog} onOpenChange={(open) => { if (!open) { setShowPaymentDialog(false); setPaymentMethod(null); setSelectedPaymentType(''); } }}>
