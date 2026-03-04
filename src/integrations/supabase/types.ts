@@ -72,6 +72,7 @@ export type Database = {
           note: string | null
           payment_date: string
           payment_method: string
+          payment_proof_url: string | null
           payment_type: string
           student_id: string
           subscription_id: string | null
@@ -85,6 +86,7 @@ export type Database = {
           note?: string | null
           payment_date: string
           payment_method: string
+          payment_proof_url?: string | null
           payment_type: string
           student_id: string
           subscription_id?: string | null
@@ -98,6 +100,7 @@ export type Database = {
           note?: string | null
           payment_date?: string
           payment_method?: string
+          payment_proof_url?: string | null
           payment_type?: string
           student_id?: string
           subscription_id?: string | null

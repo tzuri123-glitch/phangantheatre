@@ -8,6 +8,7 @@ const tabs = [
   { id: 'students', label: 'תלמידים' },
   { id: 'attendance', label: 'נוכחות' },
   { id: 'payments', label: 'תשלומים' },
+  { id: 'settings', label: 'הגדרות' },
 ];
 
 export default function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {

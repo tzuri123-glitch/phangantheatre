@@ -4,10 +4,16 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import logo from '@/assets/logo.png';
+import { toast } from 'sonner';
 
 interface StudentRecord {
   id: string;
@@ -31,6 +37,7 @@ interface PaymentRecord {
   payment_type: string;
   payment_method: string;
   note: string | null;
+  payment_proof_url: string | null;
 }
 
 export default function StudentPortal() {
@@ -40,6 +47,12 @@ export default function StudentPortal() {
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [activeTab, setActiveTab] = useState<'attendance' | 'payments'>('attendance');
   const [loading, setLoading] = useState(true);
+
+  // Payment dialog state
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'promptpay' | null>(null);
+  const [promptPayUrl, setPromptPayUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -79,7 +92,7 @@ export default function StudentPortal() {
       // Get payments
       const { data: paymentsData } = await supabase
         .from('payments')
-        .select('id, amount, payment_date, payment_type, payment_method, note')
+        .select('id, amount, payment_date, payment_type, payment_method, note, payment_proof_url')
         .eq('student_id', studentData.id)
         .order('payment_date', { ascending: false });
 
@@ -87,11 +100,51 @@ export default function StudentPortal() {
         setPayments(paymentsData);
       }
 
+      // Get PromptPay QR image
+      const { data: files } = await supabase.storage
+        .from('admin-settings')
+        .list('', { limit: 10 });
+
+      const promptPayFile = files?.find(f => f.name.startsWith('promptpay'));
+      if (promptPayFile) {
+        const { data: urlData } = supabase.storage
+          .from('admin-settings')
+          .getPublicUrl(promptPayFile.name);
+        setPromptPayUrl(urlData.publicUrl);
+      }
+
       setLoading(false);
     };
 
     load();
   }, [user]);
+
+  const handleCashPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.[0] || !user || !student) return;
+    const file = e.target.files[0];
+    setUploading(true);
+
+    try {
+      const fileName = `${user.id}/${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from('payment-proofs')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('payment-proofs')
+        .getPublicUrl(fileName);
+
+      toast.success('תמונת הוכחה הועלתה בהצלחה! המנהל יאשר את התשלום.');
+      setShowPaymentDialog(false);
+      setPaymentMethod(null);
+    } catch (error: any) {
+      toast.error('שגיאה בהעלאת התמונה: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -133,12 +186,13 @@ export default function StudentPortal() {
         </div>
       </header>
 
-      {/* Student info card */}
       <div className="container mx-auto px-2 sm:px-4 py-4">
         {!student ? (
           <Card className="p-8 text-center">
+            <div className="text-6xl mb-4">🔗</div>
             <h2 className="text-xl font-bold text-foreground mb-2">החשבון שלך עדיין לא מקושר</h2>
             <p className="text-muted-foreground">פנה למנהל כדי לקשר את החשבון שלך לפרופיל התלמיד.</p>
+            <p className="text-muted-foreground text-sm mt-2">האימייל שלך: {user?.email}</p>
           </Card>
         ) : (
           <>
@@ -148,9 +202,18 @@ export default function StudentPortal() {
                   <h2 className="text-xl font-bold text-foreground">{student.name} {student.last_name}</h2>
                   <p className="text-muted-foreground">{student.class_name}</p>
                 </div>
-                <Badge variant="outline" className="text-sm">
-                  {student.status || 'פעיל'}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-sm">
+                    {student.status || 'פעיל'}
+                  </Badge>
+                  <Button
+                    size="sm"
+                    onClick={() => setShowPaymentDialog(true)}
+                    className="bg-gradient-to-l from-primary to-primary-hover text-white"
+                  >
+                    💰 שלם
+                  </Button>
+                </div>
               </div>
             </Card>
 
@@ -217,13 +280,12 @@ export default function StudentPortal() {
                       <TableHead className="text-right">סוג</TableHead>
                       <TableHead className="text-right">שיטה</TableHead>
                       <TableHead className="text-right">סכום</TableHead>
-                      <TableHead className="text-right">הערה</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {payments.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
                           אין רשומות תשלום עדיין
                         </TableCell>
                       </TableRow>
@@ -233,8 +295,7 @@ export default function StudentPortal() {
                           <TableCell>{p.payment_date}</TableCell>
                           <TableCell>{p.payment_type}</TableCell>
                           <TableCell>{p.payment_method}</TableCell>
-                          <TableCell>₪{p.amount}</TableCell>
-                          <TableCell>{p.note || '-'}</TableCell>
+                          <TableCell>฿{p.amount}</TableCell>
                         </TableRow>
                       ))
                     )}
@@ -245,6 +306,99 @@ export default function StudentPortal() {
           </>
         )}
       </div>
+
+      {/* Payment Dialog */}
+      <Dialog open={showPaymentDialog} onOpenChange={(open) => { if (!open) { setShowPaymentDialog(false); setPaymentMethod(null); } }}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>בחר אמצעי תשלום</DialogTitle>
+          </DialogHeader>
+
+          {!paymentMethod ? (
+            <div className="space-y-3">
+              <Button
+                className="w-full h-16 text-lg"
+                variant="outline"
+                onClick={() => setPaymentMethod('cash')}
+              >
+                💵 תשלום במזומן
+              </Button>
+              <Button
+                className="w-full h-16 text-lg"
+                variant="outline"
+                onClick={() => setPaymentMethod('promptpay')}
+              >
+                📱 PromptPay
+              </Button>
+            </div>
+          ) : paymentMethod === 'cash' ? (
+            <div className="space-y-4 text-center">
+              <div className="text-4xl">📸</div>
+              <h3 className="font-bold text-lg">צלם את העברת הכסף</h3>
+              <p className="text-muted-foreground text-sm">
+                צלם תמונה של העברת המזומן למנהל כהוכחת תשלום
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="cash-photo" className="cursor-pointer">
+                  <div className="border-2 border-dashed border-primary/50 rounded-xl p-8 hover:bg-accent/50 transition-colors">
+                    <div className="text-4xl mb-2">📷</div>
+                    <p className="text-sm text-primary font-medium">
+                      {uploading ? 'מעלה...' : 'לחץ כאן לצלם או לבחור תמונה'}
+                    </p>
+                  </div>
+                </Label>
+                <input
+                  id="cash-photo"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={handleCashPhotoUpload}
+                  disabled={uploading}
+                />
+              </div>
+              <Button variant="ghost" onClick={() => setPaymentMethod(null)} className="w-full">
+                ← חזור
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4 text-center">
+              <div className="text-4xl">📱</div>
+              <h3 className="font-bold text-lg">PromptPay</h3>
+              <p className="text-muted-foreground text-sm">
+                סרוק את הקוד או הורד את התמונה לביצוע העברה
+              </p>
+              {promptPayUrl ? (
+                <div className="space-y-3">
+                  <img
+                    src={promptPayUrl}
+                    alt="PromptPay QR"
+                    className="mx-auto max-w-[250px] rounded-lg shadow-lg"
+                  />
+                  <a
+                    href={promptPayUrl}
+                    download="promptpay-qr.png"
+                    className="inline-block"
+                  >
+                    <Button variant="outline" size="sm">
+                      📥 הורד תמונה
+                    </Button>
+                  </a>
+                </div>
+              ) : (
+                <div className="p-4 bg-muted rounded-lg">
+                  <p className="text-muted-foreground">
+                    קוד PromptPay עדיין לא הוגדר. פנה למנהל.
+                  </p>
+                </div>
+              )}
+              <Button variant="ghost" onClick={() => setPaymentMethod(null)} className="w-full">
+                ← חזור
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

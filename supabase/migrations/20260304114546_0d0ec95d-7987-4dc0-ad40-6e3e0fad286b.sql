@@ -1,0 +1,4 @@
+
+-- Allow admins to read all profiles (to get linked emails)
+CREATE POLICY "Admins can view all profiles" ON public.profiles
+  FOR SELECT USING (public.has_role(auth.uid(), 'admin'));
