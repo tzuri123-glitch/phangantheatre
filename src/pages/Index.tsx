@@ -814,7 +814,22 @@ export default function Index() {
                 const calc = calcPayment(paymentForm.studentId, v, paymentForm.date);
                 setPaymentForm(prev => ({ ...prev, type: v, amount: calc.amount, note: calc.note }));
               }
-            }}><SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger><SelectContent><SelectItem value="חד פעמי">חד פעמי (฿700 / אחים ฿500)</SelectItem><SelectItem value="חודשי">חודשי (฿4,000 / אחים ฿3,200)</SelectItem></SelectContent></Select></div>
+            }}><SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger><SelectContent>
+              {(() => {
+                const selectedStudent = students.find(s => s.id === paymentForm.studentId);
+                const isSib = selectedStudent?.isSibling;
+                return <>
+                  <SelectItem value="חד פעמי">חד פעמי (฿{isSib ? '500' : '700'})</SelectItem>
+                  <SelectItem value="חודשי">חודשי (฿{isSib ? '3,200' : '4,000'})</SelectItem>
+                </>;
+              })()}
+            </SelectContent></Select></div>
+            {paymentForm.studentId && (() => {
+              const selectedStudent = students.find(s => s.id === paymentForm.studentId);
+              return selectedStudent?.isSibling ? (
+                <div className="text-xs text-primary font-medium bg-primary/10 rounded-lg px-3 py-1.5">👫 תלמיד אח/אחות — מחיר מוזל</div>
+              ) : null;
+            })()}
             <div className="space-y-2"><Label>אמצעי תשלום</Label><Select value={paymentForm.method} onValueChange={(v: 'מזומן' | 'סקאן') => setPaymentForm({ ...paymentForm, method: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="מזומן">מזומן</SelectItem><SelectItem value="סקאן">סקאן</SelectItem></SelectContent></Select></div>
             <div className="space-y-2"><Label>תאריך</Label><Input type="date" value={paymentForm.date} onChange={(e) => { 
               setPaymentForm({ ...paymentForm, date: e.target.value }); 
@@ -827,14 +842,32 @@ export default function Index() {
               const newDiscount = Number(e.target.value);
               setPaymentForm(prev => ({ ...prev, discount: newDiscount }));
               
-              // חישוב מחדש של הסכום עם ההנחה
               if (paymentForm.studentId && paymentForm.type) {
                 const calc = calcPayment(paymentForm.studentId, paymentForm.type, paymentForm.date);
                 const amountWithDiscount = calc.amount * (1 - newDiscount / 100);
                 setPaymentForm(prev => ({ ...prev, discount: newDiscount, amount: Math.round(amountWithDiscount) }));
               }
             }} /></div>
-            <div className="space-y-2"><Label>סכום שהתקבל</Label><Input type="number" value={paymentForm.amount} onChange={(e) => setPaymentForm({ ...paymentForm, amount: Number(e.target.value) })} /></div>
+            <div className="space-y-2">
+              <Label>סכום שהתקבל</Label>
+              <Input type="number" value={paymentForm.amount} onChange={(e) => setPaymentForm({ ...paymentForm, amount: Number(e.target.value) })} />
+              <p className="text-xs text-muted-foreground">אם התלמיד שילם יותר מהמחיר, הזן את הסכום שקיבלת. הזכות תירשם אוטומטית.</p>
+            </div>
+            {paymentForm.amount > 0 && paymentForm.type && paymentForm.studentId && (() => {
+              const selectedStudent = students.find(s => s.id === paymentForm.studentId);
+              if (!selectedStudent) return null;
+              const basePrice = paymentForm.type === 'חד פעמי'
+                ? (selectedStudent.isSibling ? 500 : 700)
+                : (selectedStudent.isSibling ? 3200 : 4000);
+              const discountedPrice = basePrice * (1 - (paymentForm.discount || 0) / 100);
+              const diff = paymentForm.amount - discountedPrice;
+              if (diff > 0) {
+                return <div className="text-sm font-medium text-green-700 bg-green-50 rounded-lg px-3 py-2">💰 זכות של ฿{diff} תירשם לתלמיד</div>;
+              } else if (diff < 0) {
+                return <div className="text-sm font-medium text-red-700 bg-red-50 rounded-lg px-3 py-2">⚠️ חוב של ฿{Math.abs(diff)} יירשם לתלמיד</div>;
+              }
+              return null;
+            })()}
             {paymentForm.note && <div className="text-sm text-muted-foreground">{paymentForm.note}</div>}
             <div className="flex gap-3"><Button className="flex-1" onClick={async () => { 
               if (!paymentForm.studentId || !paymentForm.type || !user) { 
