@@ -1,20 +1,51 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import logo from '@/assets/logo.png';
+
+interface ExistingStudent {
+  id: string;
+  name: string;
+  last_name: string | null;
+}
 
 export default function StudentAuth() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
+  // Registration fields
+  const [parentName, setParentName] = useState('');
+  const [parentLastName, setParentLastName] = useState('');
+  const [parentPhone, setParentPhone] = useState('');
+  const [studentName, setStudentName] = useState('');
+  const [isSibling, setIsSibling] = useState(false);
+  const [siblingId, setSiblingId] = useState('');
+  const [existingStudents, setExistingStudents] = useState<ExistingStudent[]>([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Load existing students for sibling selection
+  useEffect(() => {
+    if (isSibling) {
+      const loadStudents = async () => {
+        // Use a public-facing approach - we'll load after signup via edge function
+        // For now, search by last name hint
+        const { data } = await supabase
+          .from('students')
+          .select('id, name, last_name')
+          .order('name');
+        if (data) setExistingStudents(data);
+      };
+      loadStudents();
+    }
+  }, [isSibling]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,15 +53,47 @@ export default function StudentAuth() {
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        // Validate registration fields
+        if (!parentName.trim() || !parentLastName.trim() || !parentPhone.trim()) {
+          throw new Error('יש למלא את כל פרטי ההורה');
+        }
+        if (!studentName.trim()) {
+          throw new Error('יש למלא את שם התלמיד');
+        }
+
+        // 1. Sign up
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: { full_name: fullName },
+            data: {
+              full_name: parentName + ' ' + parentLastName,
+            },
           },
         });
-        if (error) throw error;
-        toast({ title: 'נרשמת בהצלחה! מעביר אותך...' });
+        if (signUpError) throw signUpError;
+
+        // 2. Get session token
+        const session = signUpData.session;
+        if (!session) {
+          throw new Error('ההרשמה הצליחה אך לא התקבל טוקן. נסה להתחבר.');
+        }
+
+        // 3. Create student record via edge function
+        const { data: result, error: fnError } = await supabase.functions.invoke('register-student', {
+          body: {
+            studentName: studentName.trim(),
+            parentName: parentName.trim(),
+            parentLastName: parentLastName.trim(),
+            parentPhone: parentPhone.trim(),
+            siblingId: isSibling && siblingId ? siblingId : null,
+          },
+        });
+
+        if (fnError) throw fnError;
+        if (result?.error) throw new Error(result.error);
+
+        toast({ title: 'נרשמת בהצלחה! מעביר אותך לאזור האישי...' });
         navigate('/');
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -58,28 +121,16 @@ export default function StudentAuth() {
         <div className="flex flex-col items-center mb-6">
           <img src={logo} alt="לוגו" className="h-24 mb-4" />
           <h1 className="text-3xl font-bold text-center text-foreground">
-            {isSignUp ? 'הרשמה לתלמידים' : 'כניסה לתלמידים'}
+            {isSignUp ? 'הרשמה' : 'כניסה לתלמידים'}
           </h1>
           <p className="text-muted-foreground text-sm mt-2">
-            {isSignUp ? 'צור חשבון חדש לצפייה בנוכחות ותשלומים' : 'התחבר לאזור האישי שלך'}
+            {isSignUp ? 'מלא את הפרטים להרשמה למערכת' : 'התחבר לאזור האישי שלך'}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {isSignUp && (
-            <div>
-              <label className="block text-sm font-medium mb-2 text-foreground">שם מלא</label>
-              <Input
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-                placeholder="השם המלא שלך"
-              />
-            </div>
-          )}
-
           <div>
-            <label className="block text-sm font-medium mb-2 text-foreground">אימייל</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">אימייל</label>
             <Input
               type="email"
               value={email}
@@ -90,7 +141,7 @@ export default function StudentAuth() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2 text-foreground">סיסמה</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">סיסמה</label>
             <Input
               type="password"
               value={password}
@@ -100,6 +151,89 @@ export default function StudentAuth() {
               placeholder="הכנס סיסמה"
             />
           </div>
+
+          {isSignUp && (
+            <>
+              <div className="border-t border-border pt-4 mt-4">
+                <h3 className="text-sm font-bold text-foreground mb-3">👨‍👩‍👧 פרטי הורה</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium mb-1 text-foreground">שם פרטי *</label>
+                    <Input
+                      value={parentName}
+                      onChange={(e) => setParentName(e.target.value)}
+                      required
+                      placeholder="שם ההורה"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1 text-foreground">שם משפחה *</label>
+                    <Input
+                      value={parentLastName}
+                      onChange={(e) => setParentLastName(e.target.value)}
+                      required
+                      placeholder="שם משפחה"
+                    />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <label className="block text-xs font-medium mb-1 text-foreground">טלפון *</label>
+                  <Input
+                    type="tel"
+                    value={parentPhone}
+                    onChange={(e) => setParentPhone(e.target.value)}
+                    required
+                    placeholder="050-1234567"
+                  />
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-4">
+                <h3 className="text-sm font-bold text-foreground mb-3">🎭 פרטי התלמיד</h3>
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-foreground">שם התלמיד *</label>
+                  <Input
+                    value={studentName}
+                    onChange={(e) => setStudentName(e.target.value)}
+                    required
+                    placeholder="שם התלמיד"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 mt-3">
+                  <Checkbox
+                    id="isSibling"
+                    checked={isSibling}
+                    onCheckedChange={(checked) => {
+                      setIsSibling(checked === true);
+                      if (!checked) setSiblingId('');
+                    }}
+                  />
+                  <label htmlFor="isSibling" className="text-sm text-foreground cursor-pointer">
+                    אח/אחות של תלמיד קיים במערכת
+                  </label>
+                </div>
+
+                {isSibling && (
+                  <div className="mt-3">
+                    <label className="block text-xs font-medium mb-1 text-foreground">בחר את האח/אחות</label>
+                    <Select value={siblingId} onValueChange={setSiblingId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="בחר תלמיד קיים" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {existingStudents.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name} {s.last_name || ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? 'טוען...' : isSignUp ? 'הירשם' : 'התחבר'}

@@ -232,9 +232,9 @@ export default function StudentPortal() {
       <div className="container mx-auto px-2 sm:px-4 py-4">
         {!student ? (
           <Card className="p-8 text-center">
-            <div className="text-6xl mb-4">🔗</div>
-            <h2 className="text-xl font-bold text-foreground mb-2">החשבון שלך עדיין לא מקושר</h2>
-            <p className="text-muted-foreground">פנה למנהל כדי לקשר את החשבון שלך לפרופיל התלמיד.</p>
+            <div className="text-6xl mb-4">⏳</div>
+            <h2 className="text-xl font-bold text-foreground mb-2">הפרופיל שלך בהכנה</h2>
+            <p className="text-muted-foreground">הפרטים שלך נשלחו למנהל. תוכל לגשת לאזור האישי ברגע שתשובץ לכיתה.</p>
             <p className="text-muted-foreground text-sm mt-2">האימייל שלך: {user?.email}</p>
           </Card>
         ) : (
