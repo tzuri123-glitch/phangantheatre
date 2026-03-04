@@ -32,10 +32,10 @@ export function getPaymentStatusForSession(
   console.log('📅 Session date:', session.date);
   console.log('📅 Today:', format(today, 'yyyy-MM-dd'));
   
-  // Check if trial lesson
-  if (student.status === 'חדש') {
-    console.log('✅ New student');
-    return 'trial';
+  // Check if student is frozen - not charged
+  if (student.status === 'בהקפאה') {
+    console.log('❄️ Student frozen, not charged');
+    return 'neutral';
   }
   
   // Check for active subscription

@@ -30,9 +30,9 @@ serve(async (req) => {
       });
     }
 
-    const { studentName, parentName, parentLastName, parentPhone, siblingId, className } = await req.json();
+    const { studentName, parentName, parentLastName, parentPhone, studentPhone, birthDate, siblingId, className } = await req.json();
 
-    if (!studentName || !parentName || !parentLastName || !parentPhone) {
+    if (!studentName || !parentName || !parentLastName || !parentPhone || !birthDate) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -73,10 +73,12 @@ serve(async (req) => {
         last_name: parentLastName,
         parent_name: parentName + ' ' + parentLastName,
         parent_phone: parentPhone,
+        phone: studentPhone || null,
+        birth_date: birthDate || null,
         auth_user_id: user.id,
         user_id: adminRole.user_id,
         class_name: className || 'לא שובץ',
-        status: 'חדש',
+        status: 'פעיל',
         is_sibling: !!siblingId,
         sibling_id: siblingId || null,
       })

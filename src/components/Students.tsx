@@ -327,11 +327,7 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                                 className={`inline-block px-3 py-1 rounded-full text-sm ${
                                   student.status === 'פעיל'
                                     ? 'bg-green-100 text-green-800'
-                                    : student.status === 'חדש'
-                                    ? 'bg-blue-100 text-blue-800'
-                                    : student.status === 'בהקפאה'
-                                    ? 'bg-orange-100 text-orange-800'
-                                    : 'bg-gray-100 text-gray-800'
+                                    : 'bg-orange-100 text-orange-800'
                                 }`}
                               >
                                 {student.status}
