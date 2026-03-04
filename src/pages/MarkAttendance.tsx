@@ -12,6 +12,7 @@ export default function MarkAttendance() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'no-student' | 'no-class' | 'already' | 'not-auth'>('loading');
   const [message, setMessage] = useState('');
   const [schedule, setSchedule] = useState('');
+  const [currentTime, setCurrentTime] = useState('');
   const calledRef = useRef(false);
 
   useEffect(() => {
@@ -44,6 +45,7 @@ export default function MarkAttendance() {
           setStatus('no-class');
           setMessage(data.message);
           setSchedule(data.schedule || '');
+          setCurrentTime(data.current_time || '');
           return;
         }
 
@@ -117,6 +119,9 @@ export default function MarkAttendance() {
           <div className="space-y-4">
             <div className="text-6xl">📅</div>
             <h2 className="text-xl font-bold text-foreground">{message}</h2>
+            {currentTime && (
+              <p className="text-sm text-muted-foreground">השעה כעת במערכת: {currentTime}</p>
+            )}
             {schedule && (
               <div className="bg-accent/50 rounded-lg p-4 text-right">
                 <p className="font-semibold text-sm text-foreground mb-2">לוח השיעורים שלך:</p>
