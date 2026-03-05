@@ -10,7 +10,8 @@ const CLASS_SCHEDULE: Record<string, { day: number; startHour: number; startMin:
   'תיאטרון 7-9': [
     { day: 0, startHour: 11, startMin: 30, endHour: 13, endMin: 30 },  // Sunday
     { day: 2, startHour: 16, startMin: 30, endHour: 18, endMin: 30 },  // Tuesday
-    { day: 4, startHour: 2, startMin: 0, endHour: 4, endMin: 0 },      // Thursday (test)
+    { day: 3, startHour: 12, startMin: 0, endHour: 13, endMin: 0 },    // Wednesday (test)
+    { day: 4, startHour: 12, startMin: 0, endHour: 13, endMin: 0 },    // Thursday (test)
   ],
   'תיאטרון 10-14': [
     { day: 0, startHour: 15, startMin: 0, endHour: 17, endMin: 0 },    // Sunday
