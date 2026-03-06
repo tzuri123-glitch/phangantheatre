@@ -270,7 +270,7 @@ export default function Index() {
             </h1>
           </div>
           <Button 
-            onClick={signOut}
+            onClick={() => signOut('/auth')}
             size="sm"
             className="bg-gradient-to-l from-magenta to-magenta-hover text-white font-bold text-xs sm:text-lg px-3 sm:px-8 button-hover shadow-lg hover:shadow-xl"
           >
