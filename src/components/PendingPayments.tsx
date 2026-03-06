@@ -36,6 +36,7 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
   const [approveAmount, setApproveAmount] = useState(0);
   const [approveNote, setApproveNote] = useState('');
   const [viewingProofUrl, setViewingProofUrl] = useState<string | null>(null);
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   useEffect(() => {
     if (!user) return;
     loadPending();
@@ -75,13 +76,39 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
       .order('created_at', { ascending: false });
 
     if (data) {
-      setPending(data.map((p: any) => ({
+      const mapped = data.map((p: any) => ({
         ...p,
         student_name: p.students?.name || '',
         student_last_name: p.students?.last_name || '',
         is_sibling: p.students?.is_sibling || false,
-      })));
+      }));
+      setPending(mapped);
+      // Generate signed URLs for proof images
+      resolveProofUrls(mapped);
     }
+  };
+
+  const extractStoragePath = (url: string | null): string | null => {
+    if (!url) return null;
+    // Extract the path after /payment-proofs/ from either public or signed URLs
+    const match = url.match(/\/payment-proofs\/(.+?)(\?|$)/);
+    return match ? match[1] : null;
+  };
+
+  const resolveProofUrls = async (items: PendingPayment[]) => {
+    const urlMap: Record<string, string> = {};
+    for (const item of items) {
+      const path = extractStoragePath(item.payment_proof_url);
+      if (path) {
+        const { data } = await supabase.storage
+          .from('payment-proofs')
+          .createSignedUrl(path, 3600);
+        if (data?.signedUrl) {
+          urlMap[item.id] = data.signedUrl;
+        }
+      }
+    }
+    setSignedUrls(prev => ({ ...prev, ...urlMap }));
   };
 
   const openApproveDialog = (payment: PendingPayment) => {
@@ -182,12 +209,12 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
             {pending.map((p) => (
               <div key={p.id} className="flex items-center justify-between bg-background rounded-lg p-3 shadow-sm border">
                 <div className="flex items-center gap-3">
-                  {p.payment_proof_url && (
+                  {(signedUrls[p.id] || p.payment_proof_url) && (
                     <img
-                      src={p.payment_proof_url}
+                      src={signedUrls[p.id] || p.payment_proof_url!}
                       alt="אישור"
                       className="w-12 h-12 rounded object-cover cursor-pointer hover:opacity-80 border"
-                      onClick={() => setViewingProofUrl(p.payment_proof_url)}
+                      onClick={() => setViewingProofUrl(signedUrls[p.id] || p.payment_proof_url)}
                     />
                   )}
                   <div>
@@ -237,14 +264,14 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
               {approveDialog?.is_sibling && <span className="text-primary mr-2">👫 תלמיד אח/אחות — מחיר מוזל</span>}
             </div>
 
-            {approveDialog?.payment_proof_url && (
+            {approveDialog && (signedUrls[approveDialog.id] || approveDialog.payment_proof_url) && (
               <div className="space-y-1">
                 <Label>אישור תשלום מהתלמיד:</Label>
                 <img
-                  src={approveDialog.payment_proof_url}
+                  src={signedUrls[approveDialog.id] || approveDialog.payment_proof_url!}
                   alt="אישור תשלום"
                   className="w-full max-h-[200px] object-contain rounded-lg border cursor-pointer hover:opacity-80"
-                  onClick={() => setViewingProofUrl(approveDialog.payment_proof_url)}
+                  onClick={() => setViewingProofUrl(signedUrls[approveDialog.id] || approveDialog.payment_proof_url)}
                 />
               </div>
             )}

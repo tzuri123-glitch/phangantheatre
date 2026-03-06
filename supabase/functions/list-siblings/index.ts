@@ -30,10 +30,25 @@ serve(async (req) => {
       });
     }
 
-    // Return only id, name, last_name - no sensitive data
+    // Get the admin (user_id) that owns the calling student's record
+    const { data: callerStudent } = await supabase
+      .from('students')
+      .select('user_id')
+      .eq('auth_user_id', user.id)
+      .limit(1)
+      .single();
+
+    if (!callerStudent) {
+      return new Response(JSON.stringify({ error: 'Student record not found' }), {
+        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Only return students belonging to the same admin
     const { data, error } = await supabase
       .from('students')
       .select('id, name, last_name')
+      .eq('user_id', callerStudent.user_id)
       .order('name');
 
     if (error) {

@@ -269,8 +269,8 @@ export default function StudentPortal() {
         .upload(filePath, proofFile, { contentType: proofFile.type, upsert: true });
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage.from('payment-proofs').getPublicUrl(filePath);
-      const proofUrl = urlData.publicUrl;
+      const { data: signedData, error: signedError } = await supabase.storage.from('payment-proofs').createSignedUrl(filePath, 60 * 60 * 24 * 365);
+      const proofUrl = signedData?.signedUrl || filePath;
 
       // Create pending payment with proof
       const { data, error } = await supabase
