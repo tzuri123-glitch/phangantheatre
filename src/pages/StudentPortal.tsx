@@ -448,10 +448,13 @@ export default function StudentPortal() {
     if (!student) return;
     setSavingProfile(true);
     try {
+      const parentNameParts = editParentName.trim().split(' ');
+      const newLastName = parentNameParts.length > 1 ? parentNameParts.slice(1).join(' ') : student.last_name;
       const { error } = await supabase
         .from('students')
         .update({
           name: editName.trim(),
+          last_name: newLastName,
           phone: editPhone.trim() || null,
           birth_date: editBirthDate || null,
           parent_name: editParentName.trim() || null,
@@ -463,6 +466,7 @@ export default function StudentPortal() {
         idx === selectedStudentIdx ? {
           ...s,
           name: editName.trim(),
+          last_name: newLastName,
           phone: editPhone.trim() || null,
           birth_date: editBirthDate || null,
           parent_name: editParentName.trim() || null,
