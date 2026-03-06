@@ -540,7 +540,7 @@ export default function StudentPortal() {
               האזור האישי שלי
             </h1>
           </div>
-          <Button onClick={signOut} size="sm" className="bg-gradient-to-l from-magenta to-magenta-hover text-white font-bold text-xs sm:text-lg px-3 sm:px-8">
+          <Button onClick={() => signOut()} size="sm" className="bg-gradient-to-l from-magenta to-magenta-hover text-white font-bold text-xs sm:text-lg px-3 sm:px-8">
             התנתק
           </Button>
         </div>

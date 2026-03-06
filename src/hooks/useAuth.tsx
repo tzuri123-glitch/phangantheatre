@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -27,10 +27,10 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async (redirectTo?: string) => {
     await supabase.auth.signOut();
-    navigate('/auth');
-  };
+    navigate(redirectTo ?? '/student-auth');
+  }, [navigate]);
 
   return { user, session, loading, signOut };
 }
