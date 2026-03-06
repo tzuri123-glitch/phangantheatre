@@ -255,12 +255,6 @@ export default function Index() {
       note = note ? `${note} | חוב: ${formatILS(Math.abs(balance))}` : `חוב: ${formatILS(Math.abs(balance))}`;
     }
 
-    try {
-      const dbgPrev = payments
-        .filter((p) => p.studentId === studentId)
-        .map((p) => ({ date: p.date, type: p.type, amount: p.amount }));
-      console.log('[calcPayment]', { studentId, type, date, balance, baseAmount, finalAmount, prevPayments: dbgPrev });
-    } catch {}
     
     return { amount: finalAmount, note };
   }

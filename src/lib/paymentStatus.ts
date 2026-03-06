@@ -28,13 +28,8 @@ export function getPaymentStatusForSession(
   const sessionDate = parseISO(session.date);
   sessionDate.setHours(0, 0, 0, 0);
   
-  console.log('🔍 Checking payment status for:', student.name, student.lastName);
-  console.log('📅 Session date:', session.date);
-  console.log('📅 Today:', format(today, 'yyyy-MM-dd'));
-  
   // Check if student is frozen - not charged
   if (student.status === 'בהקפאה') {
-    console.log('❄️ Student frozen, not charged');
     return 'neutral';
   }
   
@@ -45,12 +40,9 @@ export function getPaymentStatusForSession(
            sub.monthYear === sessionMonthYear && 
            sub.entriesRemaining > 0
   );
-  
-  console.log('💳 Active subscription:', activeSubscription);
-  
+
 // Check payments in range (one-time or trial)
 const studentPayments = payments.filter(p => p.studentId === student.id && (p.type === 'חד פעמי' || p.type === 'חודשי'));
-console.log('💰 Student payments:', studentPayments.map(p => ({ type: p.type, date: p.date, amount: p.amount, discount: p.discount })));
 
 // One-time and trial payments cover ONLY the specific session date, not a range
 const hasOneTimeOrTrialPayment = payments.some(payment => {
@@ -71,12 +63,6 @@ const hasOneTimeOrTrialPayment = payments.some(payment => {
   const isFullDiscount = payment.discount === 100;
   const isPaidEnough = effectiveAmount >= requiredAmount || isFullDiscount;
   
-  if (isExactMatch && isPaidEnough) {
-    console.log('✅ Found one-time/trial payment for exact session date:', payment.type, payment.date, 'amount:', payment.amount, 'discount:', payment.discount, 'required:', requiredAmount);
-  } else if (isExactMatch) {
-    console.log('❌ Insufficient payment:', payment.type, payment.date, 'paid:', effectiveAmount, 'required:', requiredAmount);
-  }
-  
   return isPaidEnough;
 });
 
@@ -93,10 +79,6 @@ const has100PercentDiscount = payments.some(payment => {
   
   // 100% discount must match the exact session date
   const isExactMatch = paymentDate.getTime() === sessionDate.getTime();
-  
-  if (isExactMatch) {
-    console.log('✅ Found 100% discount payment for exact session date:', payment.date);
-  }
   return isExactMatch;
 });
 
@@ -105,15 +87,10 @@ const hasMonthlyPayment = payments.some(payment => {
   if (payment.studentId !== student.id || payment.type !== 'חודשי') return false;
   const paymentDate = parseISO(payment.date);
   paymentDate.setHours(0, 0, 0, 0);
-  const sameMonth = isSameMonth(paymentDate, sessionDate);
-  if (sameMonth) {
-    console.log('✅ Found monthly payment for session month:', payment.date);
-  }
-  return sameMonth;
+  return isSameMonth(paymentDate, sessionDate);
 });
 
 const hasPaid = !!activeSubscription || hasMonthlyPayment || hasOneTimeOrTrialPayment || has100PercentDiscount;
-console.log('💵 Has paid:', { hasMonthlyPayment, hasOneTimeOrTrialPayment, has100PercentDiscount, activeSubscription: !!activeSubscription });
   
   // Determine status based on session date vs today
   const isToday = sessionDate.getTime() === today.getTime();
@@ -128,9 +105,6 @@ console.log('💵 Has paid:', { hasMonthlyPayment, hasOneTimeOrTrialPayment, has
     // For future sessions: show preview so you can see debts in advance
     status = hasPaid ? 'paid' : 'unpaid';
   }
-  
-  console.log('🎯 Final status:', status);
-  console.log('---');
   
   return status;
 }

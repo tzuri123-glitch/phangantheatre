@@ -47,6 +47,7 @@ export default function PaymentHistory({ student, payments, open, onClose, onEdi
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [deletingRequestId, setDeletingRequestId] = useState<string | null>(null);
   const [viewingProofUrl, setViewingProofUrl] = useState<string | null>(null);
+  const [signedProofUrls, setSignedProofUrls] = useState<Record<string, string>>({});
 
   const studentPayments = payments.filter(p => p.studentId === student.id);
 
@@ -78,7 +79,29 @@ export default function PaymentHistory({ student, payments, open, onClose, onEdi
     if (!open) return;
     if (activeTab === 'audit') loadAuditLog();
     if (activeTab === 'requests') loadPendingRequests();
+    // Resolve signed URLs for proof images on payments tab
+    if (activeTab === 'payments') {
+      resolvePaymentProofUrls();
+    }
   }, [open, activeTab, student.id]);
+
+  const resolvePaymentProofUrls = async () => {
+    const urlMap: Record<string, string> = {};
+    for (const payment of studentPayments) {
+      if (payment.proofUrl) {
+        const match = payment.proofUrl.match(/\/payment-proofs\/(.+?)(\?|$)/);
+        if (match) {
+          const { data } = await supabase.storage
+            .from('payment-proofs')
+            .createSignedUrl(match[1], 3600);
+          if (data?.signedUrl) {
+            urlMap[payment.id] = data.signedUrl;
+          }
+        }
+      }
+    }
+    setSignedProofUrls(urlMap);
+  };
 
   const getActionBadge = (action: string) => {
     switch (action) {
@@ -210,12 +233,12 @@ export default function PaymentHistory({ student, payments, open, onClose, onEdi
                         <TableCell className="text-sm">{payment.method}</TableCell>
                         <TableCell className="font-bold text-primary">{formatILS(payment.amount)}</TableCell>
                         <TableCell>
-                          {payment.proofUrl ? (
+                        {(signedProofUrls[payment.id] || payment.proofUrl) ? (
                             <img
-                              src={payment.proofUrl}
+                              src={signedProofUrls[payment.id] || payment.proofUrl!}
                               alt="אישור"
                               className="w-10 h-10 rounded object-cover cursor-pointer hover:opacity-80"
-                              onClick={() => setViewingProofUrl(payment.proofUrl!)}
+                              onClick={() => setViewingProofUrl(signedProofUrls[payment.id] || payment.proofUrl!)}
                             />
                           ) : '-'}
                         </TableCell>
