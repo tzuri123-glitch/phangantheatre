@@ -77,7 +77,8 @@ export default function StudentPortal() {
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [editBirthDate, setEditBirthDate] = useState('');
-  const [editParentName, setEditParentName] = useState('');
+  const [editParentFirstName, setEditParentFirstName] = useState('');
+  const [editParentLastName, setEditParentLastName] = useState('');
   const [editParentPhone, setEditParentPhone] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -438,7 +439,9 @@ export default function StudentPortal() {
       setEditName(student.name || '');
       setEditPhone(student.phone || '');
       setEditBirthDate(student.birth_date || '');
-      setEditParentName(student.parent_name || '');
+      const parentParts = (student.parent_name || '').split(' ');
+      setEditParentFirstName(parentParts[0] || '');
+      setEditParentLastName(student.last_name || parentParts.slice(1).join(' ') || '');
       setEditParentPhone(student.parent_phone || '');
     }
     setShowEditProfile(true);
@@ -448,8 +451,8 @@ export default function StudentPortal() {
     if (!student) return;
     setSavingProfile(true);
     try {
-      const parentNameParts = editParentName.trim().split(' ');
-      const newLastName = parentNameParts.length > 1 ? parentNameParts.slice(1).join(' ') : student.last_name;
+      const fullParentName = (editParentFirstName.trim() + ' ' + editParentLastName.trim()).trim();
+      const newLastName = editParentLastName.trim() || student.last_name;
       const { error } = await supabase
         .from('students')
         .update({
@@ -457,7 +460,7 @@ export default function StudentPortal() {
           last_name: newLastName,
           phone: editPhone.trim() || null,
           birth_date: editBirthDate || null,
-          parent_name: editParentName.trim() || null,
+          parent_name: fullParentName || null,
           parent_phone: editParentPhone.trim() || null,
         })
         .eq('id', student.id);
@@ -469,7 +472,7 @@ export default function StudentPortal() {
           last_name: newLastName,
           phone: editPhone.trim() || null,
           birth_date: editBirthDate || null,
-          parent_name: editParentName.trim() || null,
+          parent_name: fullParentName || null,
           parent_phone: editParentPhone.trim() || null,
         } : s
       ));
@@ -879,9 +882,15 @@ export default function StudentPortal() {
                       <label className="block text-xs font-medium mb-1 text-foreground">טלפון תלמיד</label>
                       <Input type="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="לא חובה" />
                     </div>
-                    <div>
-                      <label className="block text-xs font-medium mb-1 text-foreground">שם הורה</label>
-                      <Input value={editParentName} onChange={(e) => setEditParentName(e.target.value)} />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium mb-1 text-foreground">שם פרטי הורה</label>
+                        <Input value={editParentFirstName} onChange={(e) => setEditParentFirstName(e.target.value)} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium mb-1 text-foreground">שם משפחה</label>
+                        <Input value={editParentLastName} onChange={(e) => setEditParentLastName(e.target.value)} />
+                      </div>
                     </div>
                     <div>
                       <label className="block text-xs font-medium mb-1 text-foreground">טלפון הורה</label>
