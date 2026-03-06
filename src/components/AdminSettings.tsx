@@ -29,9 +29,15 @@ export default function AdminSettings() {
     }
   };
 
+  const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
   const handleUploadPromptPay = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0] || !user) return;
     const file = e.target.files[0];
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      toast.error('ניתן להעלות רק תמונות JPEG, PNG או WebP');
+      return;
+    }
     setUploading(true);
 
     try {
@@ -50,7 +56,7 @@ export default function AdminSettings() {
 
       const { error } = await supabase.storage
         .from('admin-settings')
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, file, { contentType: file.type, upsert: true });
 
       if (error) throw error;
 
@@ -98,7 +104,7 @@ export default function AdminSettings() {
           <input
             id="promptpay-upload"
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             className="hidden"
             onChange={handleUploadPromptPay}
             disabled={uploading}

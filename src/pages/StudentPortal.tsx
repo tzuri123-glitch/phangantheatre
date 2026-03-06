@@ -247,20 +247,26 @@ export default function StudentPortal() {
     }
   };
 
+  const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
   const handlePromptPayPaymentRequest = async () => {
     if (!student || !selectedPaymentType || !proofFile) {
       toast.error('בחר סוג תשלום והעלה צילום מסך');
+      return;
+    }
+    if (!ALLOWED_IMAGE_TYPES.includes(proofFile.type)) {
+      toast.error('ניתן להעלות רק תמונות JPEG, PNG או WebP');
       return;
     }
     setSubmitting(true);
 
     try {
       // Upload proof image
-      const fileExt = proofFile.name.split('.').pop();
+      const fileExt = proofFile.name.split('.').pop()?.toLowerCase();
       const filePath = `${student.id}/${Date.now()}.${fileExt}`;
       const { error: uploadError } = await supabase.storage
         .from('payment-proofs')
-        .upload(filePath, proofFile, { upsert: true });
+        .upload(filePath, proofFile, { contentType: proofFile.type, upsert: true });
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage.from('payment-proofs').getPublicUrl(filePath);
@@ -414,15 +420,20 @@ export default function StudentPortal() {
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !student) return;
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      toast.error('ניתן להעלות רק תמונות JPEG, PNG או WebP');
+      return;
+    }
     
     setUploadingPhoto(true);
     try {
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split('.').pop()?.toLowerCase();
       const filePath = `${student.id}/profile.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
         .from('profile-photos')
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, file, { contentType: file.type, upsert: true });
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage.from('profile-photos').getPublicUrl(filePath);
