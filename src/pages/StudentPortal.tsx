@@ -63,7 +63,9 @@ interface PendingPayment {
 
 export default function StudentPortal() {
   const { user, signOut } = useAuth();
-  const [student, setStudent] = useState<StudentRecord | null>(null);
+  const [students, setStudents] = useState<StudentRecord[]>([]);
+  const [selectedStudentIdx, setSelectedStudentIdx] = useState(0);
+  const student = students[selectedStudentIdx] || null;
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
@@ -96,62 +98,32 @@ export default function StudentPortal() {
   const [submitting, setSubmitting] = useState(false);
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [viewingProofUrl, setViewingProofUrl] = useState<string | null>(null);
+
+  // Add sibling dialog
+  const [showAddSibling, setShowAddSibling] = useState(false);
+  const [siblingName, setSiblingName] = useState('');
+  const [siblingBirthDate, setSiblingBirthDate] = useState('');
+  const [siblingPhone, setSiblingPhone] = useState('');
+  const [siblingClass, setSiblingClass] = useState('');
+  const [addingSibling, setAddingSibling] = useState(false);
+
+  // Load all students for this user
   useEffect(() => {
     if (!user) return;
-
-    const load = async () => {
+    const loadStudents = async () => {
       const { data: studentData } = await supabase
         .from('students')
         .select('*')
-        .eq('auth_user_id', user.id)
-        .limit(1)
-        .single();
+        .eq('auth_user_id', user.id);
 
-      if (!studentData) {
-        setLoading(false);
-        return;
-      }
-
-      setStudent(studentData as any);
-
-      // Attendance
-      const { data: attendanceData } = await supabase
-        .from('attendance')
-        .select('id, session_id, status, sessions(session_date, class_name, is_trial)')
-        .eq('student_id', studentData.id)
-        .order('created_at', { ascending: false });
-
-      if (attendanceData) {
-        setAttendance(attendanceData.map((a: any) => ({
-          id: a.id, session_id: a.session_id, status: a.status, session: a.sessions,
-        })));
-      }
-
-      // Payments
-      const { data: paymentsData } = await supabase
-        .from('payments')
-        .select('id, amount, payment_date, payment_type, payment_method, note, payment_proof_url')
-        .eq('student_id', studentData.id)
-        .order('payment_date', { ascending: false });
-
-      if (paymentsData) setPayments(paymentsData as PaymentRecord[]);
-
-      // Pending payments
-      const { data: pendingData } = await supabase
-        .from('pending_payments')
-        .select('*')
-        .eq('student_id', studentData.id)
-        .order('created_at', { ascending: false });
-
-      if (pendingData) {
-        setPendingPayments((pendingData as PendingPayment[]).filter(p => p.status !== 'deleted_by_admin'));
+      if (studentData && studentData.length > 0) {
+        setStudents(studentData as any);
       }
 
       // PromptPay QR
       const { data: files } = await supabase.storage
         .from('admin-settings')
         .list('', { limit: 10 });
-
       const ppFile = files?.find(f => f.name.startsWith('promptpay'));
       if (ppFile) {
         const { data } = supabase.storage.from('admin-settings').getPublicUrl(ppFile.name);
@@ -160,9 +132,43 @@ export default function StudentPortal() {
 
       setLoading(false);
     };
-
-    load();
+    loadStudents();
   }, [user]);
+
+  // Load student-specific data when selected student changes
+  useEffect(() => {
+    if (!student) return;
+    const loadStudentData = async () => {
+      const { data: attendanceData } = await supabase
+        .from('attendance')
+        .select('id, session_id, status, sessions(session_date, class_name, is_trial)')
+        .eq('student_id', student.id)
+        .order('created_at', { ascending: false });
+
+      setAttendance(attendanceData ? attendanceData.map((a: any) => ({
+        id: a.id, session_id: a.session_id, status: a.status, session: a.sessions,
+      })) : []);
+
+      const { data: paymentsData } = await supabase
+        .from('payments')
+        .select('id, amount, payment_date, payment_type, payment_method, note, payment_proof_url')
+        .eq('student_id', student.id)
+        .order('payment_date', { ascending: false });
+
+      setPayments((paymentsData as PaymentRecord[]) || []);
+
+      const { data: pendingData } = await supabase
+        .from('pending_payments')
+        .select('*')
+        .eq('student_id', student.id)
+        .order('created_at', { ascending: false });
+
+      setPendingPayments(
+        ((pendingData as PendingPayment[]) || []).filter(p => p.status !== 'deleted_by_admin')
+      );
+    };
+    loadStudentData();
+  }, [student?.id]);
 
   // Realtime for pending payment updates
   useEffect(() => {
@@ -351,12 +357,65 @@ export default function StudentPortal() {
       if (fnError) throw fnError;
       if (result?.error) throw new Error(result.error);
       toast.success('הפרטים נשמרו בהצלחה!');
-      // Reload to fetch student data
-      window.location.reload();
+      const { data: newStudents } = await supabase
+        .from('students')
+        .select('*')
+        .eq('auth_user_id', user!.id);
+      if (newStudents && newStudents.length > 0) {
+        setStudents(newStudents as any);
+        setSelectedStudentIdx(0);
+      }
     } catch (err: any) {
       toast.error('שגיאה: ' + err.message);
     } finally {
       setRegistering(false);
+    }
+  };
+
+  const handleAddSibling = async () => {
+    if (!siblingName.trim() || !siblingBirthDate || !siblingClass) {
+      toast.error('יש למלא שם, תאריך לידה וקבוצה');
+      return;
+    }
+    setAddingSibling(true);
+    try {
+      const firstStudent = students[0];
+      const parentNameParts = (firstStudent?.parent_name || '').split(' ');
+      const parentFirst = parentNameParts[0] || '';
+      const parentLast = firstStudent?.last_name || parentNameParts.slice(1).join(' ') || '';
+
+      const { data: result, error } = await supabase.functions.invoke('register-student', {
+        body: {
+          studentName: siblingName.trim(),
+          parentName: parentFirst,
+          parentLastName: parentLast,
+          parentPhone: firstStudent?.parent_phone || '',
+          studentPhone: siblingPhone.trim() || null,
+          birthDate: siblingBirthDate,
+          siblingId: firstStudent?.id || null,
+          className: siblingClass,
+        },
+      });
+      if (error) throw error;
+      if (result?.error) throw new Error(result.error);
+      toast.success('האח/אחות נרשמו בהצלחה! 🎉');
+      setShowAddSibling(false);
+      setSiblingName('');
+      setSiblingBirthDate('');
+      setSiblingPhone('');
+      setSiblingClass('');
+      const { data: newStudents } = await supabase
+        .from('students')
+        .select('*')
+        .eq('auth_user_id', user!.id);
+      if (newStudents) {
+        setStudents(newStudents as any);
+        setSelectedStudentIdx(newStudents.length - 1);
+      }
+    } catch (err: any) {
+      toast.error('שגיאה: ' + err.message);
+    } finally {
+      setAddingSibling(false);
     }
   };
 
@@ -400,14 +459,16 @@ export default function StudentPortal() {
         })
         .eq('id', student.id);
       if (error) throw error;
-      setStudent({
-        ...student,
-        name: editName.trim(),
-        phone: editPhone.trim() || null,
-        birth_date: editBirthDate || null,
-        parent_name: editParentName.trim() || null,
-        parent_phone: editParentPhone.trim() || null,
-      });
+      setStudents(prev => prev.map((s, idx) =>
+        idx === selectedStudentIdx ? {
+          ...s,
+          name: editName.trim(),
+          phone: editPhone.trim() || null,
+          birth_date: editBirthDate || null,
+          parent_name: editParentName.trim() || null,
+          parent_phone: editParentPhone.trim() || null,
+        } : s
+      ));
       setShowEditProfile(false);
       toast.success('הפרטים עודכנו בהצלחה!');
     } catch (err: any) {
@@ -445,7 +506,9 @@ export default function StudentPortal() {
         .eq('id', student.id);
       if (updateError) throw updateError;
 
-      setStudent({ ...student, profile_photo_url: photoUrl });
+      setStudents(prev => prev.map((s, idx) =>
+        idx === selectedStudentIdx ? { ...s, profile_photo_url: photoUrl } : s
+      ));
       toast.success('התמונה עודכנה בהצלחה! 📸');
     } catch (err: any) {
       toast.error('שגיאה בהעלאת תמונה: ' + err.message);
@@ -562,6 +625,25 @@ export default function StudentPortal() {
           </Card>
         ) : (
           <>
+            {/* Student selector */}
+            {students.length > 1 && (
+              <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2">
+                {students.map((s, idx) => (
+                  <button
+                    key={s.id}
+                    onClick={() => setSelectedStudentIdx(idx)}
+                    className={`px-4 py-2 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${
+                      idx === selectedStudentIdx
+                        ? 'bg-primary text-primary-foreground shadow-lg scale-105'
+                        : 'bg-secondary text-secondary-foreground hover:bg-accent'
+                    }`}
+                  >
+                    {s.name} {s.last_name || ''}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <Card className="p-4 sm:p-6 mb-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -592,13 +674,22 @@ export default function StudentPortal() {
                     <p className="text-muted-foreground">{student.class_name}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap justify-end">
                   <Badge variant="outline">{student.status === 'חדש' ? 'פעיל' : (student.status || 'פעיל')}</Badge>
                   <Button size="sm" onClick={() => setShowQrScanner(true)} className="bg-gradient-to-l from-green-600 to-green-500 text-white">
                     <ScanLine size={16} /> נוכחות
                   </Button>
                   <Button size="sm" onClick={() => setShowPaymentDialog(true)} className="bg-gradient-to-l from-primary to-primary-hover text-white">
                     💰 שלם
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => {
+                    setSiblingName('');
+                    setSiblingBirthDate('');
+                    setSiblingPhone('');
+                    setSiblingClass('');
+                    setShowAddSibling(true);
+                  }}>
+                    ➕ אח/אחות
                   </Button>
                 </div>
               </div>
@@ -1045,6 +1136,43 @@ export default function StudentPortal() {
               <Button variant="ghost" onClick={() => { setPaymentMethod(null); setProofFile(null); }} className="w-full">← חזור</Button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Add sibling dialog */}
+      <Dialog open={showAddSibling} onOpenChange={setShowAddSibling}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader><DialogTitle>➕ הוסף אח/אחות</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium mb-1 text-foreground">שם התלמיד *</label>
+              <Input value={siblingName} onChange={(e) => setSiblingName(e.target.value)} placeholder="שם האח/אחות" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-foreground">תאריך לידה *</label>
+              <Input type="date" value={siblingBirthDate} onChange={(e) => setSiblingBirthDate(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-foreground">טלפון (לא חובה)</label>
+              <Input type="tel" value={siblingPhone} onChange={(e) => setSiblingPhone(e.target.value)} placeholder="טלפון" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-2 text-foreground">בחר קבוצה *</label>
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setSiblingClass('תיאטרון 7-9')}
+                  className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${siblingClass === 'תיאטרון 7-9' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
+                  🎭 גילאי 7-9
+                </button>
+                <button type="button" onClick={() => setSiblingClass('תיאטרון 10-14')}
+                  className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${siblingClass === 'תיאטרון 10-14' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
+                  🎭 גילאי 10-14
+                </button>
+              </div>
+            </div>
+            <Button className="w-full" onClick={handleAddSibling} disabled={addingSibling}>
+              {addingSibling ? 'שומר...' : 'הוסף אח/אחות'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

@@ -38,18 +38,7 @@ serve(async (req) => {
       });
     }
 
-    // Check if student already exists for this user
-    const { data: existing } = await supabase
-      .from('students')
-      .select('id')
-      .eq('auth_user_id', user.id)
-      .limit(1);
-
-    if (existing && existing.length > 0) {
-      return new Response(JSON.stringify({ error: 'Student already registered', studentId: existing[0].id }), {
-        status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Allow multiple students per auth_user_id (siblings)
 
     // Find an admin user to set as user_id (owner)
     const { data: adminRole } = await supabase
