@@ -119,7 +119,27 @@ export default function StudentPortal() {
         .eq('auth_user_id', user.id);
 
       if (studentData && studentData.length > 0) {
-        setStudents(studentData as any);
+        // Resolve signed URLs for profile photos
+        const studentsWithSignedUrls = await Promise.all(
+          studentData.map(async (s: any) => {
+            let signedPhotoUrl = s.profile_photo_url;
+            if (s.profile_photo_url) {
+              // If it's a path (not a full URL), get signed URL
+              const isPath = !s.profile_photo_url.startsWith('http');
+              if (isPath) {
+                signedPhotoUrl = await getSignedProfilePhotoUrl(s.profile_photo_url);
+              } else {
+                // Extract path from existing URL and get new signed URL
+                const path = extractProfilePhotoPath(s.profile_photo_url);
+                if (path) {
+                  signedPhotoUrl = await getSignedProfilePhotoUrl(path);
+                }
+              }
+            }
+            return { ...s, profile_photo_url: signedPhotoUrl };
+          })
+        );
+        setStudents(studentsWithSignedUrls as any);
       }
 
       // PromptPay QR
