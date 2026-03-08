@@ -454,17 +454,19 @@ export default function StudentPortal() {
     try {
       const fullParentName = (editParentFirstName.trim() + ' ' + editParentLastName.trim()).trim();
       const newLastName = editParentLastName.trim() || student.last_name;
-      const { error } = await supabase
-        .from('students')
-        .update({
-          name: editName.trim(),
-          last_name: newLastName,
-          phone: editPhone.trim() || null,
-          birth_date: editBirthDate || null,
-          parent_name: fullParentName || null,
-          parent_phone: editParentPhone.trim() || null,
-        })
-        .eq('id', student.id);
+      
+      // Use RPC function for secure field updates (prevents modifying is_sibling, class_name, status)
+      const { error } = await supabase.rpc('update_own_student_profile', {
+        _student_id: student.id,
+        _name: editName.trim() || null,
+        _last_name: newLastName || null,
+        _phone: editPhone.trim() || null,
+        _birth_date: editBirthDate || null,
+        _parent_name: fullParentName || null,
+        _parent_phone: editParentPhone.trim() || null,
+        _profile_photo_url: null, // Keep existing photo
+      });
+      
       if (error) throw error;
       setStudents(prev => prev.map((s, idx) =>
         idx === selectedStudentIdx ? {
