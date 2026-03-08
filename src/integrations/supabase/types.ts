@@ -410,6 +410,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_own_student_profile: {
+        Args: {
+          _birth_date: string
+          _last_name: string
+          _name: string
+          _parent_name: string
+          _parent_phone: string
+          _phone: string
+          _profile_photo_url: string
+          _student_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "student"

@@ -24,6 +24,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { formatILS } from '@/lib/utils';
 import logo from '@/assets/logo.png';
+import { getSignedProfilePhotoUrl, extractProfilePhotoPath } from '@/lib/storageHelpers';
 
 export default function Index() {
   const { user, signOut } = useAuth();
@@ -86,21 +87,43 @@ export default function Index() {
         }
       }
 
-      setStudents(studentsData.map(s => ({
-        id: s.id,
-        name: s.name,
-        lastName: s.last_name || '',
-        phone: s.phone || '',
-        birthDate: s.birth_date || '',
-        parentName: s.parent_name || '',
-        parentPhone: s.parent_phone || '',
-        isSibling: s.is_sibling || false,
-        siblingId: s.sibling_id || undefined,
-        className: s.class_name,
-        status: (s.status === 'חדש' || s.status === 'לא פעיל' ? 'פעיל' : s.status) as Student['status'],
-        linkedEmail: (s as any).auth_user_id ? emailMap[(s as any).auth_user_id] || '' : undefined,
-        profilePhotoUrl: (s as any).profile_photo_url || undefined,
-      })).sort((a, b) => a.name.localeCompare(b.name, 'he')));
+      // Resolve signed URLs for profile photos
+      const studentsWithSignedUrls = await Promise.all(
+        studentsData.map(async (s) => {
+          let signedPhotoUrl: string | undefined = undefined;
+          const rawPhotoUrl = (s as any).profile_photo_url;
+          
+          if (rawPhotoUrl) {
+            const isPath = !rawPhotoUrl.startsWith('http');
+            if (isPath) {
+              signedPhotoUrl = (await getSignedProfilePhotoUrl(rawPhotoUrl)) || undefined;
+            } else {
+              const path = extractProfilePhotoPath(rawPhotoUrl);
+              if (path) {
+                signedPhotoUrl = (await getSignedProfilePhotoUrl(path)) || undefined;
+              }
+            }
+          }
+          
+          return {
+            id: s.id,
+            name: s.name,
+            lastName: s.last_name || '',
+            phone: s.phone || '',
+            birthDate: s.birth_date || '',
+            parentName: s.parent_name || '',
+            parentPhone: s.parent_phone || '',
+            isSibling: s.is_sibling || false,
+            siblingId: s.sibling_id || undefined,
+            className: s.class_name,
+            status: (s.status === 'חדש' || s.status === 'לא פעיל' ? 'פעיל' : s.status) as Student['status'],
+            linkedEmail: (s as any).auth_user_id ? emailMap[(s as any).auth_user_id] || '' : undefined,
+            profilePhotoUrl: signedPhotoUrl,
+          };
+        })
+      );
+      
+      setStudents(studentsWithSignedUrls.sort((a, b) => a.name.localeCompare(b.name, 'he')));
     }
     
     if (paymentsData) {
