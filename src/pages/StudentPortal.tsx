@@ -499,25 +499,28 @@ export default function StudentPortal() {
     
     setUploadingPhoto(true);
     try {
-      const fileExt = file.name.split('.').pop()?.toLowerCase();
-      const filePath = `${student.id}/profile.${fileExt}`;
+      // Upload and get signed URL
+      const result = await uploadProfilePhoto(student.id, file);
+      if (!result) throw new Error('Failed to upload photo');
       
-      const { error: uploadError } = await supabase.storage
-        .from('profile-photos')
-        .upload(filePath, file, { contentType: file.type, upsert: true });
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage.from('profile-photos').getPublicUrl(filePath);
-      const photoUrl = data.publicUrl + '?t=' + Date.now();
-
-      const { error: updateError } = await supabase
-        .from('students')
-        .update({ profile_photo_url: photoUrl })
-        .eq('id', student.id);
+      // Update the database with the file path (not the URL)
+      const filePath = `${student.id}/profile.${file.name.split('.').pop()?.toLowerCase()}`;
+      
+      // Use RPC to update profile photo URL securely
+      const { error: updateError } = await supabase.rpc('update_own_student_profile', {
+        _student_id: student.id,
+        _name: null,
+        _last_name: null,
+        _phone: null,
+        _birth_date: null,
+        _parent_name: null,
+        _parent_phone: null,
+        _profile_photo_url: filePath, // Store the path, not the signed URL
+      });
       if (updateError) throw updateError;
 
       setStudents(prev => prev.map((s, idx) =>
-        idx === selectedStudentIdx ? { ...s, profile_photo_url: photoUrl } : s
+        idx === selectedStudentIdx ? { ...s, profile_photo_url: result.url } : s
       ));
       toast.success('התמונה עודכנה בהצלחה! 📸');
     } catch (err: any) {
