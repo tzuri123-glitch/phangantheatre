@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
@@ -20,6 +20,7 @@ import {
 import logo from '@/assets/logo.png';
 import QrScanner from '@/components/QrScanner';
 import { toast } from 'sonner';
+import { getSignedProfilePhotoUrl, extractProfilePhotoPath, uploadProfilePhoto } from '@/lib/storageHelpers';
 
 interface StudentRecord {
   id: string;
