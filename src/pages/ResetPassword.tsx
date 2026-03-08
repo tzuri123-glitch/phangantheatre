@@ -15,6 +15,7 @@ export default function ResetPassword() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [email, setEmail] = useState('');
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
@@ -23,26 +24,66 @@ export default function ResetPassword() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Check URL hash for recovery parameters
+    const hash = window.location.hash;
+    const searchParams = new URLSearchParams(hash.substring(1)); // Remove leading #
+    const type = searchParams.get('type');
+    const accessToken = searchParams.get('access_token');
+    
+    console.log('Reset password check - type:', type, 'hasToken:', !!accessToken);
+    
+    // If we have type=recovery in the URL, we're in recovery mode
+    if (type === 'recovery' && accessToken) {
+      // Set the session from the recovery link
+      const refreshToken = searchParams.get('refresh_token') || '';
+      
+      supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      }).then(({ data, error }) => {
+        if (error) {
+          console.error('Error setting session:', error);
+          setChecking(false);
+          return;
+        }
+        
+        if (data.session) {
+          setReady(true);
+          setEmail(data.session.user?.email || '');
+        }
+        setChecking(false);
+      });
+      return;
+    }
+
     // Listen for PASSWORD_RECOVERY event
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state change:', event);
       if (event === 'PASSWORD_RECOVERY') {
         setReady(true);
         setEmail(session?.user?.email || '');
+        setChecking(false);
       }
     });
 
     // Also check if we already have a session from recovery
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        // Check URL hash for recovery type
-        const hash = window.location.hash;
-        if (hash.includes('type=recovery')) {
-          setReady(true);
-          setEmail(session.user?.email || '');
-        }
+      
+      // If no recovery params in URL, just show forgot password form
+      if (!hash.includes('type=recovery')) {
+        setForgotMode(true);
+        setChecking(false);
+        return;
       }
+      
+      if (session) {
+        setReady(true);
+        setEmail(session.user?.email || '');
+      }
+      setChecking(false);
     };
+    
     checkSession();
 
     return () => subscription.unsubscribe();
@@ -72,8 +113,12 @@ export default function ResetPassword() {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      toast({ title: 'הסיסמה עודכנה בהצלחה! 🎉' });
-      navigate('/');
+      
+      // Sign out after password reset so user needs to log in with new password
+      await supabase.auth.signOut();
+      
+      toast({ title: 'הסיסמה עודכנה בהצלחה! 🎉', description: 'אנא התחבר עם הסיסמה החדשה' });
+      navigate('/student-auth');
     } catch (error: any) {
       toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
     } finally {
@@ -101,6 +146,20 @@ export default function ResetPassword() {
       setLoading(false);
     }
   };
+
+  // Show loading while checking
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-accent/10 to-background p-4" dir="rtl">
+        <Card className="w-full max-w-md p-8">
+          <div className="flex flex-col items-center">
+            <img src={logo} alt="לוגו" className="h-24 mb-4" />
+            <p className="text-foreground">טוען...</p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-accent/10 to-background p-4" dir="rtl">
