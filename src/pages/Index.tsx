@@ -24,6 +24,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { formatILS } from '@/lib/utils';
 import logo from '@/assets/logo.png';
+import { getSignedProfilePhotoUrl, extractProfilePhotoPath } from '@/lib/storageHelpers';
 
 export default function Index() {
   const { user, signOut } = useAuth();
