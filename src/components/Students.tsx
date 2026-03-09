@@ -1,4 +1,4 @@
-import { Student, CLASS_OPTIONS } from '@/types';
+import { Student, CLASS_OPTIONS, isMonthlyPaymentType, getPaymentPrice } from '@/types';
 import { format, isSameMonth, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
