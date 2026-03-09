@@ -66,21 +66,20 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
         });
       
       let totalExpected = 0;
-      const monthlyPrice = student.isSibling ? 3200 : 4000;
-      
       studentPaymentsList.forEach((payment) => {
         const paymentMonth = format(parseISO(payment.date), 'MM/yyyy');
         const discount = payment.discount || 0;
         
         if (payment.type === 'סגירת יתרה') {
-          // סגירת יתרה לא מייצרת צפי - הסכום הוא מה שהתקבל
-        } else if (payment.type === 'חודשי') {
-          const priceAfterDiscount = monthlyPrice * (1 - discount / 100);
+          // סגירת יתרה לא מייצרת צפי
+        } else if (isMonthlyPaymentType(payment.type)) {
+          const base = getPaymentPrice(payment.type, student.isSibling);
+          const priceAfterDiscount = base * (1 - discount / 100);
           totalExpected += priceAfterDiscount;
         } else if (payment.type === 'חד פעמי') {
           if (!monthsWithMonthlyPayment.has(paymentMonth)) {
-            const singlePrice = student.isSibling ? 500 : 600;
-            const priceAfterDiscount = singlePrice * (1 - discount / 100);
+            const base = getPaymentPrice('חד פעמי', student.isSibling);
+            const priceAfterDiscount = base * (1 - discount / 100);
             totalExpected += priceAfterDiscount;
           }
         }
