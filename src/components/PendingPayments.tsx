@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { formatILS } from '@/lib/utils';
-import { SINGLE_PRICE, MONTHLY_PRICE, SIBLING_SINGLE_PRICE, SIBLING_MONTHLY_PRICE } from '@/types';
+import { getPaymentPrice } from '@/types';
 
 interface PendingPayment {
   id: string;
