@@ -929,9 +929,7 @@ export default function Index() {
             {paymentForm.amount > 0 && paymentForm.type && paymentForm.type !== 'סגירת יתרה' && paymentForm.studentId && (() => {
               const selectedStudent = students.find(s => s.id === paymentForm.studentId);
               if (!selectedStudent) return null;
-              const basePrice = paymentForm.type === 'חד פעמי'
-                ? (selectedStudent.isSibling ? 500 : 700)
-                : (selectedStudent.isSibling ? 3200 : 4000);
+              const basePrice = getPaymentPrice(paymentForm.type, selectedStudent.isSibling);
               const discountedPrice = basePrice * (1 - (paymentForm.discount || 0) / 100);
               const diff = paymentForm.amount - discountedPrice;
               if (diff > 0) {
