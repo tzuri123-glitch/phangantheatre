@@ -125,7 +125,7 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
 
     activeStudents.forEach(student => {
       const studentPayments = payments.filter(p => p.studentId === student.id);
-      const hasMonthlyPayment = studentPayments.some(p => p.type === 'חודשי');
+      const hasMonthlyPayment = studentPayments.some(p => isMonthlyPaymentType(p.type));
       
       if (hasMonthlyPayment) {
         subscribers.push(student);
