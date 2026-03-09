@@ -59,7 +59,7 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
       // קבוצת חודשים עם תשלום חודשי
       const monthsWithMonthlyPayment = new Set<string>();
       studentPaymentsList
-        .filter(p => p.type === 'חודשי')
+        .filter(p => isMonthlyPaymentType(p.type))
         .forEach(p => {
           const monthKey = format(parseISO(p.date), 'MM/yyyy');
           monthsWithMonthlyPayment.add(monthKey);
