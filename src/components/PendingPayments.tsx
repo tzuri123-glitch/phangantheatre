@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { formatILS } from '@/lib/utils';
-import { SINGLE_PRICE, MONTHLY_PRICE, SIBLING_SINGLE_PRICE, SIBLING_MONTHLY_PRICE } from '@/types';
+import { getPaymentPrice } from '@/types';
 
 interface PendingPayment {
   id: string;
@@ -112,14 +112,8 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
   };
 
   const openApproveDialog = (payment: PendingPayment) => {
-    // Calculate expected price
-    const isSib = payment.is_sibling;
-    let expectedPrice = 0;
-    if (payment.payment_type === 'חד פעמי') {
-      expectedPrice = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
-    } else if (payment.payment_type === 'חודשי') {
-      expectedPrice = isSib ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
-    }
+    const isSib = payment.is_sibling || false;
+    const expectedPrice = getPaymentPrice(payment.payment_type, isSib);
     
     setApproveAmount(payment.amount || expectedPrice);
     setApproveNote('');
@@ -182,13 +176,8 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
   // Calculate balance indicator
   const getBalanceInfo = () => {
     if (!approveDialog) return null;
-    const isSib = approveDialog.is_sibling;
-    let expectedPrice = 0;
-    if (approveDialog.payment_type === 'חד פעמי') {
-      expectedPrice = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
-    } else if (approveDialog.payment_type === 'חודשי') {
-      expectedPrice = isSib ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
-    }
+    const isSib = approveDialog.is_sibling || false;
+    const expectedPrice = getPaymentPrice(approveDialog.payment_type, isSib);
     const diff = approveAmount - expectedPrice;
     return { expectedPrice, diff };
   };

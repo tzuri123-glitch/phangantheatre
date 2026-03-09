@@ -1,5 +1,5 @@
-import { Student, Session, Payment } from '@/types';
-import { parseISO, isWithinInterval, addDays, subDays, format, isSameMonth } from 'date-fns';
+import { Student, Session, Payment, isMonthlyPaymentType, getPaymentPrice } from '@/types';
+import { parseISO, format, isSameMonth } from 'date-fns';
 
 export type PaymentStatus = 'trial' | 'paid' | 'unpaid' | 'neutral';
 
@@ -18,7 +18,6 @@ export function getPaymentStatusForSession(
   subscriptions: Subscription[],
   attendanceStatus?: 'נוכח' | 'לא הגיע' | 'לא באי' | 'עזב' | ''
 ): PaymentStatus {
-  // אם התלמיד לא הגיע או לא באי - תמיד neutral (לא חייב)
   if (attendanceStatus === 'לא הגיע' || attendanceStatus === 'לא באי') {
     return 'neutral';
   }
@@ -28,7 +27,6 @@ export function getPaymentStatusForSession(
   const sessionDate = parseISO(session.date);
   sessionDate.setHours(0, 0, 0, 0);
   
-  // Check if student is frozen - not charged
   if (student.status === 'בהקפאה') {
     return 'neutral';
   }
@@ -41,58 +39,42 @@ export function getPaymentStatusForSession(
            sub.entriesRemaining > 0
   );
 
-// Check payments in range (one-time or trial)
-const studentPayments = payments.filter(p => p.studentId === student.id && (p.type === 'חד פעמי' || p.type === 'חודשי'));
+  // Check one-time payments for exact session date
+  const hasOneTimePayment = payments.some(payment => {
+    if (payment.studentId !== student.id || payment.type !== 'חד פעמי') return false;
+    
+    const paymentDate = parseISO(payment.date);
+    paymentDate.setHours(0, 0, 0, 0);
+    
+    const isExactMatch = paymentDate.getTime() === sessionDate.getTime();
+    if (!isExactMatch) return false;
+    
+    const requiredAmount = student.isSibling ? 700 : 800;
+    const effectiveAmount = payment.amount * (1 - (payment.discount || 0) / 100);
+    const isFullDiscount = payment.discount === 100;
+    return effectiveAmount >= requiredAmount || isFullDiscount;
+  });
 
-// One-time and trial payments cover ONLY the specific session date, not a range
-const hasOneTimeOrTrialPayment = payments.some(payment => {
-  if (payment.studentId !== student.id || payment.type !== 'חד פעמי') {
-    return false;
-  }
-  
-  const paymentDate = parseISO(payment.date);
-  paymentDate.setHours(0, 0, 0, 0);
-  
-  // One-time/trial payment must match the exact session date
-  const isExactMatch = paymentDate.getTime() === sessionDate.getTime();
-  if (!isExactMatch) return false;
-  
-  // Check if payment amount is sufficient or has 100% discount
-  const requiredAmount = student.isSibling ? 500 : 700;
-  const effectiveAmount = payment.amount * (1 - (payment.discount || 0) / 100);
-  const isFullDiscount = payment.discount === 100;
-  const isPaidEnough = effectiveAmount >= requiredAmount || isFullDiscount;
-  
-  return isPaidEnough;
-});
+  // Check for 100% discount payments for the exact session date
+  const has100PercentDiscount = payments.some(payment => {
+    if (payment.studentId !== student.id) return false;
+    if (payment.discount !== 100) return false;
+    
+    const paymentDate = parseISO(payment.date);
+    paymentDate.setHours(0, 0, 0, 0);
+    return paymentDate.getTime() === sessionDate.getTime();
+  });
 
-// Check for 100% discount payments for the exact session date
-const has100PercentDiscount = payments.some(payment => {
-  if (payment.studentId !== student.id) return false;
-  
-  // Only 100% discount counts as payment - amount 0 without discount is NOT a payment
-  const isFullDiscount = payment.discount === 100;
-  if (!isFullDiscount) return false;
-  
-  const paymentDate = parseISO(payment.date);
-  paymentDate.setHours(0, 0, 0, 0);
-  
-  // 100% discount must match the exact session date
-  const isExactMatch = paymentDate.getTime() === sessionDate.getTime();
-  return isExactMatch;
-});
+  // Monthly payment covers the whole month of the session
+  const hasMonthlyPayment = payments.some(payment => {
+    if (payment.studentId !== student.id || !isMonthlyPaymentType(payment.type)) return false;
+    const paymentDate = parseISO(payment.date);
+    paymentDate.setHours(0, 0, 0, 0);
+    return isSameMonth(paymentDate, sessionDate);
+  });
 
-// Monthly payment counts for the whole month of the session
-const hasMonthlyPayment = payments.some(payment => {
-  if (payment.studentId !== student.id || payment.type !== 'חודשי') return false;
-  const paymentDate = parseISO(payment.date);
-  paymentDate.setHours(0, 0, 0, 0);
-  return isSameMonth(paymentDate, sessionDate);
-});
-
-const hasPaid = !!activeSubscription || hasMonthlyPayment || hasOneTimeOrTrialPayment || has100PercentDiscount;
+  const hasPaid = !!activeSubscription || hasMonthlyPayment || hasOneTimePayment || has100PercentDiscount;
   
-  // Determine status based on session date vs today
   const isToday = sessionDate.getTime() === today.getTime();
   const isPast = sessionDate < today;
   
@@ -102,7 +84,6 @@ const hasPaid = !!activeSubscription || hasMonthlyPayment || hasOneTimeOrTrialPa
   } else if (isPast) {
     status = hasPaid ? 'neutral' : 'unpaid';
   } else {
-    // For future sessions: show preview so you can see debts in advance
     status = hasPaid ? 'paid' : 'unpaid';
   }
   
