@@ -1099,7 +1099,8 @@ export default function StudentPortal() {
                   <SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="חד פעמי">חד פעמי</SelectItem>
-                    <SelectItem value="חודשי">חודשי (מנוי)</SelectItem>
+                    <SelectItem value="חודשי דו שבועי">חודשי דו שבועי (מנוי)</SelectItem>
+                    <SelectItem value="חודשי חד שבועי">חודשי חד שבועי (מנוי)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
