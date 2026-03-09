@@ -55,20 +55,14 @@ export default function Students({ students, payments, onAddStudent, onEditStude
     });
   };
 
-  const MONTHLY_PRICE = 4000;
-  const SIBLING_MONTHLY_PRICE = 3200;
-  const SINGLE_PRICE = 700;
-  const SIBLING_SINGLE_PRICE = 500;
-
   const calculateStudentBalance = (studentId: string, student: Student) => {
     const studentPayments = payments.filter(p => p.studentId === studentId);
     
     const totalPaid = studentPayments.reduce((sum, p) => sum + p.amount, 0);
     
-    // קבוצת חודשים עם תשלום חודשי
     const monthsWithMonthlyPayment = new Set<string>();
     studentPayments
-      .filter(p => p.type === 'חודשי')
+      .filter(p => isMonthlyPaymentType(p.type))
       .forEach(p => {
         const monthKey = format(parseISO(p.date), 'MM/yyyy');
         monthsWithMonthlyPayment.add(monthKey);
@@ -80,19 +74,17 @@ export default function Students({ students, payments, onAddStudent, onEditStude
       const paymentMonth = format(parseISO(payment.date), 'MM/yyyy');
       const discount = payment.discount || 0;
       
-      if (payment.type === 'חודשי') {
-        // תשלום חודשי
-        const monthlyPrice = student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
-        const priceAfterDiscount = monthlyPrice * (1 - discount / 100);
+      if (isMonthlyPaymentType(payment.type)) {
+        const base = getPaymentPrice(payment.type, student.isSibling);
+        const priceAfterDiscount = base * (1 - discount / 100);
         totalExpected += priceAfterDiscount;
       } else if (payment.type === 'חד פעמי') {
-        // תשלום חד-פעמי נספר רק אם אין תשלום חודשי באותו חודש
         if (!monthsWithMonthlyPayment.has(paymentMonth)) {
-          const singlePrice = student.isSibling ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
-          const priceAfterDiscount = singlePrice * (1 - discount / 100);
+          const base = getPaymentPrice('חד פעמי', student.isSibling);
+          const priceAfterDiscount = base * (1 - discount / 100);
           totalExpected += priceAfterDiscount;
         }
-        }
+      }
     });
     
     return totalPaid - totalExpected;
