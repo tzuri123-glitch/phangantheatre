@@ -183,9 +183,8 @@ export default function Index() {
 
   function calcPayment(studentId: string, type: string, date: string) {
     const student = students.find((s) => s.id === studentId);
-    if (!student) return { amount: 0, note: '' };
+    if (!student) return { amount: 0, note: '', blocked: false };
     
-    // Parser עמיד לפורמטים שונים (YYYY-MM-DD וגם DD.MM[.YYYY])
     const parseDate = (s: string) => {
       const d = new Date(s);
       if (!isNaN(d.getTime())) return d;
@@ -202,27 +201,47 @@ export default function Index() {
 
     const currDate = parseDate(date);
     
-    // חישוב יתרת התלמיד (זכות/חוב) מכל התשלומים הקודמים
+    // Check monthly payment window
+    if (isMonthlyPaymentType(type) && !isNaN(currDate.getTime())) {
+      const today = new Date();
+      // The target month is the current month for which payment applies
+      // Payment on 25th-31st of prev month → for next month
+      // Payment on 1st-5th → for current month
+      let targetMonth: Date;
+      if (today.getDate() >= 25) {
+        // Paying for next month
+        targetMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+      } else {
+        // Paying for current month
+        targetMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      }
+      
+      if (isLatePayment(today, targetMonth)) {
+        return { 
+          amount: 0, 
+          note: '⛔ חלון התשלום נסגר (עד ה-5 לחודש). פנה למנהל לאישור מיוחד.',
+          blocked: true 
+        };
+      }
+    }
+    
+    // חישוב יתרת התלמיד
     const studentPayments = payments.filter((p) => {
       if (p.studentId !== studentId) return false;
       const pd = parseDate(p.date);
       if (isNaN(pd.getTime()) || isNaN(currDate.getTime())) {
-        // נפילה חכמה להשוואת מחרוזות במקרה של תאריך לא תקין
         return p.date < date;
       }
-      return pd < currDate; // רק תשלומים לפני התשלום הנוכחי
+      return pd < currDate;
     });
     let balance = 0;
     
     studentPayments.forEach((payment) => {
       if (payment.type === 'סגירת יתרה') {
-        // סגירת יתרה לא מייצרת חוב/זכות חדש - הסכום הוא מה שהתקבל בפועל
         balance += payment.amount;
         return;
       }
-      const baseExpectedAmount = 
-        payment.type === 'חד פעמי' ? (student.isSibling ? 500 : SINGLE_PRICE) :
-        student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+      const baseExpectedAmount = getPaymentPrice(payment.type, student.isSibling);
       
       const discount = payment.discount || 0;
       const expectedAmount = baseExpectedAmount * (1 - discount / 100);
@@ -230,12 +249,10 @@ export default function Index() {
       balance += payment.amount - expectedAmount;
     });
     
-    // חישוב סכום התשלום הנוכחי
     let baseAmount = 0;
     let note = '';
 
     if (type === 'סגירת יתרה') {
-      // סגירת יתרה: מציג את היתרה הנוכחית ומאפשר להזין סכום חופשי
       if (balance > 0) {
         note = `זכות נוכחית: ${formatILS(balance)} — הזן סכום שלילי להחזר`;
         baseAmount = 0;
@@ -246,12 +263,12 @@ export default function Index() {
         note = 'אין יתרה פתוחה';
         baseAmount = 0;
       }
-      return { amount: baseAmount, note };
+      return { amount: baseAmount, note, blocked: false };
     }
     
     if (type === 'חד פעמי') {
-      baseAmount = student.isSibling ? 500 : SINGLE_PRICE;
-    } else if (type === 'חודשי') {
+      baseAmount = getPaymentPrice('חד פעמי', student.isSibling);
+    } else if (isMonthlyPaymentType(type)) {
       const singles = payments.filter((p) => {
         if (p.studentId !== studentId) return false;
         if (p.type !== 'חד פעמי') return false;
@@ -262,14 +279,13 @@ export default function Index() {
         return pd.getFullYear() === currDate.getFullYear() && pd.getMonth() === currDate.getMonth();
       });
       const sumSingles = singles.reduce((sum, p) => sum + p.amount, 0);
-      const base = student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+      const base = getPaymentPrice(type, student.isSibling);
       baseAmount = Math.max(base - sumSingles, 0);
       if (sumSingles > 0) {
         note = `כולל קיזוז ${formatILS(sumSingles)} מתשלומים בחודש`;
       }
     }
     
-    // קיזוז יתרה
     const finalAmount = Math.max(baseAmount - balance, 0);
 
     if (balance > 0) {
@@ -279,7 +295,7 @@ export default function Index() {
     }
 
     
-    return { amount: finalAmount, note };
+    return { amount: finalAmount, note, blocked: false };
   }
 
   return (
