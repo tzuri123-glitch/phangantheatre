@@ -176,13 +176,8 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
   // Calculate balance indicator
   const getBalanceInfo = () => {
     if (!approveDialog) return null;
-    const isSib = approveDialog.is_sibling;
-    let expectedPrice = 0;
-    if (approveDialog.payment_type === 'חד פעמי') {
-      expectedPrice = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
-    } else if (approveDialog.payment_type === 'חודשי') {
-      expectedPrice = isSib ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
-    }
+    const isSib = approveDialog.is_sibling || false;
+    const expectedPrice = getPaymentPrice(approveDialog.payment_type, isSib);
     const diff = approveAmount - expectedPrice;
     return { expectedPrice, diff };
   };
