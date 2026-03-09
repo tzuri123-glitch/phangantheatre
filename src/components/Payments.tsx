@@ -1,4 +1,4 @@
-import { Payment, Student, CLASS_OPTIONS, Session } from '@/types';
+import { Payment, Student, CLASS_OPTIONS, Session, isMonthlyPaymentType, getPaymentPrice } from '@/types';
 import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
