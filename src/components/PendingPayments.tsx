@@ -112,14 +112,8 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
   };
 
   const openApproveDialog = (payment: PendingPayment) => {
-    // Calculate expected price
-    const isSib = payment.is_sibling;
-    let expectedPrice = 0;
-    if (payment.payment_type === 'חד פעמי') {
-      expectedPrice = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
-    } else if (payment.payment_type === 'חודשי') {
-      expectedPrice = isSib ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
-    }
+    const isSib = payment.is_sibling || false;
+    const expectedPrice = getPaymentPrice(payment.payment_type, isSib);
     
     setApproveAmount(payment.amount || expectedPrice);
     setApproveNote('');
