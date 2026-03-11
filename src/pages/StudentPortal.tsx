@@ -1233,8 +1233,9 @@ export default function StudentPortal() {
               </div>
             </div>
             <Button className="w-full" onClick={handleAddSibling} disabled={addingSibling}>
-              {addingSibling ? 'שומר...' : 'הוסף אח/אחות'}
+              {addingSibling ? 'שולח...' : 'שלח בקשה למנהל'}
             </Button>
+            <p className="text-xs text-muted-foreground text-center">הבקשה תישלח למנהל לאישור</p>
           </div>
         </DialogContent>
       </Dialog>
