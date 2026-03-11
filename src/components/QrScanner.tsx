@@ -11,6 +11,7 @@ interface QrScannerProps {
 
 export default function QrScanner({ open, onClose, onScan }: QrScannerProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const runningRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<string>('qr-reader-' + Date.now());
   const scannedRef = useRef(false);
