@@ -437,6 +437,35 @@ export default function StudentPortal() {
     }
   };
 
+  const handleForgotScan = async () => {
+    if (!student || !forgotDate) {
+      toast.error('יש לבחור תאריך');
+      return;
+    }
+    setSendingForgot(true);
+    try {
+      const { error } = await supabase
+        .from('pending_attendance' as any)
+        .insert({
+          student_id: student.id,
+          requesting_user_id: user!.id,
+          admin_user_id: student.user_id,
+          class_name: student.class_name,
+          requested_date: forgotDate,
+          note: forgotNote.trim() || null,
+        });
+      if (error) throw error;
+      toast.success('בקשת נוכחות נשלחה למנהל לאישור! ⏳');
+      setShowForgotScan(false);
+      setForgotDate(new Date().toISOString().slice(0, 10));
+      setForgotNote('');
+    } catch (err: any) {
+      toast.error('שגיאה: ' + err.message);
+    } finally {
+      setSendingForgot(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
