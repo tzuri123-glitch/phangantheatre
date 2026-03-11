@@ -111,6 +111,12 @@ export default function StudentPortal() {
   const [siblingClass, setSiblingClass] = useState('');
   const [addingSibling, setAddingSibling] = useState(false);
 
+  // Forgot to scan dialog
+  const [showForgotScan, setShowForgotScan] = useState(false);
+  const [forgotDate, setForgotDate] = useState(new Date().toISOString().slice(0, 10));
+  const [forgotNote, setForgotNote] = useState('');
+  const [sendingForgot, setSendingForgot] = useState(false);
+
   // Load all students for this user
   useEffect(() => {
     if (!user) return;
