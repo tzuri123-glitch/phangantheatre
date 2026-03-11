@@ -163,6 +163,53 @@ export type Database = {
           },
         ]
       }
+      pending_attendance: {
+        Row: {
+          admin_user_id: string
+          class_name: string
+          created_at: string | null
+          id: string
+          note: string | null
+          requested_date: string
+          requesting_user_id: string
+          resolved_at: string | null
+          status: string
+          student_id: string
+        }
+        Insert: {
+          admin_user_id: string
+          class_name: string
+          created_at?: string | null
+          id?: string
+          note?: string | null
+          requested_date: string
+          requesting_user_id: string
+          resolved_at?: string | null
+          status?: string
+          student_id: string
+        }
+        Update: {
+          admin_user_id?: string
+          class_name?: string
+          created_at?: string | null
+          id?: string
+          note?: string | null
+          requested_date?: string
+          requesting_user_id?: string
+          resolved_at?: string | null
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_attendance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pending_payments: {
         Row: {
           admin_user_id: string
