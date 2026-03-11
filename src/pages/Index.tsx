@@ -487,6 +487,33 @@ export default function Index() {
             ));
             toast.success('תלמיד הוסר מהשיעור!');
           }}
+          onAddStudentToSession={async (sessionId, studentId) => {
+            if (!user) return;
+            // Check if already exists
+            const session = sessions.find(s => s.id === sessionId);
+            if (session?.students.some(st => st.studentId === studentId)) {
+              toast.error('התלמיד כבר נמצא בשיעור');
+              return;
+            }
+            const { error } = await supabase
+              .from('attendance')
+              .insert({
+                user_id: user.id,
+                session_id: sessionId,
+                student_id: studentId,
+                status: 'נוכח',
+              });
+            if (error) {
+              toast.error('שגיאה בהוספת תלמיד');
+              return;
+            }
+            setSessions(prev => prev.map(s =>
+              s.id === sessionId
+                ? { ...s, students: [...s.students, { studentId, status: 'נוכח' as const }] }
+                : s
+            ));
+            toast.success('תלמיד נוסף לשיעור!');
+          }}
         />}
         {tab === 'settings' && <AdminSettings />}
       </main>

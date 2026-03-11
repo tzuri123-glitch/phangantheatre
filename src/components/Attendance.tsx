@@ -134,12 +134,32 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
 
             {expandedSessions[session.id] && (
               <div className="p-4">
-                <div className="mb-4">
+                <div className="mb-4 flex gap-2">
                   <Input
                     placeholder="חיפוש תלמיד..."
                     value={sessionSearchQueries[session.id] || ''}
                     onChange={(e) => setSessionSearchQueries(prev => ({ ...prev, [session.id]: e.target.value }))}
+                    className="flex-1"
                   />
+                  <Select
+                    value=""
+                    onValueChange={(studentId) => {
+                      if (studentId) onAddStudentToSession(session.id, studentId);
+                    }}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="➕ הוסף תלמיד" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {students
+                        .filter(s => !session.students.some(st => st.studentId === s.id))
+                        .map(s => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name} {s.lastName}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Table>
                   <TableHeader>
