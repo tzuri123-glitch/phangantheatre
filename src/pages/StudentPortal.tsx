@@ -34,6 +34,7 @@ interface StudentRecord {
   parent_name: string | null;
   parent_phone: string | null;
   profile_photo_url: string | null;
+  is_sibling: boolean | null;
 }
 
 interface AttendanceRecord {
