@@ -36,6 +36,7 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({});
   const [sessionSearchQueries, setSessionSearchQueries] = useState<Record<string, string>>({});
   const [showQrDialog, setShowQrDialog] = useState<string | null>(null);
+  const [addStudentSession, setAddStudentSession] = useState<string | null>(null);
   const subscriptions: any[] = [];
 
   const toggleSession = (sessionId: string) => {
