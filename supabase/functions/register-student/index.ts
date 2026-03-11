@@ -30,7 +30,24 @@ serve(async (req) => {
       });
     }
 
-    const { studentName, parentName, parentLastName, parentPhone, studentPhone, birthDate, siblingId, className } = await req.json();
+    const { studentName, parentName, parentLastName, parentPhone, studentPhone, birthDate, siblingId, className, overrideAuthUserId } = await req.json();
+
+    // If overrideAuthUserId is provided, caller must be admin
+    let authUserId = user.id;
+    if (overrideAuthUserId) {
+      const { data: adminRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .single();
+      if (!adminRole) {
+        return new Response(JSON.stringify({ error: 'Admin access required for overrideAuthUserId' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      authUserId = overrideAuthUserId;
+    }
 
     if (!studentName || !parentName || !parentLastName || !parentPhone || !birthDate) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
