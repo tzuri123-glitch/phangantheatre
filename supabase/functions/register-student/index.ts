@@ -81,7 +81,7 @@ serve(async (req) => {
         parent_phone: parentPhone,
         phone: studentPhone || null,
         birth_date: birthDate || null,
-        auth_user_id: user.id,
+        auth_user_id: authUserId,
         user_id: adminRole.user_id,
         class_name: className || 'לא שובץ',
         status: 'פעיל',
