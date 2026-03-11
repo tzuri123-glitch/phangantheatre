@@ -53,10 +53,11 @@ export default function QrScanner({ open, onClose, onScan }: QrScannerProps) {
     return () => {
       cancelled = true;
       clearTimeout(timeout);
-      if (scannerRef.current) {
+      if (scannerRef.current && runningRef.current) {
+        runningRef.current = false;
         scannerRef.current.stop().catch(() => {});
-        scannerRef.current = null;
       }
+      scannerRef.current = null;
       setError(null);
     };
   }, [open, onScan]);
