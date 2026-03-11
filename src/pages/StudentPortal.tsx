@@ -404,38 +404,26 @@ export default function StudentPortal() {
     setAddingSibling(true);
     try {
       const firstStudent = students[0];
-      const parentNameParts = (firstStudent?.parent_name || '').split(' ');
-      const parentFirst = parentNameParts[0] || '';
-      const parentLast = firstStudent?.last_name || parentNameParts.slice(1).join(' ') || '';
+      if (!firstStudent) throw new Error('No existing student found');
 
-      const { data: result, error } = await supabase.functions.invoke('register-student', {
-        body: {
-          studentName: siblingName.trim(),
-          parentName: parentFirst,
-          parentLastName: parentLast,
-          parentPhone: firstStudent?.parent_phone || '',
-          studentPhone: siblingPhone.trim() || null,
-          birthDate: siblingBirthDate,
-          siblingId: firstStudent?.id || null,
-          className: siblingClass,
-        },
-      });
+      const { error } = await supabase
+        .from('pending_siblings' as any)
+        .insert({
+          requesting_user_id: user!.id,
+          admin_user_id: firstStudent.user_id,
+          existing_student_id: firstStudent.id,
+          sibling_name: siblingName.trim(),
+          sibling_birth_date: siblingBirthDate || null,
+          sibling_phone: siblingPhone.trim() || null,
+          sibling_class: siblingClass,
+        });
       if (error) throw error;
-      if (result?.error) throw new Error(result.error);
-      toast.success('האח/אחות נרשמו בהצלחה! 🎉');
+      toast.success('בקשה להוספת אח/אחות נשלחה למנהל לאישור! ⏳');
       setShowAddSibling(false);
       setSiblingName('');
       setSiblingBirthDate('');
       setSiblingPhone('');
       setSiblingClass('');
-      const { data: newStudents } = await supabase
-        .from('students')
-        .select('*')
-        .eq('auth_user_id', user!.id);
-      if (newStudents) {
-        setStudents(newStudents as any);
-        setSelectedStudentIdx(newStudents.length - 1);
-      }
     } catch (err: any) {
       toast.error('שגיאה: ' + err.message);
     } finally {
