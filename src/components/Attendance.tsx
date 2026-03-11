@@ -31,7 +31,7 @@ interface AttendanceProps {
   onAddStudentToSession: (sessionId: string, studentId: string) => void;
 }
 
-export default function Attendance({ sessions, students, payments, onCreateSession, onEditSession, onDeleteSession, onUpdateAttendance, onRemoveStudentFromSession }: AttendanceProps) {
+export default function Attendance({ sessions, students, payments, onCreateSession, onEditSession, onDeleteSession, onUpdateAttendance, onRemoveStudentFromSession, onAddStudentToSession }: AttendanceProps) {
   const { user } = useAuth();
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({});
   const [sessionSearchQueries, setSessionSearchQueries] = useState<Record<string, string>>({});
