@@ -1289,6 +1289,34 @@ export default function StudentPortal() {
         </DialogContent>
       </Dialog>
 
+      {/* Forgot to scan dialog */}
+      <Dialog open={showForgotScan} onOpenChange={setShowForgotScan}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader><DialogTitle>🤚 שכחתי לסרוק נוכחות</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              בקשה זו תישלח למנהל לאישור. לאחר אישור, הנוכחות תירשם אוטומטית.
+            </p>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-foreground">תאריך השיעור *</label>
+              <Input type="date" value={forgotDate} onChange={(e) => setForgotDate(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-foreground">הערה (לא חובה)</label>
+              <Input value={forgotNote} onChange={(e) => setForgotNote(e.target.value)} placeholder="למשל: שכחתי את הטלפון בבית" />
+            </div>
+            {student && (
+              <div className="text-xs text-muted-foreground bg-accent/50 rounded-lg p-2">
+                קבוצה: {student.class_name}
+              </div>
+            )}
+            <Button className="w-full" onClick={handleForgotScan} disabled={sendingForgot}>
+              {sendingForgot ? 'שולח...' : 'שלח בקשה למנהל'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Payment proof viewer dialog */}
       <Dialog open={!!viewingProofUrl} onOpenChange={(open) => { if (!open) setViewingProofUrl(null); }}>
         <DialogContent className="max-w-md p-2" dir="rtl">
