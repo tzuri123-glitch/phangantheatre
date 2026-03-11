@@ -28,6 +28,7 @@ interface AttendanceProps {
   onDeleteSession: (sessionId: string) => void;
   onUpdateAttendance: (sessionId: string, studentId: string, status: 'נוכח' | 'לא הגיע' | 'לא באי' | 'עזב') => void;
   onRemoveStudentFromSession: (sessionId: string, studentId: string) => void;
+  onAddStudentToSession: (sessionId: string, studentId: string) => void;
 }
 
 export default function Attendance({ sessions, students, payments, onCreateSession, onEditSession, onDeleteSession, onUpdateAttendance, onRemoveStudentFromSession }: AttendanceProps) {
