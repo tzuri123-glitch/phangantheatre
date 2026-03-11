@@ -10,6 +10,7 @@ import Attendance from '@/components/Attendance';
 import AdminSettings from '@/components/AdminSettings';
 import PendingPayments from '@/components/PendingPayments';
 import PendingSiblings from '@/components/PendingSiblings';
+import PendingAttendance from '@/components/PendingAttendance';
 import PaymentHistory from '@/components/PaymentHistory';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
