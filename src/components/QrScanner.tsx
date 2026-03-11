@@ -11,6 +11,7 @@ interface QrScannerProps {
 
 export default function QrScanner({ open, onClose, onScan }: QrScannerProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const runningRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<string>('qr-reader-' + Date.now());
   const scannedRef = useRef(false);
@@ -31,14 +32,15 @@ export default function QrScanner({ open, onClose, onScan }: QrScannerProps) {
           { facingMode: 'environment' },
           { fps: 10, qrbox: { width: 250, height: 250 } },
           (decodedText) => {
-            // Prevent multiple fires
             if (cancelled || scannedRef.current) return;
             scannedRef.current = true;
+            runningRef.current = false;
             scanner.stop().catch(() => {});
             onScan(decodedText);
           },
           () => {}
         );
+        if (!cancelled) runningRef.current = true;
       } catch (err: any) {
         if (!cancelled) {
           setError('לא ניתן לגשת למצלמה. אנא אשר הרשאות מצלמה.');
@@ -51,10 +53,11 @@ export default function QrScanner({ open, onClose, onScan }: QrScannerProps) {
     return () => {
       cancelled = true;
       clearTimeout(timeout);
-      if (scannerRef.current) {
+      if (scannerRef.current && runningRef.current) {
+        runningRef.current = false;
         scannerRef.current.stop().catch(() => {});
-        scannerRef.current = null;
       }
+      scannerRef.current = null;
       setError(null);
     };
   }, [open, onScan]);
