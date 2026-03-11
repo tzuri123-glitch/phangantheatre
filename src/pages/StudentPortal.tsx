@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
@@ -21,6 +21,7 @@ import logo from '@/assets/logo.png';
 import QrScanner from '@/components/QrScanner';
 import { toast } from 'sonner';
 import { getSignedProfilePhotoUrl, extractProfilePhotoPath, uploadProfilePhoto } from '@/lib/storageHelpers';
+import { getPaymentPrice, isMonthlyPaymentType } from '@/types';
 
 interface StudentRecord {
   id: string;
@@ -34,6 +35,7 @@ interface StudentRecord {
   parent_name: string | null;
   parent_phone: string | null;
   profile_photo_url: string | null;
+  is_sibling: boolean | null;
 }
 
 interface AttendanceRecord {
@@ -1077,106 +1079,138 @@ export default function StudentPortal() {
         <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader><DialogTitle>בחר אמצעי תשלום</DialogTitle></DialogHeader>
 
-          {!paymentMethod ? (
-            <div className="space-y-3">
-              <Button className="w-full h-16 text-lg" variant="outline" onClick={() => setPaymentMethod('cash')}>
-                💵 תשלום במזומן
-              </Button>
-              <Button className="w-full h-16 text-lg" variant="outline" onClick={() => setPaymentMethod('promptpay')}>
-                📱 PromptPay
-              </Button>
-            </div>
-          ) : paymentMethod === 'cash' ? (
-            <div className="space-y-4">
-              <div className="text-center text-4xl">💵</div>
-              <h3 className="font-bold text-lg text-center">דיווח תשלום במזומן</h3>
-              <p className="text-muted-foreground text-sm text-center">
-                בחר סוג תשלום ושלח בקשה למנהל. התשלום ייכנס לתוקף רק לאחר אישור המנהל.
-              </p>
+          {(() => {
+            const isSibling = !!student?.is_sibling;
+            const now = new Date();
+            const day = now.getDate();
+            const isMonthlyWindowOpen = day >= 25 || day <= 5;
+            const isMonthlySelected = isMonthlyPaymentType(selectedPaymentType);
+
+            const priceDisplay = selectedPaymentType
+              ? `฿${getPaymentPrice(selectedPaymentType, isSibling).toLocaleString()}`
+              : null;
+
+            const paymentTypeSelector = (
               <div className="space-y-2">
                 <label className="block text-sm font-medium">סוג תשלום</label>
                 <Select value={selectedPaymentType} onValueChange={setSelectedPaymentType}>
                   <SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="חד פעמי">חד פעמי</SelectItem>
-                    <SelectItem value="חודשי דו שבועי">חודשי דו שבועי (מנוי)</SelectItem>
-                    <SelectItem value="חודשי חד שבועי">חודשי חד שבועי (מנוי)</SelectItem>
+                    <SelectItem value="חד פעמי">חד פעמי — ฿{getPaymentPrice('חד פעמי', isSibling).toLocaleString()}</SelectItem>
+                    <SelectItem value="חודשי דו שבועי">חודשי דו שבועי — ฿{getPaymentPrice('חודשי דו שבועי', isSibling).toLocaleString()}</SelectItem>
+                    <SelectItem value="חודשי חד שבועי">חודשי חד שבועי — ฿{getPaymentPrice('חודשי חד שבועי', isSibling).toLocaleString()}</SelectItem>
                   </SelectContent>
                 </Select>
+                {isSibling && selectedPaymentType && (
+                  <p className="text-xs text-green-600">🏷️ הנחת אחים מופעלת</p>
+                )}
+                {isMonthlySelected && !isMonthlyWindowOpen && (
+                  <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
+                    <p className="text-sm text-destructive font-medium">⛔ חלון התשלום למנוי חודשי סגור.</p>
+                    <p className="text-xs text-destructive/80 mt-1">ניתן לשלם מנוי חודשי מה-25 לחודש הקודם ועד ה-5 לחודש הנוכחי. פנה למנהל לאישור מיוחד.</p>
+                  </div>
+                )}
+                {priceDisplay && !isMonthlySelected && (
+                  <p className="text-sm font-bold text-center mt-2">סכום לתשלום: {priceDisplay}</p>
+                )}
+                {priceDisplay && isMonthlySelected && isMonthlyWindowOpen && (
+                  <p className="text-sm font-bold text-center mt-2">סכום לתשלום: {priceDisplay}</p>
+                )}
               </div>
-              <Button className="w-full" onClick={handleCashPaymentRequest} disabled={submitting || !selectedPaymentType}>
-                {submitting ? 'שולח...' : 'שלח בקשת תשלום למנהל'}
-              </Button>
-              <Button variant="ghost" onClick={() => setPaymentMethod(null)} className="w-full">← חזור</Button>
-            </div>
-          ) : (
-            <div className="space-y-4 text-center">
-              <div className="text-4xl">📱</div>
-              <h3 className="font-bold text-lg">PromptPay</h3>
-              <p className="text-muted-foreground text-sm">סרוק את הקוד, בצע העברה ולאחר מכן העלה צילום מסך של האישור</p>
-              {promptPayUrl && (
-                <div className="space-y-3">
-                  <img src={promptPayUrl} alt="PromptPay QR" className="mx-auto max-w-[250px] rounded-lg shadow-lg" />
-                  <a href={promptPayUrl} download="promptpay-qr.png" className="inline-block">
-                    <Button variant="outline" size="sm">📥 הורד תמונה</Button>
-                  </a>
-                </div>
-              )}
-              {!promptPayUrl && (
-                <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-muted-foreground">קוד PromptPay עדיין לא הוגדר. פנה למנהל.</p>
-                </div>
-              )}
+            );
 
-              <div className="border-t border-border pt-4 space-y-3 text-right">
-                <h4 className="font-bold text-sm">לאחר התשלום:</h4>
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium">סוג תשלום</label>
-                  <Select value={selectedPaymentType} onValueChange={setSelectedPaymentType}>
-                    <SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="חד פעמי">חד פעמי</SelectItem>
-                      <SelectItem value="חודשי דו שבועי">חודשי דו שבועי (מנוי)</SelectItem>
-                      <SelectItem value="חודשי חד שבועי">חודשי חד שבועי (מנוי)</SelectItem>
-                    </SelectContent>
-                  </Select>
+            const isBlocked = isMonthlySelected && !isMonthlyWindowOpen;
+
+            if (!paymentMethod) {
+              return (
+                <div className="space-y-3">
+                  <Button className="w-full h-16 text-lg" variant="outline" onClick={() => setPaymentMethod('cash')}>
+                    💵 תשלום במזומן
+                  </Button>
+                  <Button className="w-full h-16 text-lg" variant="outline" onClick={() => setPaymentMethod('promptpay')}>
+                    📱 PromptPay
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium">העלה צילום מסך של אישור התשלום</label>
-                  <label className="block">
-                    <div className={`border-2 border-dashed rounded-lg p-4 cursor-pointer transition-colors ${proofFile ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-border hover:border-primary'}`}>
-                      {proofFile ? (
-                        <div className="flex items-center gap-2 justify-center">
-                          <span className="text-green-600">✅</span>
-                          <span className="text-sm font-medium">{proofFile.name}</span>
-                          <button type="button" onClick={(e) => { e.preventDefault(); setProofFile(null); }} className="text-destructive text-xs hover:underline">הסר</button>
-                        </div>
-                      ) : (
-                        <div className="text-center">
-                          <span className="text-2xl">📷</span>
-                          <p className="text-sm text-muted-foreground mt-1">לחץ לבחירת תמונה מהגלריה</p>
-                        </div>
-                      )}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => setProofFile(e.target.files?.[0] || null)}
-                      />
-                    </div>
-                  </label>
+              );
+            }
+
+            if (paymentMethod === 'cash') {
+              return (
+                <div className="space-y-4">
+                  <div className="text-center text-4xl">💵</div>
+                  <h3 className="font-bold text-lg text-center">דיווח תשלום במזומן</h3>
+                  <p className="text-muted-foreground text-sm text-center">
+                    בחר סוג תשלום ושלח בקשה למנהל. התשלום ייכנס לתוקף רק לאחר אישור המנהל.
+                  </p>
+                  {paymentTypeSelector}
+                  <Button className="w-full" onClick={handleCashPaymentRequest} disabled={submitting || !selectedPaymentType || isBlocked}>
+                    {submitting ? 'שולח...' : 'שלח בקשת תשלום למנהל'}
+                  </Button>
+                  <Button variant="ghost" onClick={() => setPaymentMethod(null)} className="w-full">← חזור</Button>
                 </div>
-                <Button
-                  className="w-full"
-                  onClick={handlePromptPayPaymentRequest}
-                  disabled={submitting || !selectedPaymentType || !proofFile}
-                >
-                  {submitting ? 'שולח...' : '📤 שלח אישור תשלום למנהל'}
-                </Button>
+              );
+            }
+
+            // promptpay
+            return (
+              <div className="space-y-4 text-center">
+                <div className="text-4xl">📱</div>
+                <h3 className="font-bold text-lg">PromptPay</h3>
+                <p className="text-muted-foreground text-sm">סרוק את הקוד, בצע העברה ולאחר מכן העלה צילום מסך של האישור</p>
+                {promptPayUrl && (
+                  <div className="space-y-3">
+                    <img src={promptPayUrl} alt="PromptPay QR" className="mx-auto max-w-[250px] rounded-lg shadow-lg" />
+                    <a href={promptPayUrl} download="promptpay-qr.png" className="inline-block">
+                      <Button variant="outline" size="sm">📥 הורד תמונה</Button>
+                    </a>
+                  </div>
+                )}
+                {!promptPayUrl && (
+                  <div className="p-4 bg-muted rounded-lg">
+                    <p className="text-muted-foreground">קוד PromptPay עדיין לא הוגדר. פנה למנהל.</p>
+                  </div>
+                )}
+
+                <div className="border-t border-border pt-4 space-y-3 text-right">
+                  <h4 className="font-bold text-sm">לאחר התשלום:</h4>
+                  {paymentTypeSelector}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium">העלה צילום מסך של אישור התשלום</label>
+                    <label className="block">
+                      <div className={`border-2 border-dashed rounded-lg p-4 cursor-pointer transition-colors ${proofFile ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-border hover:border-primary'}`}>
+                        {proofFile ? (
+                          <div className="flex items-center gap-2 justify-center">
+                            <span className="text-green-600">✅</span>
+                            <span className="text-sm font-medium">{proofFile.name}</span>
+                            <button type="button" onClick={(e) => { e.preventDefault(); setProofFile(null); }} className="text-destructive text-xs hover:underline">הסר</button>
+                          </div>
+                        ) : (
+                          <div className="text-center">
+                            <span className="text-2xl">📷</span>
+                            <p className="text-sm text-muted-foreground mt-1">לחץ לבחירת תמונה מהגלריה</p>
+                          </div>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+                        />
+                      </div>
+                    </label>
+                  </div>
+                  <Button
+                    className="w-full"
+                    onClick={handlePromptPayPaymentRequest}
+                    disabled={submitting || !selectedPaymentType || !proofFile || isBlocked}
+                  >
+                    {submitting ? 'שולח...' : '📤 שלח אישור תשלום למנהל'}
+                  </Button>
+                </div>
+                <Button variant="ghost" onClick={() => { setPaymentMethod(null); setProofFile(null); }} className="w-full">← חזור</Button>
               </div>
-              <Button variant="ghost" onClick={() => { setPaymentMethod(null); setProofFile(null); }} className="w-full">← חזור</Button>
-            </div>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
 
