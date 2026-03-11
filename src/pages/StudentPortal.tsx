@@ -779,28 +779,42 @@ export default function StudentPortal() {
             </div>
 
             {activeTab === 'attendance' && (
-              <Card className="overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-right">תאריך</TableHead>
-                      <TableHead className="text-right">כיתה</TableHead>
-                      <TableHead className="text-right">סטטוס</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {attendance.length === 0 ? (
-                      <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">אין רשומות נוכחות עדיין</TableCell></TableRow>
-                    ) : attendance.map((r) => (
-                      <TableRow key={r.id}>
-                        <TableCell>{r.session?.session_date || '-'}</TableCell>
-                        <TableCell>{r.session?.class_name || '-'}</TableCell>
-                        <TableCell><Badge className={statusMap[r.status] || ''} variant="outline">{r.status}</Badge></TableCell>
+              <div className="space-y-4">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setForgotDate(new Date().toISOString().slice(0, 10));
+                    setForgotNote('');
+                    setShowForgotScan(true);
+                  }}
+                >
+                  🤚 שכחתי לסרוק נוכחות
+                </Button>
+                <Card className="overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-right">תאריך</TableHead>
+                        <TableHead className="text-right">כיתה</TableHead>
+                        <TableHead className="text-right">סטטוס</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Card>
+                    </TableHeader>
+                    <TableBody>
+                      {attendance.length === 0 ? (
+                        <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">אין רשומות נוכחות עדיין</TableCell></TableRow>
+                      ) : attendance.map((r) => (
+                        <TableRow key={r.id}>
+                          <TableCell>{r.session?.session_date || '-'}</TableCell>
+                          <TableCell>{r.session?.class_name || '-'}</TableCell>
+                          <TableCell><Badge className={statusMap[r.status] || ''} variant="outline">{r.status}</Badge></TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Card>
+              </div>
             )}
 
             {activeTab === 'payments' && (
