@@ -10,6 +10,7 @@ import Attendance from '@/components/Attendance';
 import AdminSettings from '@/components/AdminSettings';
 import PendingPayments from '@/components/PendingPayments';
 import PendingSiblings from '@/components/PendingSiblings';
+import PendingAttendance from '@/components/PendingAttendance';
 import PaymentHistory from '@/components/PaymentHistory';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -322,6 +323,7 @@ export default function Index() {
       <main className="container mx-auto px-2 sm:px-4">
         <PendingPayments onPaymentApproved={loadData} />
         <PendingSiblings onSiblingApproved={loadData} />
+        <PendingAttendance onAttendanceApproved={loadData} />
         {tab === 'dashboard' && <Dashboard students={students} payments={payments} onAddStudent={() => { studentFormRef.current = { id: '', name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, siblingId: undefined, className: CLASS_OPTIONS[0], status: 'פעיל' }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} />}
         {tab === 'students' && <Students 
           students={students}
@@ -484,6 +486,33 @@ export default function Index() {
                 : s
             ));
             toast.success('תלמיד הוסר מהשיעור!');
+          }}
+          onAddStudentToSession={async (sessionId, studentId) => {
+            if (!user) return;
+            // Check if already exists
+            const session = sessions.find(s => s.id === sessionId);
+            if (session?.students.some(st => st.studentId === studentId)) {
+              toast.error('התלמיד כבר נמצא בשיעור');
+              return;
+            }
+            const { error } = await supabase
+              .from('attendance')
+              .insert({
+                user_id: user.id,
+                session_id: sessionId,
+                student_id: studentId,
+                status: 'נוכח',
+              });
+            if (error) {
+              toast.error('שגיאה בהוספת תלמיד');
+              return;
+            }
+            setSessions(prev => prev.map(s =>
+              s.id === sessionId
+                ? { ...s, students: [...s.students, { studentId, status: 'נוכח' as const }] }
+                : s
+            ));
+            toast.success('תלמיד נוסף לשיעור!');
           }}
         />}
         {tab === 'settings' && <AdminSettings />}

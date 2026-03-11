@@ -28,13 +28,15 @@ interface AttendanceProps {
   onDeleteSession: (sessionId: string) => void;
   onUpdateAttendance: (sessionId: string, studentId: string, status: 'נוכח' | 'לא הגיע' | 'לא באי' | 'עזב') => void;
   onRemoveStudentFromSession: (sessionId: string, studentId: string) => void;
+  onAddStudentToSession: (sessionId: string, studentId: string) => void;
 }
 
-export default function Attendance({ sessions, students, payments, onCreateSession, onEditSession, onDeleteSession, onUpdateAttendance, onRemoveStudentFromSession }: AttendanceProps) {
+export default function Attendance({ sessions, students, payments, onCreateSession, onEditSession, onDeleteSession, onUpdateAttendance, onRemoveStudentFromSession, onAddStudentToSession }: AttendanceProps) {
   const { user } = useAuth();
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({});
   const [sessionSearchQueries, setSessionSearchQueries] = useState<Record<string, string>>({});
   const [showQrDialog, setShowQrDialog] = useState<string | null>(null);
+  const [addStudentSession, setAddStudentSession] = useState<string | null>(null);
   const subscriptions: any[] = [];
 
   const toggleSession = (sessionId: string) => {
@@ -132,12 +134,32 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
 
             {expandedSessions[session.id] && (
               <div className="p-4">
-                <div className="mb-4">
+                <div className="mb-4 flex gap-2">
                   <Input
                     placeholder="חיפוש תלמיד..."
                     value={sessionSearchQueries[session.id] || ''}
                     onChange={(e) => setSessionSearchQueries(prev => ({ ...prev, [session.id]: e.target.value }))}
+                    className="flex-1"
                   />
+                  <Select
+                    value=""
+                    onValueChange={(studentId) => {
+                      if (studentId) onAddStudentToSession(session.id, studentId);
+                    }}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="➕ הוסף תלמיד" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {students
+                        .filter(s => !session.students.some(st => st.studentId === s.id))
+                        .map(s => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name} {s.lastName}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Table>
                   <TableHeader>

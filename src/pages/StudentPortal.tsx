@@ -111,6 +111,12 @@ export default function StudentPortal() {
   const [siblingClass, setSiblingClass] = useState('');
   const [addingSibling, setAddingSibling] = useState(false);
 
+  // Forgot to scan dialog
+  const [showForgotScan, setShowForgotScan] = useState(false);
+  const [forgotDate, setForgotDate] = useState(new Date().toISOString().slice(0, 10));
+  const [forgotNote, setForgotNote] = useState('');
+  const [sendingForgot, setSendingForgot] = useState(false);
+
   // Load all students for this user
   useEffect(() => {
     if (!user) return;
@@ -431,6 +437,35 @@ export default function StudentPortal() {
     }
   };
 
+  const handleForgotScan = async () => {
+    if (!student || !forgotDate) {
+      toast.error('יש לבחור תאריך');
+      return;
+    }
+    setSendingForgot(true);
+    try {
+      const { error } = await supabase
+        .from('pending_attendance' as any)
+        .insert({
+          student_id: student.id,
+          requesting_user_id: user!.id,
+          admin_user_id: student.user_id,
+          class_name: student.class_name,
+          requested_date: forgotDate,
+          note: forgotNote.trim() || null,
+        });
+      if (error) throw error;
+      toast.success('בקשת נוכחות נשלחה למנהל לאישור! ⏳');
+      setShowForgotScan(false);
+      setForgotDate(new Date().toISOString().slice(0, 10));
+      setForgotNote('');
+    } catch (err: any) {
+      toast.error('שגיאה: ' + err.message);
+    } finally {
+      setSendingForgot(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -744,28 +779,42 @@ export default function StudentPortal() {
             </div>
 
             {activeTab === 'attendance' && (
-              <Card className="overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-right">תאריך</TableHead>
-                      <TableHead className="text-right">כיתה</TableHead>
-                      <TableHead className="text-right">סטטוס</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {attendance.length === 0 ? (
-                      <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">אין רשומות נוכחות עדיין</TableCell></TableRow>
-                    ) : attendance.map((r) => (
-                      <TableRow key={r.id}>
-                        <TableCell>{r.session?.session_date || '-'}</TableCell>
-                        <TableCell>{r.session?.class_name || '-'}</TableCell>
-                        <TableCell><Badge className={statusMap[r.status] || ''} variant="outline">{r.status}</Badge></TableCell>
+              <div className="space-y-4">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setForgotDate(new Date().toISOString().slice(0, 10));
+                    setForgotNote('');
+                    setShowForgotScan(true);
+                  }}
+                >
+                  🤚 שכחתי לסרוק נוכחות
+                </Button>
+                <Card className="overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-right">תאריך</TableHead>
+                        <TableHead className="text-right">כיתה</TableHead>
+                        <TableHead className="text-right">סטטוס</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Card>
+                    </TableHeader>
+                    <TableBody>
+                      {attendance.length === 0 ? (
+                        <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">אין רשומות נוכחות עדיין</TableCell></TableRow>
+                      ) : attendance.map((r) => (
+                        <TableRow key={r.id}>
+                          <TableCell>{r.session?.session_date || '-'}</TableCell>
+                          <TableCell>{r.session?.class_name || '-'}</TableCell>
+                          <TableCell><Badge className={statusMap[r.status] || ''} variant="outline">{r.status}</Badge></TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Card>
+              </div>
             )}
 
             {activeTab === 'payments' && (
@@ -1236,6 +1285,34 @@ export default function StudentPortal() {
               {addingSibling ? 'שולח...' : 'שלח בקשה למנהל'}
             </Button>
             <p className="text-xs text-muted-foreground text-center">הבקשה תישלח למנהל לאישור</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Forgot to scan dialog */}
+      <Dialog open={showForgotScan} onOpenChange={setShowForgotScan}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader><DialogTitle>🤚 שכחתי לסרוק נוכחות</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              בקשה זו תישלח למנהל לאישור. לאחר אישור, הנוכחות תירשם אוטומטית.
+            </p>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-foreground">תאריך השיעור *</label>
+              <Input type="date" value={forgotDate} onChange={(e) => setForgotDate(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-foreground">הערה (לא חובה)</label>
+              <Input value={forgotNote} onChange={(e) => setForgotNote(e.target.value)} placeholder="למשל: שכחתי את הטלפון בבית" />
+            </div>
+            {student && (
+              <div className="text-xs text-muted-foreground bg-accent/50 rounded-lg p-2">
+                קבוצה: {student.class_name}
+              </div>
+            )}
+            <Button className="w-full" onClick={handleForgotScan} disabled={sendingForgot}>
+              {sendingForgot ? 'שולח...' : 'שלח בקשה למנהל'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
