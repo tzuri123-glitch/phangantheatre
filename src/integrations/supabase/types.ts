@@ -210,6 +210,56 @@ export type Database = {
           },
         ]
       }
+      pending_siblings: {
+        Row: {
+          admin_user_id: string
+          created_at: string | null
+          existing_student_id: string
+          id: string
+          requesting_user_id: string
+          resolved_at: string | null
+          sibling_birth_date: string | null
+          sibling_class: string
+          sibling_name: string
+          sibling_phone: string | null
+          status: string
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string | null
+          existing_student_id: string
+          id?: string
+          requesting_user_id: string
+          resolved_at?: string | null
+          sibling_birth_date?: string | null
+          sibling_class: string
+          sibling_name: string
+          sibling_phone?: string | null
+          status?: string
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string | null
+          existing_student_id?: string
+          id?: string
+          requesting_user_id?: string
+          resolved_at?: string | null
+          sibling_birth_date?: string | null
+          sibling_class?: string
+          sibling_name?: string
+          sibling_phone?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_siblings_existing_student_id_fkey"
+            columns: ["existing_student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
