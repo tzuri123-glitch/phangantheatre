@@ -32,14 +32,15 @@ export default function QrScanner({ open, onClose, onScan }: QrScannerProps) {
           { facingMode: 'environment' },
           { fps: 10, qrbox: { width: 250, height: 250 } },
           (decodedText) => {
-            // Prevent multiple fires
             if (cancelled || scannedRef.current) return;
             scannedRef.current = true;
+            runningRef.current = false;
             scanner.stop().catch(() => {});
             onScan(decodedText);
           },
           () => {}
         );
+        if (!cancelled) runningRef.current = true;
       } catch (err: any) {
         if (!cancelled) {
           setError('לא ניתן לגשת למצלמה. אנא אשר הרשאות מצלמה.');
