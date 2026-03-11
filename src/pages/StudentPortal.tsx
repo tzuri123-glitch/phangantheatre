@@ -21,6 +21,7 @@ import logo from '@/assets/logo.png';
 import QrScanner from '@/components/QrScanner';
 import { toast } from 'sonner';
 import { getSignedProfilePhotoUrl, extractProfilePhotoPath, uploadProfilePhoto } from '@/lib/storageHelpers';
+import { getPaymentPrice, isMonthlyPaymentType } from '@/types';
 
 interface StudentRecord {
   id: string;
