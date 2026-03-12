@@ -52,7 +52,8 @@ serve(async (req) => {
       .order('name');
 
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), {
+      console.error('Failed to list siblings:', error);
+      return new Response(JSON.stringify({ error: 'Failed to retrieve students' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
