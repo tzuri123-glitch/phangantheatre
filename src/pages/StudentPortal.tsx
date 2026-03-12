@@ -157,8 +157,8 @@ export default function StudentPortal() {
         .list('', { limit: 10 });
       const ppFile = files?.find(f => f.name.startsWith('promptpay'));
       if (ppFile) {
-        const { data } = supabase.storage.from('admin-settings').getPublicUrl(ppFile.name);
-        setPromptPayUrl(data.publicUrl);
+        const { data: signedData } = await supabase.storage.from('admin-settings').createSignedUrl(ppFile.name, 3600);
+        if (signedData) setPromptPayUrl(signedData.signedUrl);
       }
 
       setLoading(false);
