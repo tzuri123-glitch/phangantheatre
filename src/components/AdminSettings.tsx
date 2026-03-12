@@ -22,10 +22,10 @@ export default function AdminSettings() {
 
     const promptPayFile = files?.find(f => f.name.startsWith('promptpay'));
     if (promptPayFile) {
-      const { data } = supabase.storage
+      const { data } = await supabase.storage
         .from('admin-settings')
-        .getPublicUrl(promptPayFile.name);
-      setPromptPayUrl(data.publicUrl);
+        .createSignedUrl(promptPayFile.name, 3600);
+      if (data) setPromptPayUrl(data.signedUrl);
     }
   };
 
