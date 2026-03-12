@@ -60,11 +60,11 @@ export default function AdminSettings() {
 
       if (error) throw error;
 
-      const { data } = supabase.storage
+      const { data } = await supabase.storage
         .from('admin-settings')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 3600);
 
-      setPromptPayUrl(data.publicUrl);
+      if (data) setPromptPayUrl(data.signedUrl);
       toast.success('תמונת PromptPay עודכנה!');
     } catch (error: any) {
       toast.error('שגיאה בהעלאת התמונה: ' + error.message);
