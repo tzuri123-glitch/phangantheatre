@@ -72,7 +72,8 @@ export default function StudentPortal() {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
-  const [activeTab, setActiveTab] = useState<'attendance' | 'payments' | 'profile'>('attendance');
+  const [activeTab, setActiveTab] = useState<'home' | 'attendance' | 'payments' | 'profile'>('home');
+  const [nextSession, setNextSession] = useState<{ session_date: string; class_name: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Profile editing
@@ -196,6 +197,18 @@ export default function StudentPortal() {
       setPendingPayments(
         ((pendingData as PendingPayment[]) || []).filter(p => p.status !== 'deleted_by_admin')
       );
+
+      // Fetch next upcoming session for this student's class
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: nextSessionData } = await supabase
+        .from('sessions')
+        .select('session_date, class_name')
+        .eq('class_name', student.class_name)
+        .gte('session_date', today)
+        .order('session_date', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      setNextSession(nextSessionData || null);
     };
     loadStudentData();
   }, [student?.id]);
@@ -475,10 +488,27 @@ export default function StudentPortal() {
   }
 
   const tabs = [
+    { id: 'home' as const, label: 'בית' },
     { id: 'attendance' as const, label: 'נוכחות' },
     { id: 'payments' as const, label: 'תשלומים' },
     { id: 'profile' as const, label: 'הפרטים שלי' },
   ];
+
+  // Summary stats for home tab
+  const attendedCount = attendance.filter(a => a.status === 'present' || a.status === 'נוכח').length;
+  const totalSessions = attendance.length;
+  const attendanceRate = totalSessions > 0 ? Math.round((attendedCount / totalSessions) * 100) : null;
+
+  const now = new Date();
+  const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const currentMonthPaid = payments.some(p =>
+    p.payment_date?.startsWith(currentMonthStr) &&
+    (p.payment_type?.includes('מנוי') || p.payment_type?.includes('monthly') || p.payment_type?.includes('subscription'))
+  );
+  const hasPendingThisMonth = pendingPayments.some(p =>
+    p.status === 'pending' &&
+    p.created_at?.startsWith(currentMonthStr)
+  );
 
   const openEditProfile = () => {
     if (student) {
@@ -777,6 +807,103 @@ export default function StudentPortal() {
                 </button>
               ))}
             </div>
+
+            {activeTab === 'home' && (
+              <div className="space-y-4">
+                {/* Welcome card */}
+                <Card className="p-5 bg-gradient-to-l from-primary/10 to-background border-primary/20">
+                  <div className="flex items-center gap-3">
+                    <div className="text-3xl">🎭</div>
+                    <div>
+                      <h2 className="text-xl font-bold text-foreground">שלום, {student?.name}!</h2>
+                      <p className="text-sm text-muted-foreground">{student?.class_name}</p>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Stats grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Attendance rate */}
+                  <Card className="p-4 text-center">
+                    <div className="text-3xl font-bold text-primary">
+                      {attendanceRate !== null ? `${attendanceRate}%` : '—'}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">אחוז נוכחות</div>
+                    {totalSessions > 0 && (
+                      <div className="text-xs text-muted-foreground">{attendedCount}/{totalSessions} שיעורים</div>
+                    )}
+                  </Card>
+
+                  {/* Payment status */}
+                  <Card className="p-4 text-center">
+                    {currentMonthPaid ? (
+                      <>
+                        <div className="text-3xl">✅</div>
+                        <div className="text-xs text-muted-foreground mt-1">תשלום החודש</div>
+                        <div className="text-xs font-medium text-green-600">שולם</div>
+                      </>
+                    ) : hasPendingThisMonth ? (
+                      <>
+                        <div className="text-3xl">⏳</div>
+                        <div className="text-xs text-muted-foreground mt-1">תשלום החודש</div>
+                        <div className="text-xs font-medium text-yellow-600">ממתין לאישור</div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-3xl">⚠️</div>
+                        <div className="text-xs text-muted-foreground mt-1">תשלום החודש</div>
+                        <div className="text-xs font-medium text-red-500">לא שולם</div>
+                      </>
+                    )}
+                  </Card>
+                </div>
+
+                {/* Next session */}
+                <Card className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">📅</div>
+                    <div>
+                      <div className="text-sm font-medium text-foreground">השיעור הבא</div>
+                      {nextSession ? (
+                        <div className="text-base font-bold text-primary">
+                          {new Date(nextSession.session_date + 'T00:00:00').toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">אין שיעורים קרובים</div>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Quick pay button */}
+                {!currentMonthPaid && !hasPendingThisMonth && (
+                  <Button
+                    className="w-full"
+                    onClick={() => setShowPaymentDialog(true)}
+                  >
+                    💳 שלם עכשיו
+                  </Button>
+                )}
+
+                {/* Quick links */}
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setActiveTab('attendance')}
+                    className="p-4 rounded-xl border bg-card hover:bg-accent transition-colors text-center"
+                  >
+                    <div className="text-2xl mb-1">📋</div>
+                    <div className="text-sm font-medium">נוכחות</div>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('payments')}
+                    className="p-4 rounded-xl border bg-card hover:bg-accent transition-colors text-center"
+                  >
+                    <div className="text-2xl mb-1">💰</div>
+                    <div className="text-sm font-medium">תשלומים</div>
+                  </button>
+                </div>
+              </div>
+            )}
 
             {activeTab === 'attendance' && (
               <div className="space-y-4">
