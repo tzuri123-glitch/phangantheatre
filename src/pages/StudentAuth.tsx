@@ -390,7 +390,8 @@ export default function StudentAuth() {
               <button
                 type="button"
                 onClick={() => navigate('/reset-password')}
-                className="text-sm text-muted-foreground hover:underline"
+                className="text-sm hover:underline"
+                style={{ color: 'hsl(42 88% 52%)' }}
               >
                 שכחתי סיסמה
               </button>
