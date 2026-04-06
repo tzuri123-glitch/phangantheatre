@@ -97,8 +97,8 @@ export default function Students({ students, payments, onAddStudent, onEditStude
   };
 
   const getBalanceText = (balance: number) => {
-    if (balance > 0) return `זכות ₪${balance}`;
-    if (balance < 0) return `חוב ₪${Math.abs(balance)}`;
+    if (balance > 0) return `זכות ฿${balance}`;
+    if (balance < 0) return `חוב ฿${Math.abs(balance)}`;
     return 'מאוזן';
   };
 
