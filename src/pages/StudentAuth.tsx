@@ -175,6 +175,38 @@ export default function StudentAuth() {
           <p className="text-muted-foreground text-sm mt-1">
             {isSignUp ? 'מלא את הפרטים להרשמה למערכת' : 'התחבר לאזור האישי שלך'}
           </p>
+
+          {/* Tab switcher */}
+          <div className="flex mt-5 rounded-xl overflow-hidden border border-border/50 w-full">
+            <button
+              type="button"
+              onClick={() => setIsSignUp(false)}
+              className="flex-1 py-2.5 text-sm font-semibold transition-all"
+              style={!isSignUp ? {
+                background: 'linear-gradient(135deg, hsl(42 88% 46%), hsl(42 88% 38%))',
+                color: 'hsl(220 18% 7%)',
+              } : {
+                background: 'hsl(220 18% 14%)',
+                color: 'hsl(220 10% 52%)',
+              }}
+            >
+              כניסה
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsSignUp(true)}
+              className="flex-1 py-2.5 text-sm font-semibold transition-all"
+              style={isSignUp ? {
+                background: 'linear-gradient(135deg, hsl(42 88% 46%), hsl(42 88% 38%))',
+                color: 'hsl(220 18% 7%)',
+              } : {
+                background: 'hsl(220 18% 14%)',
+                color: 'hsl(220 10% 52%)',
+              }}
+            >
+              הרשמה
+            </button>
+          </div>
         </div>
 
       <div
@@ -378,13 +410,6 @@ export default function StudentAuth() {
         </form>
 
         <div className="mt-4 text-center space-y-2">
-          <button
-            type="button"
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="text-sm text-primary hover:underline"
-          >
-            {isSignUp ? 'כבר יש לך חשבון? התחבר' : 'אין לך חשבון? הירשם'}
-          </button>
           {!isSignUp && (
             <div>
               <button
