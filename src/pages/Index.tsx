@@ -301,23 +301,28 @@ export default function Index() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-accent/10 to-background" dir="rtl">
-      <header className="bg-card/80 backdrop-blur-md border-b border-border shadow-md sticky top-0 z-50">
-        <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 flex items-center justify-between gap-2 sm:gap-4">
+    <div className="min-h-screen bg-background" dir="rtl">
+      <header className="sticky top-0 z-50 border-b border-border/40" style={{ background: 'linear-gradient(180deg, hsl(220 18% 9%) 0%, hsl(220 18% 7% / 0.95) 100%)', backdropFilter: 'blur(12px)' }}>
+        <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
           <div className="flex items-center gap-2 sm:gap-4 animate-fade-in">
-            <img src={logo} alt="לוגו" className="h-8 sm:h-12 object-contain drop-shadow-lg" />
-            <h1 className="text-base sm:text-2xl font-bold bg-gradient-to-l from-primary to-magenta bg-clip-text text-transparent">
-              מערכת ניהול מרכז אומנויות הבמה
-            </h1>
+            <img src={logo} alt="לוגו" className="h-8 sm:h-11 object-contain drop-shadow-lg" />
+            <div>
+              <h1 className="text-sm sm:text-xl font-bold leading-tight" style={{ fontFamily: "'Frank Ruhl Libre', serif", background: 'linear-gradient(135deg, hsl(42 88% 62%), hsl(42 70% 80%))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                מרכז אומנויות הבמה
+              </h1>
+              <p className="text-muted-foreground text-xs hidden sm:block tracking-wide">Phangan Music & Performing Arts</p>
+            </div>
           </div>
-          <Button 
+          <Button
             onClick={() => signOut('/auth')}
             size="sm"
-            className="bg-gradient-to-l from-magenta to-magenta-hover text-white font-bold text-xs sm:text-lg px-3 sm:px-8 button-hover shadow-lg hover:shadow-xl"
+            variant="outline"
+            className="border-primary/40 text-primary hover:bg-primary hover:text-primary-foreground font-semibold text-xs sm:text-sm px-3 sm:px-5 button-hover transition-all"
           >
             התנתק
           </Button>
         </div>
+        <div className="stage-divider" />
       </header>
       <TabNavigation activeTab={tab} onTabChange={setTab} />
       <main className="container mx-auto px-2 sm:px-4">

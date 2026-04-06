@@ -91,9 +91,9 @@ export default function Students({ students, payments, onAddStudent, onEditStude
   };
 
   const getBalanceColor = (balance: number) => {
-    if (balance > 0) return 'bg-green-100 text-green-800'; // זכות
-    if (balance < 0) return 'bg-red-100 text-red-800'; // חוב
-    return 'bg-gray-100 text-gray-800'; // מאוזן
+    if (balance > 0) return 'bg-emerald-900/40 text-emerald-300 border border-emerald-700/50'; // זכות
+    if (balance < 0) return 'bg-red-900/40 text-red-300 border border-red-700/50'; // חוב
+    return 'bg-gray-800/60 text-gray-400 border border-gray-700/50'; // מאוזן
   };
 
   const getBalanceText = (balance: number) => {
@@ -302,7 +302,7 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                                         asChild
                                         variant="ghost"
                                         size="sm"
-                                        className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                        className="h-7 w-7 p-0 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-900/30"
                                       >
                                         <a
                                           href={getWhatsAppFallbackUrl(student.parentPhone || student.phone)}
@@ -333,10 +333,12 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                             <TableCell className="font-medium">{student.lastName}</TableCell>
                             <TableCell>
                               <span
-                                className={`inline-block px-3 py-1 rounded-full text-sm ${
+                                className={`inline-block px-3 py-1 rounded-full text-sm border ${
                                   student.status === 'פעיל'
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-orange-100 text-orange-800'
+                                    ? 'bg-emerald-900/40 text-emerald-300 border-emerald-700/50'
+                                    : student.status === 'בהקפאה'
+                                    ? 'bg-blue-900/40 text-blue-300 border-blue-700/50'
+                                    : 'bg-gray-800/60 text-gray-400 border-gray-700/50'
                                 }`}
                               >
                                 {student.status}

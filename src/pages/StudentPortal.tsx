@@ -606,20 +606,26 @@ export default function StudentPortal() {
   };
 
   const statusMap: Record<string, string> = {
-    'נוכח': 'bg-green-100 text-green-800',
-    'לא הגיע': 'bg-red-100 text-red-800',
-    'לא באי': 'bg-yellow-100 text-yellow-800',
-    'עזב': 'bg-gray-100 text-gray-800',
+    'נוכח': 'bg-emerald-900/40 text-emerald-300 border-emerald-700/50',
+    'לא הגיע': 'bg-red-900/40 text-red-300 border-red-700/50',
+    'לא באי': 'bg-yellow-900/40 text-yellow-300 border-yellow-700/50',
+    'עזב': 'bg-gray-800/60 text-gray-400 border-gray-700/50',
   };
 
   const pendingStatusMap: Record<string, { label: string; className: string }> = {
-    'pending': { label: 'ממתין לאישור', className: 'bg-yellow-100 text-yellow-800' },
-    'approved': { label: 'אושר ✅', className: 'bg-green-100 text-green-800' },
-    'rejected': { label: 'נדחה ❌', className: 'bg-red-100 text-red-800' },
+    'pending': { label: 'ממתין לאישור', className: 'bg-yellow-900/40 text-yellow-300 border-yellow-700/50' },
+    'approved': { label: 'אושר ✅', className: 'bg-emerald-900/40 text-emerald-300 border-emerald-700/50' },
+    'rejected': { label: 'נדחה ❌', className: 'bg-red-900/40 text-red-300 border-red-700/50' },
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-accent/10 to-background" dir="rtl">
+    <div
+      className="min-h-screen"
+      dir="rtl"
+      style={{
+        background: 'radial-gradient(ellipse 80% 60% at 50% 0%, hsl(42 50% 14% / 0.3), transparent), hsl(220 18% 7%)',
+      }}
+    >
       <header className="bg-card/80 backdrop-blur-md border-b border-border shadow-md sticky top-0 z-50">
         <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 flex items-center justify-between gap-2 sm:gap-4">
           <div className="flex items-center gap-2 sm:gap-4 animate-fade-in">
@@ -678,11 +684,11 @@ export default function StudentPortal() {
                   <label className="block text-xs font-medium mb-2 text-foreground">בחר קבוצה *</label>
                   <div className="flex gap-3">
                     <button type="button" onClick={() => setRegClass('תיאטרון 7-9')}
-                      className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${regClass === 'תיאטרון 7-9' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
+                      className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${regClass === 'תיאטרון 7-9' ? 'border-primary text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
                       🎭 גילאי 7-9
                     </button>
                     <button type="button" onClick={() => setRegClass('תיאטרון 10-14')}
-                      className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${regClass === 'תיאטרון 10-14' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
+                      className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${regClass === 'תיאטרון 10-14' ? 'border-primary text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
                       🎭 גילאי 10-14
                     </button>
                   </div>
@@ -786,8 +792,8 @@ export default function StudentPortal() {
 
             {/* Pending payments banner */}
             {pendingPayments.filter(p => p.status === 'pending').length > 0 && (
-              <Card className="p-3 mb-4 bg-yellow-50 border-yellow-200">
-                <p className="text-sm font-medium text-yellow-800">
+              <Card className="p-3 mb-4 bg-yellow-900/20 border-yellow-700/40">
+                <p className="text-sm font-medium text-yellow-300">
                   ⏳ יש לך {pendingPayments.filter(p => p.status === 'pending').length} בקשות תשלום ממתינות לאישור המנהל
                 </p>
               </Card>
@@ -840,19 +846,19 @@ export default function StudentPortal() {
                       <>
                         <div className="text-3xl">✅</div>
                         <div className="text-xs text-muted-foreground mt-1">תשלום החודש</div>
-                        <div className="text-xs font-medium text-green-600">שולם</div>
+                        <div className="text-xs font-medium text-emerald-400">שולם</div>
                       </>
                     ) : hasPendingThisMonth ? (
                       <>
                         <div className="text-3xl">⏳</div>
                         <div className="text-xs text-muted-foreground mt-1">תשלום החודש</div>
-                        <div className="text-xs font-medium text-yellow-600">ממתין לאישור</div>
+                        <div className="text-xs font-medium text-yellow-400">ממתין לאישור</div>
                       </>
                     ) : (
                       <>
                         <div className="text-3xl">⚠️</div>
                         <div className="text-xs text-muted-foreground mt-1">תשלום החודש</div>
-                        <div className="text-xs font-medium text-red-500">לא שולם</div>
+                        <div className="text-xs font-medium text-red-400">לא שולם</div>
                       </>
                     )}
                   </Card>
@@ -1266,7 +1272,7 @@ export default function StudentPortal() {
                   </SelectContent>
                 </Select>
                 {isSibling && selectedPaymentType && (
-                  <p className="text-xs text-green-600">🏷️ הנחת אחים מופעלת</p>
+                  <p className="text-xs text-emerald-400">🏷️ הנחת אחים מופעלת</p>
                 )}
                 {isMonthlySelected && !isMonthlyWindowOpen && (
                   <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
@@ -1341,10 +1347,10 @@ export default function StudentPortal() {
                   <div className="space-y-2">
                     <label className="block text-sm font-medium">העלה צילום מסך של אישור התשלום</label>
                     <label className="block">
-                      <div className={`border-2 border-dashed rounded-lg p-4 cursor-pointer transition-colors ${proofFile ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-border hover:border-primary'}`}>
+                      <div className={`border-2 border-dashed rounded-lg p-4 cursor-pointer transition-colors ${proofFile ? 'border-emerald-500 bg-emerald-900/20' : 'border-border hover:border-primary'}`}>
                         {proofFile ? (
                           <div className="flex items-center gap-2 justify-center">
-                            <span className="text-green-600">✅</span>
+                            <span className="text-emerald-400">✅</span>
                             <span className="text-sm font-medium">{proofFile.name}</span>
                             <button type="button" onClick={(e) => { e.preventDefault(); setProofFile(null); }} className="text-destructive text-xs hover:underline">הסר</button>
                           </div>
@@ -1399,11 +1405,11 @@ export default function StudentPortal() {
               <label className="block text-xs font-medium mb-2 text-foreground">בחר קבוצה *</label>
               <div className="flex gap-3">
                 <button type="button" onClick={() => setSiblingClass('תיאטרון 7-9')}
-                  className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${siblingClass === 'תיאטרון 7-9' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
+                  className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${siblingClass === 'תיאטרון 7-9' ? 'border-primary text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
                   🎭 גילאי 7-9
                 </button>
                 <button type="button" onClick={() => setSiblingClass('תיאטרון 10-14')}
-                  className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${siblingClass === 'תיאטרון 10-14' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
+                  className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${siblingClass === 'תיאטרון 10-14' ? 'border-primary text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
                   🎭 גילאי 10-14
                 </button>
               </div>

@@ -180,11 +180,14 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
         {/* מנויים */}
         <Card className="overflow-hidden">
           <div
-            className="p-6 bg-emerald-200 dark:bg-emerald-800/40 cursor-pointer hover:bg-emerald-300 dark:hover:bg-emerald-700/50 transition-colors"
+            className="p-6 cursor-pointer transition-colors"
+            style={{ background: 'linear-gradient(135deg, hsl(158 40% 14%), hsl(158 40% 11%))' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'linear-gradient(135deg, hsl(158 40% 18%), hsl(158 40% 14%))')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'linear-gradient(135deg, hsl(158 40% 14%), hsl(158 40% 11%))')}
             onClick={() => setExpandedSubscribers(!expandedSubscribers)}
           >
-            <h3 className="font-semibold text-lg text-foreground mb-1">💎 מנויים חודשיים</h3>
-            <p className="text-sm text-muted-foreground">
+            <h3 className="font-semibold text-lg mb-1" style={{ color: 'hsl(158 60% 72%)' }}>💎 מנויים חודשיים</h3>
+            <p className="text-sm" style={{ color: 'hsl(158 30% 55%)' }}>
               {subscribers.length} תלמידים עם מנוי
             </p>
           </div>
@@ -247,11 +250,14 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
         {/* חד פעמיים */}
         <Card className="overflow-hidden">
           <div
-            className="p-6 bg-rose-200 dark:bg-rose-800/40 cursor-pointer hover:bg-rose-300 dark:hover:bg-rose-700/50 transition-colors"
+            className="p-6 cursor-pointer transition-colors"
+            style={{ background: 'linear-gradient(135deg, hsl(355 40% 14%), hsl(355 40% 11%))' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'linear-gradient(135deg, hsl(355 40% 18%), hsl(355 40% 14%))')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'linear-gradient(135deg, hsl(355 40% 14%), hsl(355 40% 11%))')}
             onClick={() => setExpandedOneTime(!expandedOneTime)}
           >
-            <h3 className="font-semibold text-lg text-foreground mb-1">🎯 תשלומים חד פעמיים</h3>
-            <p className="text-sm text-muted-foreground">
+            <h3 className="font-semibold text-lg mb-1" style={{ color: 'hsl(355 70% 72%)' }}>🎯 תשלומים חד פעמיים</h3>
+            <p className="text-sm" style={{ color: 'hsl(355 35% 55%)' }}>
               {oneTimePayersOnly.length} תלמידים (פוטנציאל למנוי!)
             </p>
           </div>

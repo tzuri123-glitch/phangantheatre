@@ -93,11 +93,11 @@ export function getPaymentStatusForSession(
 export function getStatusColor(status: PaymentStatus): string {
   switch (status) {
     case 'trial':
-      return 'bg-yellow-100 dark:bg-yellow-900/20';
+      return 'bg-yellow-900/30';
     case 'paid':
-      return 'bg-green-100 dark:bg-green-900/20';
+      return 'bg-emerald-900/30';
     case 'unpaid':
-      return 'bg-red-100 dark:bg-red-900/20';
+      return 'bg-red-900/30';
     case 'neutral':
       return '';
   }

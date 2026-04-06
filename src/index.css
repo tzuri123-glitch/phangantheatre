@@ -2,95 +2,102 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Phangan Theatre — Dark Stage Aesthetic
+   Colours: deep charcoal + stage gold + crimson accent
+   Fonts: Frank Ruhl Libre (display) + Heebo (body)
 */
 
 @layer base {
   :root {
-    --background: 238 100% 97%;
-    --foreground: 195 100% 10%;
+    /* ── Dark theatre as default ─────────────────── */
+    --background: 220 18% 7%;
+    --foreground: 42 25% 90%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 195 100% 10%;
+    --card: 220 18% 11%;
+    --card-foreground: 42 25% 90%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 195 100% 10%;
+    --popover: 220 18% 11%;
+    --popover-foreground: 42 25% 90%;
 
-    --primary: 188 91% 36%;
-    --primary-foreground: 0 0% 100%;
-    --primary-hover: 188 91% 30%;
-    --primary-glow: 188 91% 50%;
-    
-    --magenta: 330 70% 55%;
+    /* Stage gold */
+    --primary: 42 88% 52%;
+    --primary-foreground: 220 18% 7%;
+    --primary-hover: 42 88% 44%;
+    --primary-glow: 42 88% 62%;
+
+    /* Crimson curtain */
+    --magenta: 355 65% 52%;
     --magenta-foreground: 0 0% 100%;
-    --magenta-hover: 330 70% 45%;
-    --magenta-glow: 330 70% 65%;
+    --magenta-hover: 355 65% 43%;
+    --magenta-glow: 355 65% 62%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 195 100% 10%;
+    --secondary: 220 18% 17%;
+    --secondary-foreground: 42 20% 80%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 220 18% 17%;
+    --muted-foreground: 220 10% 52%;
 
-    --accent: 188 91% 95%;
-    --accent-foreground: 188 91% 36%;
+    --accent: 220 18% 20%;
+    --accent-foreground: 42 88% 52%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 188 91% 36%;
+    --border: 220 18% 20%;
+    --input: 220 18% 17%;
+    --ring: 42 88% 52%;
 
     --radius: 0.75rem;
 
-    --gradient-primary: linear-gradient(135deg, hsl(188 91% 36%), hsl(188 91% 50%));
-    --gradient-magenta: linear-gradient(135deg, hsl(330 70% 55%), hsl(330 70% 65%));
-    --gradient-subtle: linear-gradient(180deg, hsl(238 100% 97%), hsl(210 40% 98%));
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 40% 99%));
-    
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-    --shadow-glow: 0 0 20px hsl(188 91% 36% / 0.2);
-    --shadow-magenta-glow: 0 0 20px hsl(330 70% 55% / 0.3);
+    --gradient-primary: linear-gradient(135deg, hsl(42 88% 46%), hsl(42 88% 60%));
+    --gradient-magenta: linear-gradient(135deg, hsl(355 65% 48%), hsl(355 65% 60%));
+    --gradient-subtle: linear-gradient(180deg, hsl(220 18% 7%), hsl(220 18% 10%));
+    --gradient-card: linear-gradient(135deg, hsl(220 18% 12%), hsl(220 18% 10%));
+
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.6), 0 8px 10px -6px rgb(0 0 0 / 0.4);
+    --shadow-glow: 0 0 24px hsl(42 88% 52% / 0.25);
+    --shadow-magenta-glow: 0 0 24px hsl(355 65% 52% / 0.3);
   }
 
-  .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+  /* Light theme kept for optional use */
+  .light {
+    --background: 42 30% 96%;
+    --foreground: 220 18% 12%;
 
-    --card: 222 47% 15%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 18% 12%;
 
-    --popover: 222 47% 15%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 18% 12%;
 
-    --primary: 188 91% 45%;
+    --primary: 42 88% 44%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 188 91% 55%;
-    
-    --magenta: 330 70% 55%;
+    --primary-hover: 42 88% 36%;
+    --primary-glow: 42 88% 54%;
+
+    --magenta: 355 65% 48%;
     --magenta-foreground: 0 0% 100%;
-    --magenta-hover: 330 70% 65%;
+    --magenta-hover: 355 65% 40%;
+    --magenta-glow: 355 65% 58%;
 
-    --secondary: 217 33% 18%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 42 20% 92%;
+    --secondary-foreground: 220 18% 20%;
 
-    --muted: 217 33% 18%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 42 15% 92%;
+    --muted-foreground: 220 10% 45%;
 
-    --accent: 217 33% 18%;
-    --accent-foreground: 188 91% 45%;
+    --accent: 42 30% 90%;
+    --accent-foreground: 42 88% 38%;
 
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217 33% 18%;
-    --input: 217 33% 18%;
-    --ring: 188 91% 45%;
+    --border: 42 20% 85%;
+    --input: 42 20% 88%;
+    --ring: 42 88% 44%;
   }
 }
 
@@ -101,6 +108,7 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Heebo', sans-serif;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
@@ -108,11 +116,17 @@ All colors MUST be HSL.
     direction: rtl;
     font-size: 14px;
   }
-  
+
   @media (min-width: 640px) {
     html {
       font-size: 16px;
     }
+  }
+
+  h1, h2, h3 {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-weight: 700;
+    letter-spacing: -0.01em;
   }
 }
 
@@ -120,44 +134,70 @@ All colors MUST be HSL.
   .card-hover {
     @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
   }
-  
+
   .button-hover {
     @apply transition-all duration-200 hover:scale-105 active:scale-95;
   }
-  
+
   .fade-in {
-    animation: fadeIn 0.3s ease-in;
+    animation: fadeIn 0.35s ease-out;
   }
-  
+
   .slide-up {
     animation: slideUp 0.4s ease-out;
   }
-  
+
   .glow-primary {
-    box-shadow: 0 0 20px hsl(var(--primary-glow) / 0.3);
+    box-shadow: 0 0 24px hsl(var(--primary-glow) / 0.35);
   }
-  
+
   .glow-magenta {
-    box-shadow: 0 0 20px hsl(var(--magenta-glow) / 0.3);
+    box-shadow: 0 0 24px hsl(var(--magenta-glow) / 0.35);
+  }
+
+  /* Stage curtain divider */
+  .stage-divider {
+    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.4), transparent);
+    height: 1px;
+    border: none;
+  }
+
+  /* Gold shimmer for special elements */
+  .gold-shimmer {
+    background: linear-gradient(
+      105deg,
+      hsl(var(--primary)) 0%,
+      hsl(42 95% 70%) 45%,
+      hsl(var(--primary)) 100%
+    );
+    background-size: 200% auto;
+    animation: shimmer 2.5s linear infinite;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
-  
+
   @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes shimmer {
+    from { background-position: 200% center; }
+    to   { background-position: -200% center; }
+  }
+
+  @keyframes stageReveal {
+    from { opacity: 0; transform: scale(0.97) translateY(8px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .stage-reveal {
+    animation: stageReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1);
   }
 }
