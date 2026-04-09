@@ -3,261 +3,277 @@
 @tailwind utilities;
 
 /* ─────────────────────────────────────────────────────
-   Phangan Music & Performing Arts — Apple-style Design
-   Light, clean, minimal. Inspired by iOS / macOS.
-   Accent: blue-500 (#007AFF)
+   Phangan Music & Performing Arts
+   Aesthetic: Premium dark — inspired by BlackEdge.co.il
+   Gradient: Blue #648bff → Purple #9a7ce6 → Peach #ffb398
    ───────────────────────────────────────────────────── */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300&display=swap');
 
-@layer base {
-  :root {
-    /* ── Backgrounds ── */
-    --background:   0 0% 98%;        /* #F9F9F9 — off-white */
-    --foreground:   0 0% 9%;         /* #171717 — near-black */
+:root {
+  /* Gradient palette */
+  --color-blue:   #648bff;
+  --color-purple: #9a7ce6;
+  --color-peach:  #ffb398;
+  --color-dark:   #0a0a0f;
+  --color-dark-2: #12121a;
+  --color-dark-3: #1a1a26;
+  --color-light:  #f5f5f5;
 
-    /* ── Cards & Surfaces ── */
-    --card:         0 0% 100%;       /* pure white */
-    --card-foreground: 0 0% 9%;
+  /* CSS variables for shadcn */
+  --background:   240 20% 4%;      /* #0a0a0f */
+  --foreground:   0 0% 95%;
 
-    --popover:      0 0% 100%;
-    --popover-foreground: 0 0% 9%;
+  --card:         240 20% 7%;      /* #12121a */
+  --card-foreground: 0 0% 95%;
 
-    /* ── Apple Blue accent ── */
-    --primary:      211 100% 50%;    /* #007AFF */
-    --primary-foreground: 0 0% 100%;
-    --primary-hover: 211 100% 44%;
-    --primary-glow:  211 100% 60%;
+  --popover:      240 20% 9%;
+  --popover-foreground: 0 0% 95%;
 
-    /* ── Secondary / muted ── */
-    --secondary:    220 14% 96%;     /* #F2F4F7 */
-    --secondary-foreground: 220 14% 30%;
+  --primary:      228 100% 70%;    /* #648bff */
+  --primary-foreground: 0 0% 100%;
+  --primary-hover: 228 100% 62%;
+  --primary-glow:  228 100% 75%;
 
-    --muted:        220 13% 95%;
-    --muted-foreground: 220 9% 52%;  /* medium grey */
+  --magenta:      258 65% 69%;     /* #9a7ce6 */
+  --magenta-foreground: 0 0% 100%;
+  --magenta-hover: 258 65% 60%;
+  --magenta-glow: 258 65% 75%;
 
-    --accent:       211 100% 96%;    /* very light blue tint */
-    --accent-foreground: 211 100% 40%;
+  --secondary:    240 15% 12%;
+  --secondary-foreground: 0 0% 75%;
 
-    /* ── Status ── */
-    --destructive:  0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+  --muted:        240 15% 14%;
+  --muted-foreground: 240 8% 55%;
 
-    /* ── Borders & Inputs ── */
-    --border:       220 13% 91%;     /* #E5E7EB */
-    --input:        220 13% 91%;
-    --ring:         211 100% 50%;
+  --accent:       240 15% 16%;
+  --accent-foreground: 228 100% 75%;
 
-    /* ── Radius (Apple uses 12px base) ── */
-    --radius: 0.75rem;
+  --destructive:  0 72% 55%;
+  --destructive-foreground: 0 0% 100%;
 
-    /* ── Legacy magenta (kept for compatibility) ── */
-    --magenta: 211 100% 50%;
-    --magenta-foreground: 0 0% 100%;
-    --magenta-hover: 211 100% 44%;
-    --magenta-glow: 211 100% 60%;
+  --border:       240 15% 18%;
+  --input:        240 15% 14%;
+  --ring:         228 100% 70%;
 
-    /* ── Sidebar ── */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 0 0% 9%;
-    --sidebar-primary: 211 100% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 96%;
-    --sidebar-accent-foreground: 0 0% 9%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 211 100% 50%;
-  }
+  --radius: 1rem;
 
-  /* Dark mode kept minimal — same variables inverted */
-  .dark {
-    --background:   224 16% 10%;
-    --foreground:   0 0% 95%;
-    --card:         224 16% 14%;
-    --card-foreground: 0 0% 95%;
-    --popover:      224 16% 14%;
-    --popover-foreground: 0 0% 95%;
-    --primary:      211 100% 55%;
-    --primary-foreground: 0 0% 100%;
-    --primary-hover: 211 100% 48%;
-    --secondary:    224 16% 18%;
-    --secondary-foreground: 0 0% 80%;
-    --muted:        224 16% 18%;
-    --muted-foreground: 220 9% 55%;
-    --accent:       224 16% 20%;
-    --accent-foreground: 211 100% 65%;
-    --destructive:  0 72% 50%;
-    --destructive-foreground: 0 0% 100%;
-    --border:       224 16% 22%;
-    --input:        224 16% 18%;
-    --ring:         211 100% 55%;
-    --magenta: 211 100% 55%;
-    --magenta-foreground: 0 0% 100%;
-    --magenta-hover: 211 100% 48%;
-    --magenta-glow: 211 100% 65%;
-  }
+  --sidebar-background: 240 20% 7%;
+  --sidebar-foreground: 0 0% 85%;
+  --sidebar-primary: 228 100% 70%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 240 15% 14%;
+  --sidebar-accent-foreground: 0 0% 85%;
+  --sidebar-border: 240 15% 18%;
+  --sidebar-ring: 228 100% 70%;
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display',
-      'Segoe UI', sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-  }
+  * { @apply border-border; box-sizing: border-box; }
 
   html {
     direction: rtl;
     font-size: 15px;
+    scroll-behavior: smooth;
   }
+  @media (min-width: 640px) { html { font-size: 16px; } }
 
-  @media (min-width: 640px) {
-    html { font-size: 16px; }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    background-color: var(--color-dark);
+    /* Subtle ambient glow */
+    background-image:
+      radial-gradient(ellipse 80% 50% at 20% -10%, rgba(100, 139, 255, 0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(154, 124, 230, 0.08) 0%, transparent 60%);
+    background-attachment: fixed;
   }
 
   h1, h2, h3, h4 {
     font-weight: 600;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
   }
-
-  /* Smooth scrolling */
-  * { scroll-behavior: smooth; }
 }
 
+/* ── Gradient text ── */
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-blue), var(--color-purple), var(--color-peach));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-blue {
+  background: linear-gradient(135deg, var(--color-blue), var(--color-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Frosted glass card ── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.25rem;
+  transition: all 0.3s ease;
+}
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(100, 139, 255, 0.25);
+  box-shadow: 0 8px 40px rgba(100, 139, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+/* ── Gradient border card ── */
+.gradient-card {
+  position: relative;
+  background: var(--color-dark-2);
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255,255,255,0.06);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+.gradient-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(100,139,255,0.4), rgba(154,124,230,0.2), transparent);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ── Premium button ── */
+.btn-gradient {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.5rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, var(--color-blue), var(--color-purple));
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 20px rgba(100, 139, 255, 0.3);
+}
+.btn-gradient:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 28px rgba(100, 139, 255, 0.45);
+}
+.btn-gradient:active { transform: scale(0.97); }
+
+.btn-outline-glow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: transparent;
+  color: var(--color-light);
+  border: 1px solid rgba(255,255,255,0.15);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-outline-glow:hover {
+  border-color: rgba(100,139,255,0.5);
+  color: var(--color-blue);
+  background: rgba(100,139,255,0.07);
+}
+
+/* ── Input ── */
+.dark-input {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 0.75rem;
+  padding: 0.65rem 1rem;
+  font-size: 0.875rem;
+  color: #fff;
+  outline: none;
+  transition: all 0.2s ease;
+}
+.dark-input::placeholder { color: rgba(255,255,255,0.3); }
+.dark-input:focus {
+  border-color: rgba(100,139,255,0.6);
+  background: rgba(100,139,255,0.06);
+  box-shadow: 0 0 0 3px rgba(100,139,255,0.12);
+}
+
+/* ── Status badges ── */
+.badge-green  { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium; background: rgba(52,211,153,0.12); color: #34d399; border: 1px solid rgba(52,211,153,0.2); }
+.badge-red    { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium; background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.2); }
+.badge-orange { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium; background: rgba(251,146,60,0.12); color: #fb923c; border: 1px solid rgba(251,146,60,0.2); }
+.badge-blue   { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium; background: rgba(100,139,255,0.12); color: #648bff; border: 1px solid rgba(100,139,255,0.2); }
+.badge-gray   { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.1); }
+
+/* ── Section label ── */
+.section-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  margin-bottom: 0.75rem;
+}
+
+/* ── Divider ── */
+.glow-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(100,139,255,0.3), transparent);
+  border: none;
+  margin: 1.5rem 0;
+}
+
+/* ── Ambient blob ── */
+.ambient-blob {
+  position: fixed;
+  border-radius: 9999px;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Animations ── */
 @layer utilities {
-  /* ── Apple card style ── */
-  .apple-card {
-    @apply bg-card rounded-2xl border border-border/60;
-    box-shadow:
-      0 1px 3px rgb(0 0 0 / 0.06),
-      0 4px 12px rgb(0 0 0 / 0.04);
-  }
+  .fade-in   { animation: fadeIn 0.4s ease-out both; }
+  .slide-up  { animation: slideUp 0.45s cubic-bezier(0.16,1,0.3,1) both; }
+  .scale-in  { animation: scaleIn 0.25s cubic-bezier(0.16,1,0.3,1) both; }
+  .float     { animation: float 3s ease-in-out infinite; }
+  .stagger-1 { animation-delay: 0.06s; }
+  .stagger-2 { animation-delay: 0.12s; }
+  .stagger-3 { animation-delay: 0.18s; }
+  .stagger-4 { animation-delay: 0.24s; }
 
-  .apple-card-hover {
-    @apply apple-card transition-all duration-200;
-  }
-  .apple-card-hover:hover {
-    box-shadow:
-      0 2px 8px rgb(0 0 0 / 0.08),
-      0 8px 24px rgb(0 0 0 / 0.06);
-    transform: translateY(-1px);
-  }
+  @keyframes fadeIn  { from { opacity:0 } to { opacity:1 } }
+  @keyframes slideUp { from { opacity:0; transform:translateY(14px) } to { opacity:1; transform:translateY(0) } }
+  @keyframes scaleIn { from { opacity:0; transform:scale(0.95) } to { opacity:1; transform:scale(1) } }
+  @keyframes float   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
 
-  /* ── Apple button ── */
-  .apple-btn {
-    @apply inline-flex items-center justify-center rounded-xl
-           px-5 py-2.5 text-sm font-semibold
-           transition-all duration-150 active:scale-95;
-  }
-  .apple-btn-primary {
-    @apply apple-btn bg-primary text-primary-foreground;
-    box-shadow: 0 1px 4px rgb(0 122 255 / 0.3);
-  }
-  .apple-btn-primary:hover {
-    background: hsl(var(--primary-hover));
-    box-shadow: 0 2px 8px rgb(0 122 255 / 0.4);
-  }
-  .apple-btn-ghost {
-    @apply apple-btn bg-transparent text-primary hover:bg-accent;
-  }
-  .apple-btn-secondary {
-    @apply apple-btn bg-secondary text-secondary-foreground hover:bg-secondary/80;
-  }
+  /* Legacy compat */
+  .card-hover    { @apply glass-card; }
+  .apple-card    { @apply glass-card; }
+  .apple-card-hover { @apply glass-card; }
+  .button-hover  { transition: all 0.2s ease; }
+  .button-hover:hover { transform: translateY(-1px); }
+  .glow-primary  { box-shadow: 0 0 24px rgba(100,139,255,0.25); }
+  .glow-magenta  { box-shadow: 0 0 24px rgba(154,124,230,0.25); }
 
-  /* ── Input Apple style ── */
-  .apple-input {
-    @apply w-full rounded-xl border border-border bg-white px-4 py-2.5
-           text-sm text-foreground placeholder:text-muted-foreground
-           focus:outline-none focus:ring-2 focus:ring-primary/30
-           focus:border-primary transition-all duration-150;
-  }
-
-  /* ── Segmented control (like iOS) ── */
-  .segmented-control {
-    @apply flex rounded-xl p-1;
-    background: hsl(220 13% 91%);
-  }
-  .segmented-btn {
-    @apply flex-1 rounded-lg py-1.5 text-sm font-medium transition-all duration-200
-           text-muted-foreground;
-  }
-  .segmented-btn.active {
-    @apply bg-white text-foreground;
-    box-shadow: 0 1px 4px rgb(0 0 0 / 0.12);
-  }
-
-  /* ── Status badges ── */
-  .badge-green {
-    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium
-           bg-emerald-50 text-emerald-700 border border-emerald-200;
-  }
-  .badge-red {
-    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium
-           bg-red-50 text-red-700 border border-red-200;
-  }
-  .badge-orange {
-    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium
-           bg-orange-50 text-orange-700 border border-orange-200;
-  }
-  .badge-blue {
-    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium
-           bg-blue-50 text-blue-700 border border-blue-200;
-  }
-  .badge-gray {
-    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium
-           bg-gray-100 text-gray-600 border border-gray-200;
-  }
-
-  /* ── Divider ── */
-  .apple-divider {
-    @apply w-full h-px bg-border/80 my-4;
-  }
-
-  /* ── Section title ── */
-  .section-title {
-    @apply text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3;
-  }
-
-  /* ── Animations ── */
-  .fade-in {
-    animation: fadeIn 0.3s ease-out both;
-  }
-  .slide-up {
-    animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-  .scale-in {
-    animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-  .stagger-1 { animation-delay: 0.05s; }
-  .stagger-2 { animation-delay: 0.10s; }
-  .stagger-3 { animation-delay: 0.15s; }
-  .stagger-4 { animation-delay: 0.20s; }
-
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-  }
-  @keyframes slideUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes scaleIn {
-    from { opacity: 0; transform: scale(0.96); }
-    to   { opacity: 1; transform: scale(1); }
-  }
-  @keyframes shimmer {
-    from { background-position: 200% center; }
-    to   { background-position: -200% center; }
-  }
-
-  /* ── Legacy helpers (compatibility) ── */
-  .card-hover { @apply apple-card-hover; }
-  .button-hover { @apply transition-all duration-150 hover:scale-105 active:scale-95; }
-  .glow-primary { box-shadow: 0 0 20px hsl(var(--primary-glow) / 0.2); }
-  .glow-magenta { box-shadow: 0 0 20px hsl(var(--magenta-glow) / 0.2); }
+  /* Segmented control */
+  .segmented-control { display:flex; border-radius:0.75rem; padding:0.2rem; background:rgba(255,255,255,0.06); }
+  .segmented-btn { flex:1; border-radius:0.6rem; padding:0.4rem 0.75rem; font-size:0.875rem; font-weight:500; color:rgba(255,255,255,0.45); transition:all 0.2s; cursor:pointer; text-align:center; }
+  .segmented-btn.active { background:rgba(100,139,255,0.2); color:var(--color-blue); box-shadow:0 1px 6px rgba(0,0,0,0.2); }
 }

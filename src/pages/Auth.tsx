@@ -26,20 +26,28 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4" dir="rtl">
-      <div className="w-full max-w-sm slide-up">
-        {/* Logo */}
+    <div className="min-h-screen flex items-center justify-center p-4" dir="rtl">
+      {/* Ambient blobs */}
+      <div className="ambient-blob w-96 h-96 opacity-20" style={{ background: 'var(--color-blue)', top: '-10%', right: '10%' }} />
+      <div className="ambient-blob w-80 h-80 opacity-15" style={{ background: 'var(--color-purple)', bottom: '5%', left: '5%' }} />
+
+      <div className="w-full max-w-sm relative z-10 slide-up">
+        {/* Logo + title */}
         <div className="flex flex-col items-center mb-8">
-          <img src={logo} alt="לוגו" className="h-16 w-16 object-contain mb-4 rounded-2xl" />
-          <h1 className="text-2xl font-semibold text-foreground">כניסת מנהל</h1>
-          <p className="text-sm text-muted-foreground mt-1">Phangan Music & Performing Arts</p>
+          <div className="float mb-5">
+            <img src={logo} alt="לוגו" className="h-20 w-20 object-contain rounded-2xl" style={{ filter: 'drop-shadow(0 0 20px rgba(100,139,255,0.4))' }} />
+          </div>
+          <h1 className="text-3xl font-bold mb-1 gradient-text">Phangan Arts</h1>
+          <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>Music & Performing Arts</p>
         </div>
 
-        {/* Card */}
-        <div className="apple-card p-6">
+        {/* Form */}
+        <div className="glass-card p-7">
+          <p className="text-center text-sm font-medium mb-5" style={{ color: 'rgba(255,255,255,0.5)' }}>כניסת מנהל</p>
+
           <form onSubmit={handleAuth} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">אימייל</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'rgba(255,255,255,0.5)' }}>אימייל</label>
               <input
                 type="email"
                 value={email}
@@ -47,39 +55,31 @@ export default function Auth() {
                 required
                 placeholder="admin@example.com"
                 dir="ltr"
-                className="apple-input"
+                className="dark-input"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">סיסמה</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'rgba(255,255,255,0.5)' }}>סיסמה</label>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
                 placeholder="••••••••"
-                className="apple-input"
+                className="dark-input"
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="apple-btn-primary w-full mt-2"
-            >
+            <button type="submit" disabled={loading} className="btn-gradient w-full mt-2">
               {loading ? 'נכנס...' : 'כניסה'}
             </button>
           </form>
         </div>
 
-        {/* Footer */}
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => navigate('/student-auth')}
-            className="text-sm text-primary hover:underline"
-          >
-            כניסת תלמידים והורים
+        <div className="mt-5 text-center">
+          <button onClick={() => navigate('/student-auth')} className="text-sm hover:underline" style={{ color: 'var(--color-blue)' }}>
+            כניסת תלמידים והורים ←
           </button>
         </div>
       </div>

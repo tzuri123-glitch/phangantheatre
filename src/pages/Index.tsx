@@ -302,24 +302,25 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-border/60">
+      <header className="sticky top-0 z-50 border-b" style={{ background: 'rgba(10,10,15,0.85)', backdropFilter: 'blur(20px)', borderColor: 'rgba(255,255,255,0.07)' }}>
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3 fade-in">
-            <img src={logo} alt="לוגו" className="h-9 w-9 object-contain rounded-xl" />
+            <img src={logo} alt="לוגו" className="h-9 w-9 object-contain rounded-xl" style={{ filter: 'drop-shadow(0 0 8px rgba(100,139,255,0.3))' }} />
             <div>
-              <h1 className="text-base font-semibold text-foreground leading-tight">Phangan Arts</h1>
-              <p className="text-xs text-muted-foreground hidden sm:block">Music & Performing Arts</p>
+              <h1 className="text-base font-semibold gradient-text-blue leading-tight">Phangan Arts</h1>
+              <p className="text-xs hidden sm:block" style={{ color: 'rgba(255,255,255,0.35)' }}>Music & Performing Arts</p>
             </div>
           </div>
           <Button
             onClick={() => signOut('/auth')}
             size="sm"
             variant="ghost"
-            className="text-sm text-muted-foreground hover:text-foreground hover:bg-secondary"
+            className="text-sm btn-outline-glow"
           >
             התנתק
           </Button>
         </div>
+        <div className="glow-divider" style={{ margin: 0 }} />
       </header>
       <TabNavigation activeTab={tab} onTabChange={setTab} />
       <main className="container mx-auto px-2 sm:px-4">
