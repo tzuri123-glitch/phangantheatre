@@ -2,102 +2,98 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Phangan Theatre — Dark Stage Aesthetic
-   Colours: deep charcoal + stage gold + crimson accent
-   Fonts: Frank Ruhl Libre (display) + Heebo (body)
-*/
+/* ─────────────────────────────────────────────────────
+   Phangan Music & Performing Arts — Apple-style Design
+   Light, clean, minimal. Inspired by iOS / macOS.
+   Accent: blue-500 (#007AFF)
+   ───────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    /* ── Dark theatre as default ─────────────────── */
-    --background: 220 18% 7%;
-    --foreground: 42 25% 90%;
+    /* ── Backgrounds ── */
+    --background:   0 0% 98%;        /* #F9F9F9 — off-white */
+    --foreground:   0 0% 9%;         /* #171717 — near-black */
 
-    --card: 220 18% 11%;
-    --card-foreground: 42 25% 90%;
+    /* ── Cards & Surfaces ── */
+    --card:         0 0% 100%;       /* pure white */
+    --card-foreground: 0 0% 9%;
 
-    --popover: 220 18% 11%;
-    --popover-foreground: 42 25% 90%;
+    --popover:      0 0% 100%;
+    --popover-foreground: 0 0% 9%;
 
-    /* Stage gold */
-    --primary: 42 88% 52%;
-    --primary-foreground: 220 18% 7%;
-    --primary-hover: 42 88% 44%;
-    --primary-glow: 42 88% 62%;
+    /* ── Apple Blue accent ── */
+    --primary:      211 100% 50%;    /* #007AFF */
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 211 100% 44%;
+    --primary-glow:  211 100% 60%;
 
-    /* Crimson curtain */
-    --magenta: 355 65% 52%;
-    --magenta-foreground: 0 0% 100%;
-    --magenta-hover: 355 65% 43%;
-    --magenta-glow: 355 65% 62%;
+    /* ── Secondary / muted ── */
+    --secondary:    220 14% 96%;     /* #F2F4F7 */
+    --secondary-foreground: 220 14% 30%;
 
-    --secondary: 220 18% 17%;
-    --secondary-foreground: 42 20% 80%;
+    --muted:        220 13% 95%;
+    --muted-foreground: 220 9% 52%;  /* medium grey */
 
-    --muted: 220 18% 17%;
-    --muted-foreground: 220 10% 52%;
+    --accent:       211 100% 96%;    /* very light blue tint */
+    --accent-foreground: 211 100% 40%;
 
-    --accent: 220 18% 20%;
-    --accent-foreground: 42 88% 52%;
-
-    --destructive: 0 72% 50%;
+    /* ── Status ── */
+    --destructive:  0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 18% 20%;
-    --input: 220 18% 17%;
-    --ring: 42 88% 52%;
+    /* ── Borders & Inputs ── */
+    --border:       220 13% 91%;     /* #E5E7EB */
+    --input:        220 13% 91%;
+    --ring:         211 100% 50%;
 
+    /* ── Radius (Apple uses 12px base) ── */
     --radius: 0.75rem;
 
-    --gradient-primary: linear-gradient(135deg, hsl(42 88% 46%), hsl(42 88% 60%));
-    --gradient-magenta: linear-gradient(135deg, hsl(355 65% 48%), hsl(355 65% 60%));
-    --gradient-subtle: linear-gradient(180deg, hsl(220 18% 7%), hsl(220 18% 10%));
-    --gradient-card: linear-gradient(135deg, hsl(220 18% 12%), hsl(220 18% 10%));
+    /* ── Legacy magenta (kept for compatibility) ── */
+    --magenta: 211 100% 50%;
+    --magenta-foreground: 0 0% 100%;
+    --magenta-hover: 211 100% 44%;
+    --magenta-glow: 211 100% 60%;
 
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.3);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.6), 0 8px 10px -6px rgb(0 0 0 / 0.4);
-    --shadow-glow: 0 0 24px hsl(42 88% 52% / 0.25);
-    --shadow-magenta-glow: 0 0 24px hsl(355 65% 52% / 0.3);
+    /* ── Sidebar ── */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 9%;
+    --sidebar-primary: 211 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 0 0% 9%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 211 100% 50%;
   }
 
-  /* Light theme kept for optional use */
-  .light {
-    --background: 42 30% 96%;
-    --foreground: 220 18% 12%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 220 18% 12%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 18% 12%;
-
-    --primary: 42 88% 44%;
+  /* Dark mode kept minimal — same variables inverted */
+  .dark {
+    --background:   224 16% 10%;
+    --foreground:   0 0% 95%;
+    --card:         224 16% 14%;
+    --card-foreground: 0 0% 95%;
+    --popover:      224 16% 14%;
+    --popover-foreground: 0 0% 95%;
+    --primary:      211 100% 55%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 42 88% 36%;
-    --primary-glow: 42 88% 54%;
-
-    --magenta: 355 65% 48%;
-    --magenta-foreground: 0 0% 100%;
-    --magenta-hover: 355 65% 40%;
-    --magenta-glow: 355 65% 58%;
-
-    --secondary: 42 20% 92%;
-    --secondary-foreground: 220 18% 20%;
-
-    --muted: 42 15% 92%;
-    --muted-foreground: 220 10% 45%;
-
-    --accent: 42 30% 90%;
-    --accent-foreground: 42 88% 38%;
-
-    --destructive: 0 72% 50%;
+    --primary-hover: 211 100% 48%;
+    --secondary:    224 16% 18%;
+    --secondary-foreground: 0 0% 80%;
+    --muted:        224 16% 18%;
+    --muted-foreground: 220 9% 55%;
+    --accent:       224 16% 20%;
+    --accent-foreground: 211 100% 65%;
+    --destructive:  0 72% 50%;
     --destructive-foreground: 0 0% 100%;
-
-    --border: 42 20% 85%;
-    --input: 42 20% 88%;
-    --ring: 42 88% 44%;
+    --border:       224 16% 22%;
+    --input:        224 16% 18%;
+    --ring:         211 100% 55%;
+    --magenta: 211 100% 55%;
+    --magenta-foreground: 0 0% 100%;
+    --magenta-hover: 211 100% 48%;
+    --magenta-glow: 211 100% 65%;
   }
 }
 
@@ -108,96 +104,160 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Heebo', sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display',
+      'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
   html {
     direction: rtl;
-    font-size: 14px;
+    font-size: 15px;
   }
 
   @media (min-width: 640px) {
-    html {
-      font-size: 16px;
-    }
+    html { font-size: 16px; }
   }
 
-  h1, h2, h3 {
-    font-family: 'Frank Ruhl Libre', serif;
-    font-weight: 700;
-    letter-spacing: -0.01em;
+  h1, h2, h3, h4 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
   }
+
+  /* Smooth scrolling */
+  * { scroll-behavior: smooth; }
 }
 
 @layer utilities {
-  .card-hover {
-    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+  /* ── Apple card style ── */
+  .apple-card {
+    @apply bg-card rounded-2xl border border-border/60;
+    box-shadow:
+      0 1px 3px rgb(0 0 0 / 0.06),
+      0 4px 12px rgb(0 0 0 / 0.04);
   }
 
-  .button-hover {
-    @apply transition-all duration-200 hover:scale-105 active:scale-95;
+  .apple-card-hover {
+    @apply apple-card transition-all duration-200;
+  }
+  .apple-card-hover:hover {
+    box-shadow:
+      0 2px 8px rgb(0 0 0 / 0.08),
+      0 8px 24px rgb(0 0 0 / 0.06);
+    transform: translateY(-1px);
   }
 
+  /* ── Apple button ── */
+  .apple-btn {
+    @apply inline-flex items-center justify-center rounded-xl
+           px-5 py-2.5 text-sm font-semibold
+           transition-all duration-150 active:scale-95;
+  }
+  .apple-btn-primary {
+    @apply apple-btn bg-primary text-primary-foreground;
+    box-shadow: 0 1px 4px rgb(0 122 255 / 0.3);
+  }
+  .apple-btn-primary:hover {
+    background: hsl(var(--primary-hover));
+    box-shadow: 0 2px 8px rgb(0 122 255 / 0.4);
+  }
+  .apple-btn-ghost {
+    @apply apple-btn bg-transparent text-primary hover:bg-accent;
+  }
+  .apple-btn-secondary {
+    @apply apple-btn bg-secondary text-secondary-foreground hover:bg-secondary/80;
+  }
+
+  /* ── Input Apple style ── */
+  .apple-input {
+    @apply w-full rounded-xl border border-border bg-white px-4 py-2.5
+           text-sm text-foreground placeholder:text-muted-foreground
+           focus:outline-none focus:ring-2 focus:ring-primary/30
+           focus:border-primary transition-all duration-150;
+  }
+
+  /* ── Segmented control (like iOS) ── */
+  .segmented-control {
+    @apply flex rounded-xl p-1;
+    background: hsl(220 13% 91%);
+  }
+  .segmented-btn {
+    @apply flex-1 rounded-lg py-1.5 text-sm font-medium transition-all duration-200
+           text-muted-foreground;
+  }
+  .segmented-btn.active {
+    @apply bg-white text-foreground;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.12);
+  }
+
+  /* ── Status badges ── */
+  .badge-green {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium
+           bg-emerald-50 text-emerald-700 border border-emerald-200;
+  }
+  .badge-red {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium
+           bg-red-50 text-red-700 border border-red-200;
+  }
+  .badge-orange {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium
+           bg-orange-50 text-orange-700 border border-orange-200;
+  }
+  .badge-blue {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium
+           bg-blue-50 text-blue-700 border border-blue-200;
+  }
+  .badge-gray {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium
+           bg-gray-100 text-gray-600 border border-gray-200;
+  }
+
+  /* ── Divider ── */
+  .apple-divider {
+    @apply w-full h-px bg-border/80 my-4;
+  }
+
+  /* ── Section title ── */
+  .section-title {
+    @apply text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3;
+  }
+
+  /* ── Animations ── */
   .fade-in {
-    animation: fadeIn 0.35s ease-out;
+    animation: fadeIn 0.3s ease-out both;
   }
-
   .slide-up {
-    animation: slideUp 0.4s ease-out;
+    animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
-
-  .glow-primary {
-    box-shadow: 0 0 24px hsl(var(--primary-glow) / 0.35);
+  .scale-in {
+    animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
-
-  .glow-magenta {
-    box-shadow: 0 0 24px hsl(var(--magenta-glow) / 0.35);
-  }
-
-  /* Stage curtain divider */
-  .stage-divider {
-    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.4), transparent);
-    height: 1px;
-    border: none;
-  }
-
-  /* Gold shimmer for special elements */
-  .gold-shimmer {
-    background: linear-gradient(
-      105deg,
-      hsl(var(--primary)) 0%,
-      hsl(42 95% 70%) 45%,
-      hsl(var(--primary)) 100%
-    );
-    background-size: 200% auto;
-    animation: shimmer 2.5s linear infinite;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.10s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.20s; }
 
   @keyframes fadeIn {
     from { opacity: 0; }
     to   { opacity: 1; }
   }
-
   @keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
+    from { opacity: 0; transform: translateY(12px); }
     to   { opacity: 1; transform: translateY(0); }
   }
-
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to   { opacity: 1; transform: scale(1); }
+  }
   @keyframes shimmer {
     from { background-position: 200% center; }
     to   { background-position: -200% center; }
   }
 
-  @keyframes stageReveal {
-    from { opacity: 0; transform: scale(0.97) translateY(8px); }
-    to   { opacity: 1; transform: scale(1) translateY(0); }
-  }
-
-  .stage-reveal {
-    animation: stageReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1);
-  }
+  /* ── Legacy helpers (compatibility) ── */
+  .card-hover { @apply apple-card-hover; }
+  .button-hover { @apply transition-all duration-150 hover:scale-105 active:scale-95; }
+  .glow-primary { box-shadow: 0 0 20px hsl(var(--primary-glow) / 0.2); }
+  .glow-magenta { box-shadow: 0 0 20px hsl(var(--magenta-glow) / 0.2); }
 }

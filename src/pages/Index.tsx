@@ -302,27 +302,24 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
-      <header className="sticky top-0 z-50 border-b border-border/40" style={{ background: 'linear-gradient(180deg, hsl(220 18% 9%) 0%, hsl(220 18% 7% / 0.95) 100%)', backdropFilter: 'blur(12px)' }}>
-        <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
-          <div className="flex items-center gap-2 sm:gap-4 animate-fade-in">
-            <img src={logo} alt="לוגו" className="h-8 sm:h-11 object-contain drop-shadow-lg" />
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-border/60">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3 fade-in">
+            <img src={logo} alt="לוגו" className="h-9 w-9 object-contain rounded-xl" />
             <div>
-              <h1 className="text-sm sm:text-xl font-bold leading-tight" style={{ fontFamily: "'Frank Ruhl Libre', serif", background: 'linear-gradient(135deg, hsl(42 88% 62%), hsl(42 70% 80%))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                מרכז אומנויות הבמה
-              </h1>
-              <p className="text-muted-foreground text-xs hidden sm:block tracking-wide">Phangan Music & Performing Arts</p>
+              <h1 className="text-base font-semibold text-foreground leading-tight">Phangan Arts</h1>
+              <p className="text-xs text-muted-foreground hidden sm:block">Music & Performing Arts</p>
             </div>
           </div>
           <Button
             onClick={() => signOut('/auth')}
             size="sm"
-            variant="outline"
-            className="border-primary/40 text-primary hover:bg-primary hover:text-primary-foreground font-semibold text-xs sm:text-sm px-3 sm:px-5 button-hover transition-all"
+            variant="ghost"
+            className="text-sm text-muted-foreground hover:text-foreground hover:bg-secondary"
           >
             התנתק
           </Button>
         </div>
-        <div className="stage-divider" />
       </header>
       <TabNavigation activeTab={tab} onTabChange={setTab} />
       <main className="container mx-auto px-2 sm:px-4">
@@ -491,6 +488,34 @@ export default function Index() {
                 : s
             ));
             toast.success('תלמיד הוסר מהשיעור!');
+          }}
+          onMarkCashPayment={async (studentId, paymentType, amount, note) => {
+            if (!user) return;
+            const { data, error } = await supabase.from('payments').insert({
+              user_id: user.id,
+              student_id: studentId,
+              payment_type: paymentType,
+              payment_method: 'מזומן',
+              payment_date: new Date().toISOString().split('T')[0],
+              amount,
+              note: note ?? 'נרשם ע"י המורה',
+            }).select().single();
+            if (error) {
+              toast.error('שגיאה ברישום תשלום');
+              throw error;
+            }
+            setPayments(prev => [...prev, {
+              id: data.id,
+              studentId: data.student_id,
+              type: data.payment_type as Payment['type'],
+              method: data.payment_method as Payment['method'],
+              date: data.payment_date,
+              amount: data.amount,
+              note: data.note ?? '',
+              discount: data.discount ?? undefined,
+              proofUrl: data.payment_proof_url ?? null,
+            }]);
+            toast.success('תשלום מזומן נרשם! ✅');
           }}
           onAddStudentToSession={async (sessionId, studentId) => {
             if (!user) return;
