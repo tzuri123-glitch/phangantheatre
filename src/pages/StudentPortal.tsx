@@ -247,6 +247,88 @@ export default function StudentPortal() {
     }
   };
 
+  const handleSelectProof = (file: File | null) => {
+    if (!file) { setProofFile(null); setProofPreview(null); return; }
+    if (!file.type.startsWith('image/')) {
+      toast.error('יש להעלות תמונה בלבד');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('התמונה גדולה מדי (מקסימום 10MB)');
+      return;
+    }
+    setProofFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setProofPreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  // Listen for paste events while PromptPay dialog is open
+  useEffect(() => {
+    if (!showPaymentDialog || paymentMethod !== 'promptpay') return;
+    const onPaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            handleSelectProof(file);
+            toast.success('תמונה הודבקה ✓');
+            e.preventDefault();
+            return;
+          }
+        }
+      }
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  }, [showPaymentDialog, paymentMethod]);
+
+  const handlePromptPayRequest = async () => {
+    if (!student || !user || !selectedPaymentType) {
+      toast.error('בחר סוג תשלום');
+      return;
+    }
+    if (!proofFile) {
+      toast.error('יש להעלות צילום אישור התשלום');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const ext = proofFile.name.split('.').pop() || 'jpg';
+      const path = `${user.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('payment-proofs').upload(path, proofFile);
+      if (upErr) throw upErr;
+
+      const { data, error } = await supabase
+        .from('pending_payments')
+        .insert({
+          student_id: student.id,
+          admin_user_id: student.user_id,
+          payment_type: selectedPaymentType,
+          payment_method: 'PromptPay',
+          subscription_frequency: selectedPaymentType === 'חודשי' ? selectedFrequency : null,
+          payment_proof_url: path,
+        } as any)
+        .select()
+        .single();
+      if (error) throw error;
+
+      setPendingPayments(prev => [data, ...prev]);
+      toast.success('בקשת תשלום נשלחה למנהל! ⏳');
+      setShowPaymentDialog(false);
+      setPaymentMethod(null);
+      setSelectedPaymentType('');
+      setProofFile(null);
+      setProofPreview(null);
+    } catch (error: any) {
+      toast.error('שגיאה: ' + error.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   // Registration completion form state
   const [regName, setRegName] = useState('');
   const [regParentName, setRegParentName] = useState('');
