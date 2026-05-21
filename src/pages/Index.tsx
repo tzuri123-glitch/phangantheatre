@@ -640,7 +640,8 @@ export default function Index() {
                     date: new Date().toISOString().slice(0, 10),
                     amount: 0,
                     note: '',
-                    discount: 0
+                    discount: 0,
+                    subscriptionFrequency: 'biweekly',
                   });
                   setShowPaymentModal(true);
                 }}
@@ -1001,7 +1002,7 @@ export default function Index() {
               
               setShowPaymentModal(false); 
               setEditingPayment(null);
-              setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0 }); 
+              setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0, subscriptionFrequency: 'biweekly' }); 
             }}>אישור</Button><Button variant="outline" className="flex-1" onClick={() => { setShowPaymentModal(false); setEditingPayment(null); }}>ביטול</Button></div>
           </div>
         </DialogContent>
@@ -1138,6 +1139,7 @@ export default function Index() {
               amount: payment.amount,
               note: payment.note,
               discount: payment.discount || 0,
+              subscriptionFrequency: payment.subscriptionFrequency || 'biweekly',
             });
             setShowPaymentModal(true);
           }}
