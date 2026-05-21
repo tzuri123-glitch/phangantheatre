@@ -271,10 +271,44 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-sm text-muted-foreground">
-              סוג: <strong>{approveDialog?.payment_type}</strong> | אמצעי: <strong>{approveDialog?.payment_method}</strong>
+              סוג מקורי: <strong>{approveDialog?.payment_type}</strong> | אמצעי: <strong>{approveDialog?.payment_method}</strong>
               {approveDialog?.is_sibling && <span className="text-primary mr-2">👫 תלמיד אח/אחות — מחיר מוזל</span>}
             </div>
-            
+
+            <div className="space-y-2">
+              <Label>אשר כסוג תשלום</Label>
+              <Select value={approveType} onValueChange={(v) => {
+                const t = v as 'חד פעמי' | 'חודשי';
+                setApproveType(t);
+                const isSib = !!approveDialog?.is_sibling;
+                const price = t === 'חד פעמי'
+                  ? (isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE)
+                  : getMonthlyPrice(isSib, approveFrequency);
+                setApproveAmount(Math.round(price * (1 - approveDiscount / 100)));
+              }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="חד פעמי">חד פעמי</SelectItem>
+                  <SelectItem value="חודשי">חודשי (יבטל חיובי חד-פעמי באותו חודש)</SelectItem>
+                </SelectContent>
+              </Select>
+              {approveType === 'חודשי' && (
+                <Select value={approveFrequency} onValueChange={(v) => {
+                  const f = v as SubscriptionFrequency;
+                  setApproveFrequency(f);
+                  const isSib = !!approveDialog?.is_sibling;
+                  const price = getMonthlyPrice(isSib, f);
+                  setApproveAmount(Math.round(price * (1 - approveDiscount / 100)));
+                }}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="biweekly">{FREQUENCY_LABELS.biweekly}</SelectItem>
+                    <SelectItem value="weekly">{FREQUENCY_LABELS.weekly}</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
             {balanceInfo && (
               <div className="text-sm bg-muted rounded-lg px-3 py-2">
                 מחיר צפוי: <strong>{formatILS(balanceInfo.expectedPrice)}</strong>
