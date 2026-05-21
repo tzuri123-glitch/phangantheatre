@@ -372,7 +372,7 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                                     onClick={async () => {
                                       try {
                                         const { error } = await supabase.functions.invoke('reset-student-password', {
-                                          body: { studentEmail: student.linkedEmail },
+                                          body: { studentEmail: student.linkedEmail, redirectTo: `${window.location.origin}/reset-password` },
                                         });
                                         if (error) throw error;
                                         toast.success(`מייל איפוס סיסמה נשלח ל-${student.linkedEmail}`);
