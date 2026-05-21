@@ -131,7 +131,7 @@ export default function Kiosk() {
     });
     // refresh arrivals
     loadData(currentClass);
-    setTimeout(() => setConfirmation(null), 3000);
+    setTimeout(() => setConfirmation(null), 800);
   };
 
   const arrivedSet = new Set(arrived.map(a => a.student_id));
