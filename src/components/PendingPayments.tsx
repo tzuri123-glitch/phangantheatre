@@ -34,6 +34,7 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
   const [processing, setProcessing] = useState<string | null>(null);
   const [approveDialog, setApproveDialog] = useState<PendingPayment | null>(null);
   const [approveAmount, setApproveAmount] = useState(0);
+  const [approveDiscount, setApproveDiscount] = useState(0);
   const [approveNote, setApproveNote] = useState('');
 
   useEffect(() => {
@@ -95,6 +96,7 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
     }
     
     setApproveAmount(payment.amount || expectedPrice);
+    setApproveDiscount(0);
     setApproveNote('');
     setApproveDialog(payment);
   };
@@ -118,7 +120,8 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
           payment_method: approveDialog.payment_method,
           payment_date: new Date().toISOString().slice(0, 10),
           amount: approveAmount,
-          note: approveNote || 'אושר מבקשת תלמיד',
+          discount: approveDiscount,
+          note: approveNote || (approveDiscount > 0 ? `אושר עם הנחה של ${approveDiscount}%` : 'אושר מבקשת תלמיד'),
           subscription_frequency: approveDialog.payment_type === 'חודשי' ? (approveDialog.subscription_frequency || 'biweekly') : null,
         } as any);
 
@@ -162,8 +165,9 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
     } else if (approveDialog.payment_type === 'חודשי') {
       expectedPrice = getMonthlyPrice(isSib, approveDialog.subscription_frequency || 'biweekly');
     }
-    const diff = approveAmount - expectedPrice;
-    return { expectedPrice, diff };
+    const expectedAfterDiscount = expectedPrice * (1 - approveDiscount / 100);
+    const diff = approveAmount - expectedAfterDiscount;
+    return { expectedPrice, expectedAfterDiscount, diff };
   };
 
   if (pending.length === 0 && !approveDialog) return null;
@@ -230,8 +234,39 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
             {balanceInfo && (
               <div className="text-sm bg-muted rounded-lg px-3 py-2">
                 מחיר צפוי: <strong>{formatILS(balanceInfo.expectedPrice)}</strong>
+                {approveDiscount > 0 && (
+                  <span className="block mt-1 text-primary">
+                    אחרי הנחה של {approveDiscount}%: <strong>{formatILS(balanceInfo.expectedAfterDiscount)}</strong>
+                  </span>
+                )}
               </div>
             )}
+
+            <div className="space-y-2">
+              <Label>הנחה (%)</Label>
+              <div className="flex gap-2 items-center">
+                <Input
+                  type="number"
+                  value={approveDiscount}
+                  onChange={(e) => {
+                    const d = Math.max(0, Math.min(100, Number(e.target.value)));
+                    setApproveDiscount(d);
+                    if (balanceInfo) {
+                      setApproveAmount(Math.round(balanceInfo.expectedPrice * (1 - d / 100)));
+                    }
+                  }}
+                  min={0}
+                  max={100}
+                  className="flex-1"
+                />
+                <Button type="button" variant="outline" size="sm" onClick={() => {
+                  setApproveDiscount(100);
+                  setApproveAmount(0);
+                }}>
+                  חינם (100%)
+                </Button>
+              </div>
+            </div>
 
             <div className="space-y-2">
               <Label>סכום שהתקבל בפועל</Label>
