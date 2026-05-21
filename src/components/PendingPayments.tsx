@@ -37,6 +37,13 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
   const [approveAmount, setApproveAmount] = useState(0);
   const [approveDiscount, setApproveDiscount] = useState(0);
   const [approveNote, setApproveNote] = useState('');
+  const [viewingProof, setViewingProof] = useState<string | null>(null);
+
+  const openProof = async (path: string) => {
+    const { data, error } = await supabase.storage.from('payment-proofs').createSignedUrl(path, 300);
+    if (error || !data) { toast.error('שגיאה בטעינת אישור התשלום'); return; }
+    setViewingProof(data.signedUrl);
+  };
 
   useEffect(() => {
     if (!user) return;
