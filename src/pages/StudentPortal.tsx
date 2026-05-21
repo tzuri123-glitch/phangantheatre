@@ -92,6 +92,8 @@ export default function StudentPortal() {
   const [selectedPaymentType, setSelectedPaymentType] = useState<string>('');
   const [selectedFrequency, setSelectedFrequency] = useState<'weekly' | 'biweekly'>('biweekly');
   const [promptPayUrl, setPromptPayUrl] = useState<string | null>(null);
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
