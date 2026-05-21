@@ -204,6 +204,15 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
                   </span>
                 </div>
                 <div className="flex gap-2">
+                  {p.payment_proof_url && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openProof(p.payment_proof_url!)}
+                    >
+                      🖼️ אישור
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     onClick={() => openApproveDialog(p)}
