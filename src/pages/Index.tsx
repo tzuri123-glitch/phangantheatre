@@ -993,6 +993,15 @@ export default function Index() {
                 };
                 
                 setPayments((prev) => [...prev, newPayment]);
+
+                // אם זה תשלום חודשי — בטל אוטומטית חיובי 'חד פעמי' ממתינים שנוצרו בקיוסק באותו חודש
+                if (paymentForm.type === 'חודשי') {
+                  const { cancelMonthOneTimePendingDebts } = await import('@/lib/cancelPendingDebts');
+                  const cancelled = await cancelMonthOneTimePendingDebts(paymentForm.studentId, paymentForm.date);
+                  if (cancelled > 0) {
+                    toast.success(`בוטלו ${cancelled} חיובי חד-פעמי ממתינים באותו חודש`);
+                  }
+                }
                 
                 // בדיקה אם זה התשלום השני והפיכת התלמיד לפעיל
                 const studentPayments = payments.filter(p => p.studentId === paymentForm.studentId);
