@@ -55,10 +55,10 @@ export default function Students({ students, payments, onAddStudent, onEditStude
     });
   };
 
-  const MONTHLY_PRICE = 4000;
-  const SIBLING_MONTHLY_PRICE = 3200;
-  const SINGLE_PRICE = 700;
-  const SIBLING_SINGLE_PRICE = 500;
+  const MONTHLY_PRICE = 4200;
+  const SIBLING_MONTHLY_PRICE = 4000;
+  const SINGLE_PRICE = 800;
+  const SIBLING_SINGLE_PRICE = 650;
 
   const calculateStudentBalance = (studentId: string, student: Student) => {
     const studentPayments = payments.filter(p => p.studentId === studentId);
