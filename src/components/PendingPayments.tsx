@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { formatILS } from '@/lib/utils';
-import { SINGLE_PRICE, MONTHLY_PRICE, SIBLING_SINGLE_PRICE, SIBLING_MONTHLY_PRICE } from '@/types';
+import { SINGLE_PRICE, MONTHLY_PRICE, SIBLING_SINGLE_PRICE, SIBLING_MONTHLY_PRICE, MONTHLY_WEEKLY_PRICE, SIBLING_MONTHLY_WEEKLY_PRICE, getMonthlyPrice, SubscriptionFrequency, FREQUENCY_LABELS } from '@/types';
 
 interface PendingPayment {
   id: string;
@@ -18,6 +18,7 @@ interface PendingPayment {
   amount: number | null;
   status: string;
   created_at: string;
+  subscription_frequency?: SubscriptionFrequency | null;
   student_name?: string;
   student_last_name?: string;
   is_sibling?: boolean;
