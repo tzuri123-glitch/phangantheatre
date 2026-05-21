@@ -52,11 +52,20 @@ export default function QrScanner({ open, onClose, onScan }: QrScannerProps) {
       cancelled = true;
       clearTimeout(timeout);
       if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {});
+        try {
+          const state = scannerRef.current.getState?.();
+          // 2 = SCANNING, 3 = PAUSED per Html5QrcodeScannerState
+          if (state === 2 || state === 3) {
+            scannerRef.current.stop().catch(() => {});
+          }
+        } catch {
+          // ignore
+        }
         scannerRef.current = null;
       }
       setError(null);
     };
+
   }, [open, onScan]);
 
   return (
