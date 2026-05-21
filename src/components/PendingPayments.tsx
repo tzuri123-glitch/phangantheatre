@@ -34,6 +34,7 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
   const [processing, setProcessing] = useState<string | null>(null);
   const [approveDialog, setApproveDialog] = useState<PendingPayment | null>(null);
   const [approveAmount, setApproveAmount] = useState(0);
+  const [approveDiscount, setApproveDiscount] = useState(0);
   const [approveNote, setApproveNote] = useState('');
 
   useEffect(() => {
