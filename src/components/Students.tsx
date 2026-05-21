@@ -1,4 +1,4 @@
-import { Student, CLASS_OPTIONS } from '@/types';
+import { Student, CLASS_OPTIONS, getMonthlyPrice, SubscriptionFrequency } from '@/types';
 import { format, isSameMonth, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -20,7 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface StudentsProps {
   students: Student[];
-  payments: { studentId: string; amount: number; type: string; discount: number; date: string }[];
+  payments: { studentId: string; amount: number; type: string; discount: number; date: string; subscriptionFrequency?: SubscriptionFrequency }[];
   onAddStudent: () => void;
   onEditStudent: (student: Student) => void;
   onDeleteStudent: (studentId: string) => void;
