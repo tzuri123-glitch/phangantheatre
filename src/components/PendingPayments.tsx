@@ -42,11 +42,34 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
   const [approveDiscount, setApproveDiscount] = useState(0);
   const [approveNote, setApproveNote] = useState('');
   const [viewingProof, setViewingProof] = useState<string | null>(null);
+  const [oneTimePaidThisMonth, setOneTimePaidThisMonth] = useState(0);
 
   const openProof = async (path: string) => {
     const { data, error } = await supabase.storage.from('payment-proofs').createSignedUrl(path, 300);
     if (error || !data) { toast.error('שגיאה בטעינת אישור התשלום'); return; }
     setViewingProof(data.signedUrl);
+  };
+
+  // Load one-time payments already paid this month for the student
+  const loadOneTimePaidThisMonth = async (studentId: string) => {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = today.getMonth() + 1;
+    const lastDay = new Date(y, m, 0).getDate();
+    const start = `${y}-${String(m).padStart(2, '0')}-01`;
+    const end = `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    const { data } = await supabase
+      .from('payments')
+      .select('amount, discount')
+      .eq('student_id', studentId)
+      .eq('payment_type', 'חד פעמי')
+      .gte('payment_date', start)
+      .lte('payment_date', end);
+    const total = (data || []).reduce((sum: number, p: any) => {
+      const eff = Number(p.amount || 0) * (1 - (Number(p.discount) || 0) / 100);
+      return sum + eff;
+    }, 0);
+    return total;
   };
 
   useEffect(() => {
