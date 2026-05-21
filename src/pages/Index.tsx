@@ -865,6 +865,33 @@ export default function Index() {
                 </>;
               })()}
             </SelectContent></Select></div>
+            {paymentForm.type === 'חודשי' && (() => {
+              const selectedStudent = students.find(s => s.id === paymentForm.studentId);
+              const isSib = selectedStudent?.isSibling;
+              const biweekly = isSib ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+              const weekly = isSib ? SIBLING_MONTHLY_WEEKLY_PRICE : MONTHLY_WEEKLY_PRICE;
+              return (
+                <div className="space-y-2">
+                  <Label>תדירות המנוי</Label>
+                  <Select value={paymentForm.subscriptionFrequency} onValueChange={(v: SubscriptionFrequency) => {
+                    setPaymentForm(prev => ({ ...prev, subscriptionFrequency: v }));
+                    if (paymentForm.studentId) {
+                      // recalc using new frequency synchronously by passing updated form state via closure
+                      setTimeout(() => {
+                        const calc = calcPayment(paymentForm.studentId, 'חודשי', paymentForm.date);
+                        setPaymentForm(prev => ({ ...prev, amount: calc.amount, note: calc.note }));
+                      }, 0);
+                    }
+                  }}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="biweekly">{FREQUENCY_LABELS.biweekly} (฿{biweekly.toLocaleString()})</SelectItem>
+                      <SelectItem value="weekly">{FREQUENCY_LABELS.weekly} (฿{weekly.toLocaleString()})</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              );
+            })()}
             {paymentForm.studentId && (() => {
               const selectedStudent = students.find(s => s.id === paymentForm.studentId);
               return selectedStudent?.isSibling ? (
@@ -898,8 +925,8 @@ export default function Index() {
               const selectedStudent = students.find(s => s.id === paymentForm.studentId);
               if (!selectedStudent) return null;
               const basePrice = paymentForm.type === 'חד פעמי'
-                ? (selectedStudent.isSibling ? 650 : 800)
-                : (selectedStudent.isSibling ? 4000 : 4200);
+                ? (selectedStudent.isSibling ? SIBLING_SINGLE_PRICE : SINGLE_PRICE)
+                : getMonthlyPrice(selectedStudent.isSibling, paymentForm.subscriptionFrequency);
               const discountedPrice = basePrice * (1 - (paymentForm.discount || 0) / 100);
               const diff = paymentForm.amount - discountedPrice;
               if (diff > 0) {
