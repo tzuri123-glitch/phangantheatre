@@ -96,6 +96,7 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
     }
     
     setApproveAmount(payment.amount || expectedPrice);
+    setApproveDiscount(0);
     setApproveNote('');
     setApproveDialog(payment);
   };
