@@ -89,6 +89,7 @@ export default function StudentPortal() {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'promptpay' | null>(null);
   const [selectedPaymentType, setSelectedPaymentType] = useState<string>('');
+  const [selectedFrequency, setSelectedFrequency] = useState<'weekly' | 'biweekly'>('biweekly');
   const [promptPayUrl, setPromptPayUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -224,7 +225,8 @@ export default function StudentPortal() {
           admin_user_id: student.user_id,
           payment_type: selectedPaymentType,
           payment_method: 'מזומן',
-        })
+          subscription_frequency: selectedPaymentType === 'חודשי' ? selectedFrequency : null,
+        } as any)
         .select()
         .single();
 
