@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { formatILS } from '@/lib/utils';
-import { getPaymentPrice } from '@/types';
+import { SINGLE_PRICE, MONTHLY_PRICE, SIBLING_SINGLE_PRICE, SIBLING_MONTHLY_PRICE } from '@/types';
 
 interface PendingPayment {
   id: string;
@@ -18,7 +18,6 @@ interface PendingPayment {
   amount: number | null;
   status: string;
   created_at: string;
-  payment_proof_url: string | null;
   student_name?: string;
   student_last_name?: string;
   is_sibling?: boolean;
@@ -35,8 +34,7 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
   const [approveDialog, setApproveDialog] = useState<PendingPayment | null>(null);
   const [approveAmount, setApproveAmount] = useState(0);
   const [approveNote, setApproveNote] = useState('');
-  const [viewingProofUrl, setViewingProofUrl] = useState<string | null>(null);
-  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (!user) return;
     loadPending();
@@ -76,44 +74,24 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
       .order('created_at', { ascending: false });
 
     if (data) {
-      const mapped = data.map((p: any) => ({
+      setPending(data.map((p: any) => ({
         ...p,
         student_name: p.students?.name || '',
         student_last_name: p.students?.last_name || '',
         is_sibling: p.students?.is_sibling || false,
-      }));
-      setPending(mapped);
-      // Generate signed URLs for proof images
-      resolveProofUrls(mapped);
+      })));
     }
-  };
-
-  const extractStoragePath = (url: string | null): string | null => {
-    if (!url) return null;
-    // Extract the path after /payment-proofs/ from either public or signed URLs
-    const match = url.match(/\/payment-proofs\/(.+?)(\?|$)/);
-    return match ? match[1] : null;
-  };
-
-  const resolveProofUrls = async (items: PendingPayment[]) => {
-    const urlMap: Record<string, string> = {};
-    for (const item of items) {
-      const path = extractStoragePath(item.payment_proof_url);
-      if (path) {
-        const { data } = await supabase.storage
-          .from('payment-proofs')
-          .createSignedUrl(path, 3600);
-        if (data?.signedUrl) {
-          urlMap[item.id] = data.signedUrl;
-        }
-      }
-    }
-    setSignedUrls(prev => ({ ...prev, ...urlMap }));
   };
 
   const openApproveDialog = (payment: PendingPayment) => {
-    const isSib = payment.is_sibling || false;
-    const expectedPrice = getPaymentPrice(payment.payment_type, isSib);
+    // Calculate expected price
+    const isSib = payment.is_sibling;
+    let expectedPrice = 0;
+    if (payment.payment_type === 'חד פעמי') {
+      expectedPrice = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
+    } else if (payment.payment_type === 'חודשי') {
+      expectedPrice = isSib ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+    }
     
     setApproveAmount(payment.amount || expectedPrice);
     setApproveNote('');
@@ -140,7 +118,6 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
           payment_date: new Date().toISOString().slice(0, 10),
           amount: approveAmount,
           note: approveNote || 'אושר מבקשת תלמיד',
-          payment_proof_url: approveDialog.payment_proof_url || null,
         });
 
       setPending(prev => prev.filter(p => p.id !== approveDialog.id));
@@ -176,8 +153,13 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
   // Calculate balance indicator
   const getBalanceInfo = () => {
     if (!approveDialog) return null;
-    const isSib = approveDialog.is_sibling || false;
-    const expectedPrice = getPaymentPrice(approveDialog.payment_type, isSib);
+    const isSib = approveDialog.is_sibling;
+    let expectedPrice = 0;
+    if (approveDialog.payment_type === 'חד פעמי') {
+      expectedPrice = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
+    } else if (approveDialog.payment_type === 'חודשי') {
+      expectedPrice = isSib ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+    }
     const diff = approveAmount - expectedPrice;
     return { expectedPrice, diff };
   };
@@ -197,25 +179,15 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
           <div className="space-y-2">
             {pending.map((p) => (
               <div key={p.id} className="flex items-center justify-between bg-background rounded-lg p-3 shadow-sm border">
-                <div className="flex items-center gap-3">
-                  {(signedUrls[p.id] || p.payment_proof_url) && (
-                    <img
-                      src={signedUrls[p.id] || p.payment_proof_url!}
-                      alt="אישור"
-                      className="w-12 h-12 rounded object-cover cursor-pointer hover:opacity-80 border"
-                      onClick={() => setViewingProofUrl(signedUrls[p.id] || p.payment_proof_url)}
-                    />
-                  )}
-                  <div>
-                    <span className="font-medium">{p.student_name} {p.student_last_name}</span>
-                    {p.is_sibling && <span className="text-xs text-primary mr-1">👫</span>}
-                    <span className="text-muted-foreground text-sm mr-2">
-                      – {p.payment_type} ({p.payment_method})
-                    </span>
-                    <span className="text-xs text-muted-foreground block">
-                      {new Date(p.created_at).toLocaleString('he-IL')}
-                    </span>
-                  </div>
+                <div>
+                  <span className="font-medium">{p.student_name} {p.student_last_name}</span>
+                  {p.is_sibling && <span className="text-xs text-primary mr-1">👫</span>}
+                  <span className="text-muted-foreground text-sm mr-2">
+                    – {p.payment_type} ({p.payment_method})
+                  </span>
+                  <span className="text-xs text-muted-foreground block">
+                    {new Date(p.created_at).toLocaleString('he-IL')}
+                  </span>
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -243,7 +215,7 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
 
       {/* Approve dialog with amount input */}
       <Dialog open={!!approveDialog} onOpenChange={(open) => { if (!open) setApproveDialog(null); }}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader>
             <DialogTitle>אישור תשלום — {approveDialog?.student_name} {approveDialog?.student_last_name}</DialogTitle>
           </DialogHeader>
@@ -252,18 +224,6 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
               סוג: <strong>{approveDialog?.payment_type}</strong> | אמצעי: <strong>{approveDialog?.payment_method}</strong>
               {approveDialog?.is_sibling && <span className="text-primary mr-2">👫 תלמיד אח/אחות — מחיר מוזל</span>}
             </div>
-
-            {approveDialog && (signedUrls[approveDialog.id] || approveDialog.payment_proof_url) && (
-              <div className="space-y-1">
-                <Label>אישור תשלום מהתלמיד:</Label>
-                <img
-                  src={signedUrls[approveDialog.id] || approveDialog.payment_proof_url!}
-                  alt="אישור תשלום"
-                  className="w-full max-h-[200px] object-contain rounded-lg border cursor-pointer hover:opacity-80"
-                  onClick={() => setViewingProofUrl(signedUrls[approveDialog.id] || approveDialog.payment_proof_url)}
-                />
-              </div>
-            )}
             
             {balanceInfo && (
               <div className="text-sm bg-muted rounded-lg px-3 py-2">
@@ -319,19 +279,6 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Payment proof viewer */}
-      <Dialog open={!!viewingProofUrl} onOpenChange={(open) => { if (!open) setViewingProofUrl(null); }}>
-        <DialogContent className="max-w-md p-2" dir="rtl">
-          {viewingProofUrl && (
-            <img
-              src={viewingProofUrl}
-              alt="אישור תשלום"
-              className="w-full max-h-[70vh] object-contain rounded-lg"
-            />
-          )}
         </DialogContent>
       </Dialog>
     </>

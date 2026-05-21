@@ -1,1 +1,0 @@
-ALTER TABLE public.pending_payments ADD COLUMN payment_proof_url text;

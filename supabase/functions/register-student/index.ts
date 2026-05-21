@@ -30,24 +30,7 @@ serve(async (req) => {
       });
     }
 
-    const { studentName, parentName, parentLastName, parentPhone, studentPhone, birthDate, siblingId, className, overrideAuthUserId } = await req.json();
-
-    // If overrideAuthUserId is provided, caller must be admin
-    let authUserId = user.id;
-    if (overrideAuthUserId) {
-      const { data: adminRole } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'admin')
-        .single();
-      if (!adminRole) {
-        return new Response(JSON.stringify({ error: 'Admin access required for overrideAuthUserId' }), {
-          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      authUserId = overrideAuthUserId;
-    }
+    const { studentName, parentName, parentLastName, parentPhone, studentPhone, birthDate, siblingId, className } = await req.json();
 
     if (!studentName || !parentName || !parentLastName || !parentPhone || !birthDate) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
@@ -55,7 +38,18 @@ serve(async (req) => {
       });
     }
 
-    // Allow multiple students per auth_user_id (siblings)
+    // Check if student already exists for this user
+    const { data: existing } = await supabase
+      .from('students')
+      .select('id')
+      .eq('auth_user_id', user.id)
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      return new Response(JSON.stringify({ error: 'Student already registered', studentId: existing[0].id }), {
+        status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Find an admin user to set as user_id (owner)
     const { data: adminRole } = await supabase
@@ -81,7 +75,7 @@ serve(async (req) => {
         parent_phone: parentPhone,
         phone: studentPhone || null,
         birth_date: birthDate || null,
-        auth_user_id: authUserId,
+        auth_user_id: user.id,
         user_id: adminRole.user_id,
         class_name: className || 'לא שובץ',
         status: 'פעיל',
@@ -92,8 +86,7 @@ serve(async (req) => {
       .single();
 
     if (insertError) {
-      console.error('Failed to create student:', insertError);
-      return new Response(JSON.stringify({ error: 'Failed to create student' }), {
+      return new Response(JSON.stringify({ error: 'Failed to create student', details: insertError.message }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -102,9 +95,8 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  } catch (error: unknown) {
-    console.error('Internal error:', error);
-    return new Response(JSON.stringify({ error: 'An internal error occurred' }), {
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

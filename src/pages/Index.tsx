@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Student, Payment, Session, CLASS_OPTIONS, MONTHLY_PRICE, SIBLING_MONTHLY_PRICE, SINGLE_PRICE, isMonthlyPaymentType, getPaymentPrice, isWithinPaymentWindow, isLatePayment } from '@/types';
+import { Student, Payment, Session, CLASS_OPTIONS, MONTHLY_PRICE, SIBLING_MONTHLY_PRICE, SINGLE_PRICE } from '@/types';
 import { getPaymentStatusForSession, getStatusColor, getStatusBadge } from '@/lib/paymentStatus';
 import { Badge } from '@/components/ui/badge';
 import TabNavigation from '@/components/TabNavigation';
@@ -9,8 +9,6 @@ import Payments from '@/components/Payments';
 import Attendance from '@/components/Attendance';
 import AdminSettings from '@/components/AdminSettings';
 import PendingPayments from '@/components/PendingPayments';
-import PendingSiblings from '@/components/PendingSiblings';
-import PendingAttendance from '@/components/PendingAttendance';
 import PaymentHistory from '@/components/PaymentHistory';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -26,7 +24,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { formatILS } from '@/lib/utils';
 import logo from '@/assets/logo.png';
-import { getSignedProfilePhotoUrl, extractProfilePhotoPath } from '@/lib/storageHelpers';
 
 export default function Index() {
   const { user, signOut } = useAuth();
@@ -89,43 +86,21 @@ export default function Index() {
         }
       }
 
-      // Resolve signed URLs for profile photos
-      const studentsWithSignedUrls = await Promise.all(
-        studentsData.map(async (s) => {
-          let signedPhotoUrl: string | undefined = undefined;
-          const rawPhotoUrl = (s as any).profile_photo_url;
-          
-          if (rawPhotoUrl) {
-            const isPath = !rawPhotoUrl.startsWith('http');
-            if (isPath) {
-              signedPhotoUrl = (await getSignedProfilePhotoUrl(rawPhotoUrl)) || undefined;
-            } else {
-              const path = extractProfilePhotoPath(rawPhotoUrl);
-              if (path) {
-                signedPhotoUrl = (await getSignedProfilePhotoUrl(path)) || undefined;
-              }
-            }
-          }
-          
-          return {
-            id: s.id,
-            name: s.name,
-            lastName: s.last_name || '',
-            phone: s.phone || '',
-            birthDate: s.birth_date || '',
-            parentName: s.parent_name || '',
-            parentPhone: s.parent_phone || '',
-            isSibling: s.is_sibling || false,
-            siblingId: s.sibling_id || undefined,
-            className: s.class_name,
-            status: (s.status === 'חדש' || s.status === 'לא פעיל' ? 'פעיל' : s.status) as Student['status'],
-            linkedEmail: (s as any).auth_user_id ? emailMap[(s as any).auth_user_id] || '' : undefined,
-            profilePhotoUrl: signedPhotoUrl,
-          };
-        })
-      );
-      
-      setStudents(studentsWithSignedUrls.sort((a, b) => a.name.localeCompare(b.name, 'he')));
+      setStudents(studentsData.map(s => ({
+        id: s.id,
+        name: s.name,
+        lastName: s.last_name || '',
+        phone: s.phone || '',
+        birthDate: s.birth_date || '',
+        parentName: s.parent_name || '',
+        parentPhone: s.parent_phone || '',
+        isSibling: s.is_sibling || false,
+        siblingId: s.sibling_id || undefined,
+        className: s.class_name,
+        status: (s.status === 'חדש' || s.status === 'לא פעיל' ? 'פעיל' : s.status) as Student['status'],
+        linkedEmail: (s as any).auth_user_id ? emailMap[(s as any).auth_user_id] || '' : undefined,
+        profilePhotoUrl: (s as any).profile_photo_url || undefined,
+      })).sort((a, b) => a.name.localeCompare(b.name, 'he')));
     }
     
     if (paymentsData) {
@@ -137,8 +112,7 @@ export default function Index() {
         date: p.payment_date,
         amount: Number(p.amount),
         note: p.note || '',
-        discount: Number(p.discount) || 0,
-        proofUrl: p.payment_proof_url || null,
+        discount: Number(p.discount) || 0
       })));
     }
     
@@ -185,8 +159,9 @@ export default function Index() {
 
   function calcPayment(studentId: string, type: string, date: string) {
     const student = students.find((s) => s.id === studentId);
-    if (!student) return { amount: 0, note: '', blocked: false };
+    if (!student) return { amount: 0, note: '' };
     
+    // Parser עמיד לפורמטים שונים (YYYY-MM-DD וגם DD.MM[.YYYY])
     const parseDate = (s: string) => {
       const d = new Date(s);
       if (!isNaN(d.getTime())) return d;
@@ -203,47 +178,27 @@ export default function Index() {
 
     const currDate = parseDate(date);
     
-    // Check monthly payment window
-    if (isMonthlyPaymentType(type) && !isNaN(currDate.getTime())) {
-      const today = new Date();
-      // The target month is the current month for which payment applies
-      // Payment on 25th-31st of prev month → for next month
-      // Payment on 1st-5th → for current month
-      let targetMonth: Date;
-      if (today.getDate() >= 25) {
-        // Paying for next month
-        targetMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-      } else {
-        // Paying for current month
-        targetMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      }
-      
-      if (isLatePayment(today, targetMonth)) {
-        return { 
-          amount: 0, 
-          note: '⛔ חלון התשלום נסגר (עד ה-5 לחודש). פנה למנהל לאישור מיוחד.',
-          blocked: true 
-        };
-      }
-    }
-    
-    // חישוב יתרת התלמיד
+    // חישוב יתרת התלמיד (זכות/חוב) מכל התשלומים הקודמים
     const studentPayments = payments.filter((p) => {
       if (p.studentId !== studentId) return false;
       const pd = parseDate(p.date);
       if (isNaN(pd.getTime()) || isNaN(currDate.getTime())) {
+        // נפילה חכמה להשוואת מחרוזות במקרה של תאריך לא תקין
         return p.date < date;
       }
-      return pd < currDate;
+      return pd < currDate; // רק תשלומים לפני התשלום הנוכחי
     });
     let balance = 0;
     
     studentPayments.forEach((payment) => {
       if (payment.type === 'סגירת יתרה') {
+        // סגירת יתרה לא מייצרת חוב/זכות חדש - הסכום הוא מה שהתקבל בפועל
         balance += payment.amount;
         return;
       }
-      const baseExpectedAmount = getPaymentPrice(payment.type, student.isSibling);
+      const baseExpectedAmount = 
+        payment.type === 'חד פעמי' ? (student.isSibling ? 500 : SINGLE_PRICE) :
+        student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
       
       const discount = payment.discount || 0;
       const expectedAmount = baseExpectedAmount * (1 - discount / 100);
@@ -251,10 +206,12 @@ export default function Index() {
       balance += payment.amount - expectedAmount;
     });
     
+    // חישוב סכום התשלום הנוכחי
     let baseAmount = 0;
     let note = '';
 
     if (type === 'סגירת יתרה') {
+      // סגירת יתרה: מציג את היתרה הנוכחית ומאפשר להזין סכום חופשי
       if (balance > 0) {
         note = `זכות נוכחית: ${formatILS(balance)} — הזן סכום שלילי להחזר`;
         baseAmount = 0;
@@ -265,12 +222,12 @@ export default function Index() {
         note = 'אין יתרה פתוחה';
         baseAmount = 0;
       }
-      return { amount: baseAmount, note, blocked: false };
+      return { amount: baseAmount, note };
     }
     
     if (type === 'חד פעמי') {
-      baseAmount = getPaymentPrice('חד פעמי', student.isSibling);
-    } else if (isMonthlyPaymentType(type)) {
+      baseAmount = student.isSibling ? 500 : SINGLE_PRICE;
+    } else if (type === 'חודשי') {
       const singles = payments.filter((p) => {
         if (p.studentId !== studentId) return false;
         if (p.type !== 'חד פעמי') return false;
@@ -281,13 +238,14 @@ export default function Index() {
         return pd.getFullYear() === currDate.getFullYear() && pd.getMonth() === currDate.getMonth();
       });
       const sumSingles = singles.reduce((sum, p) => sum + p.amount, 0);
-      const base = getPaymentPrice(type, student.isSibling);
+      const base = student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
       baseAmount = Math.max(base - sumSingles, 0);
       if (sumSingles > 0) {
         note = `כולל קיזוז ${formatILS(sumSingles)} מתשלומים בחודש`;
       }
     }
     
+    // קיזוז יתרה
     const finalAmount = Math.max(baseAmount - balance, 0);
 
     if (balance > 0) {
@@ -296,37 +254,38 @@ export default function Index() {
       note = note ? `${note} | חוב: ${formatILS(Math.abs(balance))}` : `חוב: ${formatILS(Math.abs(balance))}`;
     }
 
+    try {
+      const dbgPrev = payments
+        .filter((p) => p.studentId === studentId)
+        .map((p) => ({ date: p.date, type: p.type, amount: p.amount }));
+      console.log('[calcPayment]', { studentId, type, date, balance, baseAmount, finalAmount, prevPayments: dbgPrev });
+    } catch {}
     
-    return { amount: finalAmount, note, blocked: false };
+    return { amount: finalAmount, note };
   }
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
-      <header className="sticky top-0 z-50 border-b" style={{ background: 'rgba(10,10,15,0.85)', backdropFilter: 'blur(20px)', borderColor: 'rgba(255,255,255,0.07)' }}>
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3 fade-in">
-            <img src={logo} alt="לוגו" className="h-9 w-9 object-contain rounded-xl" style={{ filter: 'drop-shadow(0 0 8px rgba(100,139,255,0.3))' }} />
-            <div>
-              <h1 className="text-base font-semibold gradient-text-blue leading-tight">Phangan Arts</h1>
-              <p className="text-xs hidden sm:block" style={{ color: 'rgba(255,255,255,0.35)' }}>Music & Performing Arts</p>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-background via-accent/10 to-background" dir="rtl">
+      <header className="bg-card/80 backdrop-blur-md border-b border-border shadow-md sticky top-0 z-50">
+        <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 animate-fade-in">
+            <img src={logo} alt="לוגו" className="h-8 sm:h-12 object-contain drop-shadow-lg" />
+            <h1 className="text-base sm:text-2xl font-bold bg-gradient-to-l from-primary to-magenta bg-clip-text text-transparent">
+              מערכת ניהול מרכז אומנויות הבמה
+            </h1>
           </div>
-          <Button
-            onClick={() => signOut('/auth')}
+          <Button 
+            onClick={signOut}
             size="sm"
-            variant="ghost"
-            className="text-sm btn-outline-glow"
+            className="bg-gradient-to-l from-magenta to-magenta-hover text-white font-bold text-xs sm:text-lg px-3 sm:px-8 button-hover shadow-lg hover:shadow-xl"
           >
             התנתק
           </Button>
         </div>
-        <div className="glow-divider" style={{ margin: 0 }} />
       </header>
       <TabNavigation activeTab={tab} onTabChange={setTab} />
       <main className="container mx-auto px-2 sm:px-4">
         <PendingPayments onPaymentApproved={loadData} />
-        <PendingSiblings onSiblingApproved={loadData} />
-        <PendingAttendance onAttendanceApproved={loadData} />
         {tab === 'dashboard' && <Dashboard students={students} payments={payments} onAddStudent={() => { studentFormRef.current = { id: '', name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, siblingId: undefined, className: CLASS_OPTIONS[0], status: 'פעיל' }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} />}
         {tab === 'students' && <Students 
           students={students}
@@ -489,61 +448,6 @@ export default function Index() {
                 : s
             ));
             toast.success('תלמיד הוסר מהשיעור!');
-          }}
-          onMarkCashPayment={async (studentId, paymentType, amount, note) => {
-            if (!user) return;
-            const { data, error } = await supabase.from('payments').insert({
-              user_id: user.id,
-              student_id: studentId,
-              payment_type: paymentType,
-              payment_method: 'מזומן',
-              payment_date: new Date().toISOString().split('T')[0],
-              amount,
-              note: note ?? 'נרשם ע"י המורה',
-            }).select().single();
-            if (error) {
-              toast.error('שגיאה ברישום תשלום');
-              throw error;
-            }
-            setPayments(prev => [...prev, {
-              id: data.id,
-              studentId: data.student_id,
-              type: data.payment_type as Payment['type'],
-              method: data.payment_method as Payment['method'],
-              date: data.payment_date,
-              amount: data.amount,
-              note: data.note ?? '',
-              discount: data.discount ?? undefined,
-              proofUrl: data.payment_proof_url ?? null,
-            }]);
-            toast.success('תשלום מזומן נרשם! ✅');
-          }}
-          onAddStudentToSession={async (sessionId, studentId) => {
-            if (!user) return;
-            // Check if already exists
-            const session = sessions.find(s => s.id === sessionId);
-            if (session?.students.some(st => st.studentId === studentId)) {
-              toast.error('התלמיד כבר נמצא בשיעור');
-              return;
-            }
-            const { error } = await supabase
-              .from('attendance')
-              .insert({
-                user_id: user.id,
-                session_id: sessionId,
-                student_id: studentId,
-                status: 'נוכח',
-              });
-            if (error) {
-              toast.error('שגיאה בהוספת תלמיד');
-              return;
-            }
-            setSessions(prev => prev.map(s =>
-              s.id === sessionId
-                ? { ...s, students: [...s.students, { studentId, status: 'נוכח' as const }] }
-                : s
-            ));
-            toast.success('תלמיד נוסף לשיעור!');
           }}
         />}
         {tab === 'settings' && <AdminSettings />}
@@ -952,9 +856,8 @@ export default function Index() {
                 const selectedStudent = students.find(s => s.id === paymentForm.studentId);
                 const isSib = selectedStudent?.isSibling;
                 return <>
-                  <SelectItem value="חד פעמי">חד פעמי (฿{isSib ? '700' : '800'})</SelectItem>
-                  <SelectItem value="חודשי דו שבועי">חודשי דו שבועי (฿{isSib ? '3,800' : '4,200'})</SelectItem>
-                  <SelectItem value="חודשי חד שבועי">חודשי חד שבועי (฿{isSib ? '2,400' : '3,000'})</SelectItem>
+                  <SelectItem value="חד פעמי">חד פעמי (฿{isSib ? '500' : '700'})</SelectItem>
+                  <SelectItem value="חודשי">חודשי (฿{isSib ? '3,200' : '4,000'})</SelectItem>
                   <SelectItem value="סגירת יתרה">סגירת יתרה (השלמת חוב / החזר זכות)</SelectItem>
                 </>;
               })()}
@@ -991,7 +894,9 @@ export default function Index() {
             {paymentForm.amount > 0 && paymentForm.type && paymentForm.type !== 'סגירת יתרה' && paymentForm.studentId && (() => {
               const selectedStudent = students.find(s => s.id === paymentForm.studentId);
               if (!selectedStudent) return null;
-              const basePrice = getPaymentPrice(paymentForm.type, selectedStudent.isSibling);
+              const basePrice = paymentForm.type === 'חד פעמי'
+                ? (selectedStudent.isSibling ? 500 : 700)
+                : (selectedStudent.isSibling ? 3200 : 4000);
               const discountedPrice = basePrice * (1 - (paymentForm.discount || 0) / 100);
               const diff = paymentForm.amount - discountedPrice;
               if (diff > 0) {

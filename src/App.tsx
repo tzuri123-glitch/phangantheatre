@@ -2,7 +2,6 @@ import Index from "./pages/Index";
 import StudentPortal from "./pages/StudentPortal";
 import { useAuth } from './hooks/useAuth';
 import { useUserRole } from './hooks/useUserRole';
-import { useSessionTimeout } from './hooks/useSessionTimeout';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,7 +9,6 @@ const App = () => {
   const { user, loading: authLoading } = useAuth();
   const { role, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
-  useSessionTimeout();
 
   const loading = authLoading || roleLoading;
 
@@ -28,7 +26,9 @@ const App = () => {
     );
   }
 
-  if (!user) return null;
+  if (!user) {
+    return null;
+  }
 
   if (role === 'admin') {
     return <Index />;

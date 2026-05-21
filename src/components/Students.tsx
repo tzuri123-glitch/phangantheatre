@@ -1,4 +1,4 @@
-import { Student, CLASS_OPTIONS, isMonthlyPaymentType, getPaymentPrice } from '@/types';
+import { Student, CLASS_OPTIONS } from '@/types';
 import { format, isSameMonth, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -55,14 +55,20 @@ export default function Students({ students, payments, onAddStudent, onEditStude
     });
   };
 
+  const MONTHLY_PRICE = 4000;
+  const SIBLING_MONTHLY_PRICE = 3200;
+  const SINGLE_PRICE = 700;
+  const SIBLING_SINGLE_PRICE = 500;
+
   const calculateStudentBalance = (studentId: string, student: Student) => {
     const studentPayments = payments.filter(p => p.studentId === studentId);
     
     const totalPaid = studentPayments.reduce((sum, p) => sum + p.amount, 0);
     
+    // קבוצת חודשים עם תשלום חודשי
     const monthsWithMonthlyPayment = new Set<string>();
     studentPayments
-      .filter(p => isMonthlyPaymentType(p.type))
+      .filter(p => p.type === 'חודשי')
       .forEach(p => {
         const monthKey = format(parseISO(p.date), 'MM/yyyy');
         monthsWithMonthlyPayment.add(monthKey);
@@ -74,31 +80,33 @@ export default function Students({ students, payments, onAddStudent, onEditStude
       const paymentMonth = format(parseISO(payment.date), 'MM/yyyy');
       const discount = payment.discount || 0;
       
-      if (isMonthlyPaymentType(payment.type)) {
-        const base = getPaymentPrice(payment.type, student.isSibling);
-        const priceAfterDiscount = base * (1 - discount / 100);
+      if (payment.type === 'חודשי') {
+        // תשלום חודשי
+        const monthlyPrice = student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+        const priceAfterDiscount = monthlyPrice * (1 - discount / 100);
         totalExpected += priceAfterDiscount;
       } else if (payment.type === 'חד פעמי') {
+        // תשלום חד-פעמי נספר רק אם אין תשלום חודשי באותו חודש
         if (!monthsWithMonthlyPayment.has(paymentMonth)) {
-          const base = getPaymentPrice('חד פעמי', student.isSibling);
-          const priceAfterDiscount = base * (1 - discount / 100);
+          const singlePrice = student.isSibling ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
+          const priceAfterDiscount = singlePrice * (1 - discount / 100);
           totalExpected += priceAfterDiscount;
         }
-      }
+        }
     });
     
     return totalPaid - totalExpected;
   };
 
   const getBalanceColor = (balance: number) => {
-    if (balance > 0) return 'bg-emerald-900/40 text-emerald-300 border border-emerald-700/50'; // זכות
-    if (balance < 0) return 'bg-red-900/40 text-red-300 border border-red-700/50'; // חוב
-    return 'bg-gray-800/60 text-gray-400 border border-gray-700/50'; // מאוזן
+    if (balance > 0) return 'bg-green-100 text-green-800'; // זכות
+    if (balance < 0) return 'bg-red-100 text-red-800'; // חוב
+    return 'bg-gray-100 text-gray-800'; // מאוזן
   };
 
   const getBalanceText = (balance: number) => {
-    if (balance > 0) return `זכות ฿${balance}`;
-    if (balance < 0) return `חוב ฿${Math.abs(balance)}`;
+    if (balance > 0) return `זכות ₪${balance}`;
+    if (balance < 0) return `חוב ₪${Math.abs(balance)}`;
     return 'מאוזן';
   };
 
@@ -302,7 +310,7 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                                         asChild
                                         variant="ghost"
                                         size="sm"
-                                        className="h-7 w-7 p-0 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-900/30"
+                                        className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
                                       >
                                         <a
                                           href={getWhatsAppFallbackUrl(student.parentPhone || student.phone)}
@@ -333,12 +341,10 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                             <TableCell className="font-medium">{student.lastName}</TableCell>
                             <TableCell>
                               <span
-                                className={`inline-block px-3 py-1 rounded-full text-sm border ${
+                                className={`inline-block px-3 py-1 rounded-full text-sm ${
                                   student.status === 'פעיל'
-                                    ? 'bg-emerald-900/40 text-emerald-300 border-emerald-700/50'
-                                    : student.status === 'בהקפאה'
-                                    ? 'bg-blue-900/40 text-blue-300 border-blue-700/50'
-                                    : 'bg-gray-800/60 text-gray-400 border-gray-700/50'
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-orange-100 text-orange-800'
                                 }`}
                               >
                                 {student.status}

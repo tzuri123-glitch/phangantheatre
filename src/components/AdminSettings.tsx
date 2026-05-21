@@ -22,22 +22,16 @@ export default function AdminSettings() {
 
     const promptPayFile = files?.find(f => f.name.startsWith('promptpay'));
     if (promptPayFile) {
-      const { data } = await supabase.storage
+      const { data } = supabase.storage
         .from('admin-settings')
-        .createSignedUrl(promptPayFile.name, 3600);
-      if (data) setPromptPayUrl(data.signedUrl);
+        .getPublicUrl(promptPayFile.name);
+      setPromptPayUrl(data.publicUrl);
     }
   };
-
-  const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
   const handleUploadPromptPay = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0] || !user) return;
     const file = e.target.files[0];
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      toast.error('ניתן להעלות רק תמונות JPEG, PNG או WebP');
-      return;
-    }
     setUploading(true);
 
     try {
@@ -56,15 +50,15 @@ export default function AdminSettings() {
 
       const { error } = await supabase.storage
         .from('admin-settings')
-        .upload(fileName, file, { contentType: file.type, upsert: true });
+        .upload(fileName, file, { upsert: true });
 
       if (error) throw error;
 
-      const { data } = await supabase.storage
+      const { data } = supabase.storage
         .from('admin-settings')
-        .createSignedUrl(fileName, 3600);
+        .getPublicUrl(fileName);
 
-      if (data) setPromptPayUrl(data.signedUrl);
+      setPromptPayUrl(data.publicUrl);
       toast.success('תמונת PromptPay עודכנה!');
     } catch (error: any) {
       toast.error('שגיאה בהעלאת התמונה: ' + error.message);
@@ -104,7 +98,7 @@ export default function AdminSettings() {
           <input
             id="promptpay-upload"
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/*"
             className="hidden"
             onChange={handleUploadPromptPay}
             disabled={uploading}

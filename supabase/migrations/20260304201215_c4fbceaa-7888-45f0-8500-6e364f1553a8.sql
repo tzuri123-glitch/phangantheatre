@@ -1,1 +1,0 @@
-DROP POLICY IF EXISTS "Authenticated can read student names" ON public.students;

@@ -81,8 +81,7 @@ serve(async (req) => {
       .eq('id', studentId);
 
     if (updateError) {
-      console.error('Failed to link student:', updateError);
-      return new Response(JSON.stringify({ error: 'Failed to link student' }), {
+      return new Response(JSON.stringify({ error: 'Failed to link student', details: updateError.message }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -92,9 +91,8 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  } catch (error: unknown) {
-    console.error('Internal error:', error);
-    return new Response(JSON.stringify({ error: 'An internal error occurred' }), {
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

@@ -163,53 +163,6 @@ export type Database = {
           },
         ]
       }
-      pending_attendance: {
-        Row: {
-          admin_user_id: string
-          class_name: string
-          created_at: string | null
-          id: string
-          note: string | null
-          requested_date: string
-          requesting_user_id: string
-          resolved_at: string | null
-          status: string
-          student_id: string
-        }
-        Insert: {
-          admin_user_id: string
-          class_name: string
-          created_at?: string | null
-          id?: string
-          note?: string | null
-          requested_date: string
-          requesting_user_id: string
-          resolved_at?: string | null
-          status?: string
-          student_id: string
-        }
-        Update: {
-          admin_user_id?: string
-          class_name?: string
-          created_at?: string | null
-          id?: string
-          note?: string | null
-          requested_date?: string
-          requesting_user_id?: string
-          resolved_at?: string | null
-          status?: string
-          student_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pending_attendance_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       pending_payments: {
         Row: {
           admin_user_id: string
@@ -217,7 +170,6 @@ export type Database = {
           created_at: string | null
           id: string
           payment_method: string
-          payment_proof_url: string | null
           payment_type: string
           resolved_at: string | null
           status: string
@@ -229,7 +181,6 @@ export type Database = {
           created_at?: string | null
           id?: string
           payment_method?: string
-          payment_proof_url?: string | null
           payment_type: string
           resolved_at?: string | null
           status?: string
@@ -241,7 +192,6 @@ export type Database = {
           created_at?: string | null
           id?: string
           payment_method?: string
-          payment_proof_url?: string | null
           payment_type?: string
           resolved_at?: string | null
           status?: string
@@ -251,56 +201,6 @@ export type Database = {
           {
             foreignKeyName: "pending_payments_student_id_fkey"
             columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      pending_siblings: {
-        Row: {
-          admin_user_id: string
-          created_at: string | null
-          existing_student_id: string
-          id: string
-          requesting_user_id: string
-          resolved_at: string | null
-          sibling_birth_date: string | null
-          sibling_class: string
-          sibling_name: string
-          sibling_phone: string | null
-          status: string
-        }
-        Insert: {
-          admin_user_id: string
-          created_at?: string | null
-          existing_student_id: string
-          id?: string
-          requesting_user_id: string
-          resolved_at?: string | null
-          sibling_birth_date?: string | null
-          sibling_class: string
-          sibling_name: string
-          sibling_phone?: string | null
-          status?: string
-        }
-        Update: {
-          admin_user_id?: string
-          created_at?: string | null
-          existing_student_id?: string
-          id?: string
-          requesting_user_id?: string
-          resolved_at?: string | null
-          sibling_birth_date?: string | null
-          sibling_class?: string
-          sibling_name?: string
-          sibling_phone?: string | null
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pending_siblings_existing_student_id_fkey"
-            columns: ["existing_student_id"]
             isOneToOne: false
             referencedRelation: "students"
             referencedColumns: ["id"]
@@ -506,19 +406,6 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
-      }
-      update_own_student_profile: {
-        Args: {
-          _birth_date: string
-          _last_name: string
-          _name: string
-          _parent_name: string
-          _parent_phone: string
-          _phone: string
-          _profile_photo_url: string
-          _student_id: string
-        }
-        Returns: undefined
       }
     }
     Enums: {

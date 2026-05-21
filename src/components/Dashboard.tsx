@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Student, Payment, isMonthlyPaymentType, getPaymentPrice } from '@/types';
+import { Student, Payment, SINGLE_PRICE, SIBLING_SINGLE_PRICE, MONTHLY_PRICE, SIBLING_MONTHLY_PRICE } from '@/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Chart from 'chart.js/auto';
@@ -23,33 +23,36 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
 
   const totalIncome = payments.reduce((sum, p) => sum + p.amount, 0);
 
+  // חישוב חובות וזכויות לכל התלמידים
   const balanceSummary = (() => {
     let totalExpected = 0;
     
+    // Group payments by student
     const studentIds = [...new Set(payments.map(p => p.studentId))];
     
     studentIds.forEach(studentId => {
       const student = students.find(s => s.id === studentId);
       const studentPayments = payments.filter(p => p.studentId === studentId);
       
+      // Months with monthly payment (to skip one-time in those months)
       const monthsWithMonthly = new Set<string>();
-      studentPayments.filter(p => isMonthlyPaymentType(p.type)).forEach(p => {
+      studentPayments.filter(p => p.type === 'חודשי').forEach(p => {
         monthsWithMonthly.add(p.date.slice(0, 7));
       });
       
       studentPayments.forEach(payment => {
-        if (payment.type === 'סגירת יתרה') return;
+        if (payment.type === 'סגירת יתרה') return; // no expected amount
         
         const isSib = student?.isSibling || false;
         const discount = payment.discount || 0;
         
-        if (isMonthlyPaymentType(payment.type)) {
-          const base = getPaymentPrice(payment.type, isSib);
+        if (payment.type === 'חודשי') {
+          const base = isSib ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
           totalExpected += base * (1 - discount / 100);
         } else if (payment.type === 'חד פעמי') {
           const paymentMonth = payment.date.slice(0, 7);
           if (!monthsWithMonthly.has(paymentMonth)) {
-            const base = getPaymentPrice('חד פעמי', isSib);
+            const base = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
             totalExpected += base * (1 - discount / 100);
           }
         }
@@ -69,15 +72,18 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
     return acc;
   }, {} as Record<string, number>);
 
+  // חישוב הכנסות שבועיות - 8 שבועות אחרונים כולל השבוע הנוכחי
   const today = new Date();
-  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-  const eightWeeksAgo = subWeeks(weekStart, 7);
+  const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // יום שני
+  const eightWeeksAgo = subWeeks(weekStart, 7); // 7 שבועות אחורה + השבוע הנוכחי = 8 שבועות
   
+  // יצירת מערך של כל השבועות
   const weeks = eachWeekOfInterval(
     { start: eightWeeksAgo, end: today },
     { weekStartsOn: 1 }
   );
   
+  // חישוב הכנסות לכל שבוע
   const weeklyIncomeData = weeks.map(weekStartDate => {
     const weekEndDate = endOfWeek(weekStartDate, { weekStartsOn: 1 });
     
@@ -86,10 +92,12 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
     payments.forEach(payment => {
       const paymentDate = parseISO(payment.date);
       
-      if (isMonthlyPaymentType(payment.type)) {
+      if (payment.type === 'חודשי') {
+        // תשלום חודשי - מתפרס על כל השבועות בחודש
         const paymentMonthStart = new Date(paymentDate.getFullYear(), paymentDate.getMonth(), 1);
         const paymentMonthEnd = new Date(paymentDate.getFullYear(), paymentDate.getMonth() + 1, 0);
         
+        // כל השבועות בחודש של התשלום
         const monthWeeks = eachWeekOfInterval(
           { start: paymentMonthStart, end: paymentMonthEnd },
           { weekStartsOn: 1 }
@@ -98,6 +106,7 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
         const weeksInMonth = monthWeeks.length;
         const weeklyAmount = payment.amount / weeksInMonth;
         
+        // אם השבוע הנוכחי חופף לחודש של התשלום, נוסיף חלק יחסי
         const isWeekInPaymentMonth = monthWeeks.some(mw => 
           mw.getTime() === weekStartDate.getTime()
         );
@@ -106,6 +115,7 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
           weekIncome += weeklyAmount;
         }
       } else {
+        // תשלום חד-פעמי או ניסיון - נספר רק בשבוע שבו בוצע
         if (isWithinInterval(paymentDate, { start: weekStartDate, end: weekEndDate })) {
           weekIncome += payment.amount;
         }
@@ -127,10 +137,18 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
   useEffect(() => {
     if (!barChartRef.current || !weeklyChartRef.current || !pieChartRef.current) return;
 
-    if (barChartInstance.current) barChartInstance.current.destroy();
-    if (weeklyChartInstance.current) weeklyChartInstance.current.destroy();
-    if (pieChartInstance.current) pieChartInstance.current.destroy();
+    // Destroy previous charts
+    if (barChartInstance.current) {
+      barChartInstance.current.destroy();
+    }
+    if (weeklyChartInstance.current) {
+      weeklyChartInstance.current.destroy();
+    }
+    if (pieChartInstance.current) {
+      pieChartInstance.current.destroy();
+    }
 
+    // Bar chart - monthly income
     const barLabels = Object.keys(incomeByMonth).sort();
     const barData = barLabels.map((k) => incomeByMonth[k]);
 
@@ -138,30 +156,25 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
       type: 'bar',
       data: {
         labels: barLabels,
-        datasets: [{
-          label: 'הכנסות חודשיות',
-          data: barData,
-          backgroundColor: 'hsl(42 88% 52%)',
-          borderRadius: 8,
-        }],
+        datasets: [
+          {
+            label: 'הכנסות חודשיות',
+            data: barData,
+            backgroundColor: 'hsl(188 91% 36%)',
+            borderRadius: 8,
+          },
+        ],
       },
       options: {
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: { display: false },
+        },
         responsive: true,
         maintainAspectRatio: true,
-        scales: {
-          x: {
-            ticks: { color: 'hsl(220, 10%, 52%)' },
-            grid: { color: 'hsl(220, 18%, 20%)' },
-          },
-          y: {
-            ticks: { color: 'hsl(220, 10%, 52%)' },
-            grid: { color: 'hsl(220, 18%, 20%)' },
-          },
-        },
       },
     });
 
+    // Weekly chart - weekly income (8 last weeks including current week)
     const weeklyLabels = weeklyIncomeData.map(w => w.label);
     const weeklyData = weeklyIncomeData.map(w => w.income);
     const currentWeekIndex = weeklyIncomeData.length - 1;
@@ -170,19 +183,25 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
       type: 'line',
       data: {
         labels: weeklyLabels,
-        datasets: [{
-          label: 'הכנסות שבועיות',
-          data: weeklyData,
-          backgroundColor: 'hsl(42 88% 52% / 0.15)',
-          borderColor: 'hsl(42 88% 52%)',
-          borderWidth: 2,
-          fill: true,
-          tension: 0.4,
-          pointBackgroundColor: weeklyLabels.map((_, i) => i === currentWeekIndex ? 'hsl(355 65% 52%)' : 'hsl(42 88% 52%)'),
-          pointBorderColor: weeklyLabels.map((_, i) => i === currentWeekIndex ? 'hsl(355 65% 52%)' : 'hsl(42 88% 52%)'),
-          pointRadius: weeklyLabels.map((_, i) => i === currentWeekIndex ? 6 : 3),
-          pointHoverRadius: weeklyLabels.map((_, i) => i === currentWeekIndex ? 8 : 5),
-        }],
+        datasets: [
+          {
+            label: 'הכנסות שבועיות',
+            data: weeklyData,
+            backgroundColor: 'hsl(142 71% 45% / 0.2)',
+            borderColor: 'hsl(142 71% 45%)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: weeklyLabels.map((_, i) => 
+              i === currentWeekIndex ? 'hsl(0 84% 60%)' : 'hsl(142 71% 45%)'
+            ),
+            pointBorderColor: weeklyLabels.map((_, i) => 
+              i === currentWeekIndex ? 'hsl(0 84% 60%)' : 'hsl(142 71% 45%)'
+            ),
+            pointRadius: weeklyLabels.map((_, i) => i === currentWeekIndex ? 6 : 3),
+            pointHoverRadius: weeklyLabels.map((_, i) => i === currentWeekIndex ? 8 : 5),
+          },
+        ],
       },
       options: {
         plugins: {
@@ -195,50 +214,55 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
                 const weekEnd = endOfWeek(weekData.weekStart, { weekStartsOn: 1 });
                 return `${format(weekData.weekStart, 'dd/MM')} - ${format(weekEnd, 'dd/MM')}`;
               },
-              label: (context) => `הכנסה: ${formatILS(context.parsed.y)}`
+              label: (context) => {
+                return `הכנסה: ${formatILS(context.parsed.y)}`;
+              }
             }
           }
         },
         responsive: true,
         maintainAspectRatio: true,
-        scales: {
-          x: {
-            ticks: { color: 'hsl(220, 10%, 52%)' },
-            grid: { color: 'hsl(220, 18%, 20%)' },
-          },
-          y: {
-            ticks: { color: 'hsl(220, 10%, 52%)' },
-            grid: { color: 'hsl(220, 18%, 20%)' },
-          },
-        },
       },
     });
 
+    // Pie chart - income by type
     const pieLabels = Object.keys(incomeByType);
     const pieData = pieLabels.map((k) => incomeByType[k]);
-    const colors = ['hsl(42 88% 52%)', 'hsl(42 88% 38%)', 'hsl(355 65% 52%)', 'hsl(42 70% 68%)', 'hsl(355 65% 38%)'];
+    const colors = [
+      'hsl(188 91% 36%)',
+      'hsl(188 91% 50%)',
+      'hsl(142 71% 45%)',
+      'hsl(48 96% 53%)',
+      'hsl(0 84% 60%)',
+    ];
 
     pieChartInstance.current = new Chart(pieChartRef.current, {
       type: 'pie',
       data: {
         labels: pieLabels,
-        datasets: [{ data: pieData, backgroundColor: colors.slice(0, pieLabels.length) }],
+        datasets: [
+          {
+            data: pieData,
+            backgroundColor: colors.slice(0, pieLabels.length),
+          },
+        ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: true,
-        plugins: {
-          legend: {
-            labels: { color: 'hsl(42, 25%, 75%)' },
-          },
-        },
       },
     });
 
     return () => {
-      if (barChartInstance.current) barChartInstance.current.destroy();
-      if (weeklyChartInstance.current) weeklyChartInstance.current.destroy();
-      if (pieChartInstance.current) pieChartInstance.current.destroy();
+      if (barChartInstance.current) {
+        barChartInstance.current.destroy();
+      }
+      if (weeklyChartInstance.current) {
+        weeklyChartInstance.current.destroy();
+      }
+      if (pieChartInstance.current) {
+        pieChartInstance.current.destroy();
+      }
     };
   }, [payments]);
 
@@ -272,9 +296,9 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
           </p>
         </Card>
 
-        <Card className="p-4 sm:p-6 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 card-hover backdrop-blur-sm">
+        <Card className="p-4 sm:p-6 bg-gradient-to-br from-green-500/10 via-green-500/5 to-transparent border-green-500/20 card-hover backdrop-blur-sm">
           <h3 className="text-sm sm:text-lg font-semibold text-muted-foreground mb-1 sm:mb-2">נטו</h3>
-          <p className="text-2xl sm:text-4xl font-bold bg-gradient-to-l from-primary to-primary-glow bg-clip-text text-transparent">
+          <p className="text-2xl sm:text-4xl font-bold text-green-600 dark:text-green-400">
             {formatILS(balanceSummary.netIncome)}
           </p>
         </Card>
@@ -283,13 +307,13 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
           <div className="space-y-2">
             <div>
               <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground">אני חייב לתלמידים</h3>
-              <p className="text-lg sm:text-2xl font-bold text-red-400">
+              <p className="text-lg sm:text-2xl font-bold text-red-600 dark:text-red-400">
                 {formatILS(balanceSummary.totalCredits)}
               </p>
             </div>
             <div>
               <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground">תלמידים חייבים לי</h3>
-              <p className="text-lg sm:text-2xl font-bold" style={{ color: 'hsl(42 88% 62%)' }}>
+              <p className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400">
                 {formatILS(balanceSummary.totalDebts)}
               </p>
             </div>

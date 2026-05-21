@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
@@ -20,8 +20,6 @@ import {
 import logo from '@/assets/logo.png';
 import QrScanner from '@/components/QrScanner';
 import { toast } from 'sonner';
-import { getSignedProfilePhotoUrl, extractProfilePhotoPath, uploadProfilePhoto } from '@/lib/storageHelpers';
-import { getPaymentPrice, isMonthlyPaymentType } from '@/types';
 
 interface StudentRecord {
   id: string;
@@ -35,7 +33,6 @@ interface StudentRecord {
   parent_name: string | null;
   parent_phone: string | null;
   profile_photo_url: string | null;
-  is_sibling: boolean | null;
 }
 
 interface AttendanceRecord {
@@ -52,28 +49,22 @@ interface PaymentRecord {
   payment_type: string;
   payment_method: string;
   note: string | null;
-  payment_proof_url: string | null;
 }
 
 interface PendingPayment {
   id: string;
   payment_type: string;
-  payment_method: string;
   status: string;
   created_at: string;
-  payment_proof_url: string | null;
 }
 
 export default function StudentPortal() {
   const { user, signOut } = useAuth();
-  const [students, setStudents] = useState<StudentRecord[]>([]);
-  const [selectedStudentIdx, setSelectedStudentIdx] = useState(0);
-  const student = students[selectedStudentIdx] || null;
+  const [student, setStudent] = useState<StudentRecord | null>(null);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
-  const [activeTab, setActiveTab] = useState<'home' | 'attendance' | 'payments' | 'profile'>('home');
-  const [nextSession, setNextSession] = useState<{ session_date: string; class_name: string } | null>(null);
+  const [activeTab, setActiveTab] = useState<'attendance' | 'payments' | 'profile'>('attendance');
   const [loading, setLoading] = useState(true);
 
   // Profile editing
@@ -81,8 +72,7 @@ export default function StudentPortal() {
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [editBirthDate, setEditBirthDate] = useState('');
-  const [editParentFirstName, setEditParentFirstName] = useState('');
-  const [editParentLastName, setEditParentLastName] = useState('');
+  const [editParentName, setEditParentName] = useState('');
   const [editParentPhone, setEditParentPhone] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -101,117 +91,74 @@ export default function StudentPortal() {
   const [selectedPaymentType, setSelectedPaymentType] = useState<string>('');
   const [promptPayUrl, setPromptPayUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [proofFile, setProofFile] = useState<File | null>(null);
-  const [viewingProofUrl, setViewingProofUrl] = useState<string | null>(null);
 
-  // Add sibling dialog
-  const [showAddSibling, setShowAddSibling] = useState(false);
-  const [siblingName, setSiblingName] = useState('');
-  const [siblingBirthDate, setSiblingBirthDate] = useState('');
-  const [siblingPhone, setSiblingPhone] = useState('');
-  const [siblingClass, setSiblingClass] = useState('');
-  const [addingSibling, setAddingSibling] = useState(false);
-
-  // Forgot to scan dialog
-  const [showForgotScan, setShowForgotScan] = useState(false);
-  const [forgotDate, setForgotDate] = useState(new Date().toISOString().slice(0, 10));
-  const [forgotNote, setForgotNote] = useState('');
-  const [sendingForgot, setSendingForgot] = useState(false);
-
-  // Load all students for this user
   useEffect(() => {
     if (!user) return;
-    const loadStudents = async () => {
+
+    const load = async () => {
       const { data: studentData } = await supabase
         .from('students')
         .select('*')
-        .eq('auth_user_id', user.id);
+        .eq('auth_user_id', user.id)
+        .limit(1)
+        .single();
 
-      if (studentData && studentData.length > 0) {
-        // Resolve signed URLs for profile photos
-        const studentsWithSignedUrls = await Promise.all(
-          studentData.map(async (s: any) => {
-            let signedPhotoUrl = s.profile_photo_url;
-            if (s.profile_photo_url) {
-              // If it's a path (not a full URL), get signed URL
-              const isPath = !s.profile_photo_url.startsWith('http');
-              if (isPath) {
-                signedPhotoUrl = await getSignedProfilePhotoUrl(s.profile_photo_url);
-              } else {
-                // Extract path from existing URL and get new signed URL
-                const path = extractProfilePhotoPath(s.profile_photo_url);
-                if (path) {
-                  signedPhotoUrl = await getSignedProfilePhotoUrl(path);
-                }
-              }
-            }
-            return { ...s, profile_photo_url: signedPhotoUrl };
-          })
-        );
-        setStudents(studentsWithSignedUrls as any);
+      if (!studentData) {
+        setLoading(false);
+        return;
+      }
+
+      setStudent(studentData as any);
+
+      // Attendance
+      const { data: attendanceData } = await supabase
+        .from('attendance')
+        .select('id, session_id, status, sessions(session_date, class_name, is_trial)')
+        .eq('student_id', studentData.id)
+        .order('created_at', { ascending: false });
+
+      if (attendanceData) {
+        setAttendance(attendanceData.map((a: any) => ({
+          id: a.id, session_id: a.session_id, status: a.status, session: a.sessions,
+        })));
+      }
+
+      // Payments
+      const { data: paymentsData } = await supabase
+        .from('payments')
+        .select('id, amount, payment_date, payment_type, payment_method, note')
+        .eq('student_id', studentData.id)
+        .order('payment_date', { ascending: false });
+
+      if (paymentsData) setPayments(paymentsData);
+
+      // Pending payments
+      const { data: pendingData } = await supabase
+        .from('pending_payments')
+        .select('*')
+        .eq('student_id', studentData.id)
+        .order('created_at', { ascending: false });
+
+      if (pendingData) {
+        setPendingPayments((pendingData as PendingPayment[]).filter(p => p.status !== 'deleted_by_admin'));
       }
 
       // PromptPay QR
       const { data: files } = await supabase.storage
         .from('admin-settings')
         .list('', { limit: 10 });
+
       const ppFile = files?.find(f => f.name.startsWith('promptpay'));
       if (ppFile) {
-        const { data: signedData } = await supabase.storage.from('admin-settings').createSignedUrl(ppFile.name, 3600);
-        if (signedData) setPromptPayUrl(signedData.signedUrl);
+        const { data } = supabase.storage.from('admin-settings').getPublicUrl(ppFile.name);
+        setPromptPayUrl(data.publicUrl);
       }
 
       setLoading(false);
     };
-    loadStudents();
+
+    load();
   }, [user]);
-
-  // Load student-specific data when selected student changes
-  useEffect(() => {
-    if (!student) return;
-    const loadStudentData = async () => {
-      const { data: attendanceData } = await supabase
-        .from('attendance')
-        .select('id, session_id, status, sessions(session_date, class_name, is_trial)')
-        .eq('student_id', student.id)
-        .order('created_at', { ascending: false });
-
-      setAttendance(attendanceData ? attendanceData.map((a: any) => ({
-        id: a.id, session_id: a.session_id, status: a.status, session: a.sessions,
-      })) : []);
-
-      const { data: paymentsData } = await supabase
-        .from('payments')
-        .select('id, amount, payment_date, payment_type, payment_method, note, payment_proof_url')
-        .eq('student_id', student.id)
-        .order('payment_date', { ascending: false });
-
-      setPayments((paymentsData as PaymentRecord[]) || []);
-
-      const { data: pendingData } = await supabase
-        .from('pending_payments')
-        .select('*')
-        .eq('student_id', student.id)
-        .order('created_at', { ascending: false });
-
-      setPendingPayments(
-        ((pendingData as PendingPayment[]) || []).filter(p => p.status !== 'deleted_by_admin')
-      );
-
-      // Fetch next upcoming session for this student's class
-      const today = new Date().toISOString().slice(0, 10);
-      const { data: nextSessionData } = await supabase
-        .from('sessions')
-        .select('session_date, class_name')
-        .eq('class_name', student.class_name)
-        .gte('session_date', today)
-        .order('session_date', { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      setNextSession(nextSessionData || null);
-    };
-    loadStudentData();
-  }, [student?.id]);
 
   // Realtime for pending payment updates
   useEffect(() => {
@@ -255,7 +202,6 @@ export default function StudentPortal() {
           payment_type: newPayment.payment_type,
           payment_method: newPayment.payment_method,
           note: newPayment.note,
-          payment_proof_url: newPayment.payment_proof_url,
         }, ...prev]);
       })
       .subscribe();
@@ -296,59 +242,6 @@ export default function StudentPortal() {
     }
   };
 
-  const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-
-  const handlePromptPayPaymentRequest = async () => {
-    if (!student || !selectedPaymentType || !proofFile) {
-      toast.error('בחר סוג תשלום והעלה צילום מסך');
-      return;
-    }
-    if (!ALLOWED_IMAGE_TYPES.includes(proofFile.type)) {
-      toast.error('ניתן להעלות רק תמונות JPEG, PNG או WebP');
-      return;
-    }
-    setSubmitting(true);
-
-    try {
-      // Upload proof image
-      const fileExt = proofFile.name.split('.').pop()?.toLowerCase();
-      const filePath = `${student.id}/${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage
-        .from('payment-proofs')
-        .upload(filePath, proofFile, { contentType: proofFile.type, upsert: true });
-      if (uploadError) throw uploadError;
-
-      const { data: signedData, error: signedError } = await supabase.storage.from('payment-proofs').createSignedUrl(filePath, 60 * 60 * 24 * 365);
-      const proofUrl = signedData?.signedUrl || filePath;
-
-      // Create pending payment with proof
-      const { data, error } = await supabase
-        .from('pending_payments')
-        .insert({
-          student_id: student.id,
-          admin_user_id: student.user_id,
-          payment_type: selectedPaymentType,
-          payment_method: 'סקאן',
-          payment_proof_url: proofUrl,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setPendingPayments(prev => [data as PendingPayment, ...prev]);
-      toast.success('אישור התשלום נשלח למנהל! ⏳');
-      setShowPaymentDialog(false);
-      setPaymentMethod(null);
-      setSelectedPaymentType('');
-      setProofFile(null);
-    } catch (error: any) {
-      toast.error('שגיאה: ' + error.message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   // Registration completion form state
   const [regName, setRegName] = useState('');
   const [regParentName, setRegParentName] = useState('');
@@ -364,8 +257,8 @@ export default function StudentPortal() {
 
   useEffect(() => {
     if (!student && !loading && regIsSibling) {
-      supabase.functions.invoke('list-siblings').then(({ data, error }) => {
-        if (!error && data?.students) setExistingStudents(data.students);
+      supabase.from('students').select('id, name, last_name').order('name').then(({ data }) => {
+        if (data) setExistingStudents(data);
       });
     }
   }, [regIsSibling, student, loading]);
@@ -400,82 +293,12 @@ export default function StudentPortal() {
       if (fnError) throw fnError;
       if (result?.error) throw new Error(result.error);
       toast.success('הפרטים נשמרו בהצלחה!');
-      const { data: newStudents } = await supabase
-        .from('students')
-        .select('*')
-        .eq('auth_user_id', user!.id);
-      if (newStudents && newStudents.length > 0) {
-        setStudents(newStudents as any);
-        setSelectedStudentIdx(0);
-      }
+      // Reload to fetch student data
+      window.location.reload();
     } catch (err: any) {
       toast.error('שגיאה: ' + err.message);
     } finally {
       setRegistering(false);
-    }
-  };
-
-  const handleAddSibling = async () => {
-    if (!siblingName.trim() || !siblingBirthDate || !siblingClass) {
-      toast.error('יש למלא שם, תאריך לידה וקבוצה');
-      return;
-    }
-    setAddingSibling(true);
-    try {
-      const firstStudent = students[0];
-      if (!firstStudent) throw new Error('No existing student found');
-
-      const { error } = await supabase
-        .from('pending_siblings' as any)
-        .insert({
-          requesting_user_id: user!.id,
-          admin_user_id: firstStudent.user_id,
-          existing_student_id: firstStudent.id,
-          sibling_name: siblingName.trim(),
-          sibling_birth_date: siblingBirthDate || null,
-          sibling_phone: siblingPhone.trim() || null,
-          sibling_class: siblingClass,
-        });
-      if (error) throw error;
-      toast.success('בקשה להוספת אח/אחות נשלחה למנהל לאישור! ⏳');
-      setShowAddSibling(false);
-      setSiblingName('');
-      setSiblingBirthDate('');
-      setSiblingPhone('');
-      setSiblingClass('');
-    } catch (err: any) {
-      toast.error('שגיאה: ' + err.message);
-    } finally {
-      setAddingSibling(false);
-    }
-  };
-
-  const handleForgotScan = async () => {
-    if (!student || !forgotDate) {
-      toast.error('יש לבחור תאריך');
-      return;
-    }
-    setSendingForgot(true);
-    try {
-      const { error } = await supabase
-        .from('pending_attendance' as any)
-        .insert({
-          student_id: student.id,
-          requesting_user_id: user!.id,
-          admin_user_id: student.user_id,
-          class_name: student.class_name,
-          requested_date: forgotDate,
-          note: forgotNote.trim() || null,
-        });
-      if (error) throw error;
-      toast.success('בקשת נוכחות נשלחה למנהל לאישור! ⏳');
-      setShowForgotScan(false);
-      setForgotDate(new Date().toISOString().slice(0, 10));
-      setForgotNote('');
-    } catch (err: any) {
-      toast.error('שגיאה: ' + err.message);
-    } finally {
-      setSendingForgot(false);
     }
   };
 
@@ -488,36 +311,17 @@ export default function StudentPortal() {
   }
 
   const tabs = [
-    { id: 'home' as const, label: 'בית' },
     { id: 'attendance' as const, label: 'נוכחות' },
     { id: 'payments' as const, label: 'תשלומים' },
     { id: 'profile' as const, label: 'הפרטים שלי' },
   ];
-
-  // Summary stats for home tab
-  const attendedCount = attendance.filter(a => a.status === 'present' || a.status === 'נוכח').length;
-  const totalSessions = attendance.length;
-  const attendanceRate = totalSessions > 0 ? Math.round((attendedCount / totalSessions) * 100) : null;
-
-  const now = new Date();
-  const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const currentMonthPaid = payments.some(p =>
-    p.payment_date?.startsWith(currentMonthStr) &&
-    (p.payment_type?.includes('מנוי') || p.payment_type?.includes('monthly') || p.payment_type?.includes('subscription'))
-  );
-  const hasPendingThisMonth = pendingPayments.some(p =>
-    p.status === 'pending' &&
-    p.created_at?.startsWith(currentMonthStr)
-  );
 
   const openEditProfile = () => {
     if (student) {
       setEditName(student.name || '');
       setEditPhone(student.phone || '');
       setEditBirthDate(student.birth_date || '');
-      const parentParts = (student.parent_name || '').split(' ');
-      setEditParentFirstName(parentParts[0] || '');
-      setEditParentLastName(student.last_name || parentParts.slice(1).join(' ') || '');
+      setEditParentName(student.parent_name || '');
       setEditParentPhone(student.parent_phone || '');
     }
     setShowEditProfile(true);
@@ -527,33 +331,25 @@ export default function StudentPortal() {
     if (!student) return;
     setSavingProfile(true);
     try {
-      const fullParentName = (editParentFirstName.trim() + ' ' + editParentLastName.trim()).trim();
-      const newLastName = editParentLastName.trim() || student.last_name;
-      
-      // Use RPC function for secure field updates (prevents modifying is_sibling, class_name, status)
-      const { error } = await supabase.rpc('update_own_student_profile', {
-        _student_id: student.id,
-        _name: editName.trim() || null,
-        _last_name: newLastName || null,
-        _phone: editPhone.trim() || null,
-        _birth_date: editBirthDate || null,
-        _parent_name: fullParentName || null,
-        _parent_phone: editParentPhone.trim() || null,
-        _profile_photo_url: null, // Keep existing photo
-      });
-      
-      if (error) throw error;
-      setStudents(prev => prev.map((s, idx) =>
-        idx === selectedStudentIdx ? {
-          ...s,
+      const { error } = await supabase
+        .from('students')
+        .update({
           name: editName.trim(),
-          last_name: newLastName,
           phone: editPhone.trim() || null,
           birth_date: editBirthDate || null,
-          parent_name: fullParentName || null,
+          parent_name: editParentName.trim() || null,
           parent_phone: editParentPhone.trim() || null,
-        } : s
-      ));
+        })
+        .eq('id', student.id);
+      if (error) throw error;
+      setStudent({
+        ...student,
+        name: editName.trim(),
+        phone: editPhone.trim() || null,
+        birth_date: editBirthDate || null,
+        parent_name: editParentName.trim() || null,
+        parent_phone: editParentPhone.trim() || null,
+      });
       setShowEditProfile(false);
       toast.success('הפרטים עודכנו בהצלחה!');
     } catch (err: any) {
@@ -566,37 +362,27 @@ export default function StudentPortal() {
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !student) return;
-
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      toast.error('ניתן להעלות רק תמונות JPEG, PNG או WebP');
-      return;
-    }
     
     setUploadingPhoto(true);
     try {
-      // Upload and get signed URL
-      const result = await uploadProfilePhoto(student.id, file);
-      if (!result) throw new Error('Failed to upload photo');
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${student.id}/profile.${fileExt}`;
       
-      // Update the database with the file path (not the URL)
-      const filePath = `${student.id}/profile.${file.name.split('.').pop()?.toLowerCase()}`;
-      
-      // Use RPC to update profile photo URL securely
-      const { error: updateError } = await supabase.rpc('update_own_student_profile', {
-        _student_id: student.id,
-        _name: null,
-        _last_name: null,
-        _phone: null,
-        _birth_date: null,
-        _parent_name: null,
-        _parent_phone: null,
-        _profile_photo_url: filePath, // Store the path, not the signed URL
-      });
+      const { error: uploadError } = await supabase.storage
+        .from('profile-photos')
+        .upload(filePath, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('profile-photos').getPublicUrl(filePath);
+      const photoUrl = data.publicUrl + '?t=' + Date.now();
+
+      const { error: updateError } = await supabase
+        .from('students')
+        .update({ profile_photo_url: photoUrl })
+        .eq('id', student.id);
       if (updateError) throw updateError;
 
-      setStudents(prev => prev.map((s, idx) =>
-        idx === selectedStudentIdx ? { ...s, profile_photo_url: result.url } : s
-      ));
+      setStudent({ ...student, profile_photo_url: photoUrl });
       toast.success('התמונה עודכנה בהצלחה! 📸');
     } catch (err: any) {
       toast.error('שגיאה בהעלאת תמונה: ' + err.message);
@@ -606,26 +392,20 @@ export default function StudentPortal() {
   };
 
   const statusMap: Record<string, string> = {
-    'נוכח': 'bg-emerald-900/40 text-emerald-300 border-emerald-700/50',
-    'לא הגיע': 'bg-red-900/40 text-red-300 border-red-700/50',
-    'לא באי': 'bg-yellow-900/40 text-yellow-300 border-yellow-700/50',
-    'עזב': 'bg-gray-800/60 text-gray-400 border-gray-700/50',
+    'נוכח': 'bg-green-100 text-green-800',
+    'לא הגיע': 'bg-red-100 text-red-800',
+    'לא באי': 'bg-yellow-100 text-yellow-800',
+    'עזב': 'bg-gray-100 text-gray-800',
   };
 
   const pendingStatusMap: Record<string, { label: string; className: string }> = {
-    'pending': { label: 'ממתין לאישור', className: 'bg-yellow-900/40 text-yellow-300 border-yellow-700/50' },
-    'approved': { label: 'אושר ✅', className: 'bg-emerald-900/40 text-emerald-300 border-emerald-700/50' },
-    'rejected': { label: 'נדחה ❌', className: 'bg-red-900/40 text-red-300 border-red-700/50' },
+    'pending': { label: 'ממתין לאישור', className: 'bg-yellow-100 text-yellow-800' },
+    'approved': { label: 'אושר ✅', className: 'bg-green-100 text-green-800' },
+    'rejected': { label: 'נדחה ❌', className: 'bg-red-100 text-red-800' },
   };
 
   return (
-    <div
-      className="min-h-screen"
-      dir="rtl"
-      style={{
-        background: 'radial-gradient(ellipse 80% 60% at 50% 0%, hsl(42 50% 14% / 0.3), transparent), hsl(220 18% 7%)',
-      }}
-    >
+    <div className="min-h-screen bg-gradient-to-br from-background via-accent/10 to-background" dir="rtl">
       <header className="bg-card/80 backdrop-blur-md border-b border-border shadow-md sticky top-0 z-50">
         <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 flex items-center justify-between gap-2 sm:gap-4">
           <div className="flex items-center gap-2 sm:gap-4 animate-fade-in">
@@ -634,7 +414,7 @@ export default function StudentPortal() {
               האזור האישי שלי
             </h1>
           </div>
-          <Button onClick={() => signOut()} size="sm" className="bg-gradient-to-l from-magenta to-magenta-hover text-white font-bold text-xs sm:text-lg px-3 sm:px-8">
+          <Button onClick={signOut} size="sm" className="bg-gradient-to-l from-magenta to-magenta-hover text-white font-bold text-xs sm:text-lg px-3 sm:px-8">
             התנתק
           </Button>
         </div>
@@ -684,11 +464,11 @@ export default function StudentPortal() {
                   <label className="block text-xs font-medium mb-2 text-foreground">בחר קבוצה *</label>
                   <div className="flex gap-3">
                     <button type="button" onClick={() => setRegClass('תיאטרון 7-9')}
-                      className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${regClass === 'תיאטרון 7-9' ? 'border-primary text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
+                      className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${regClass === 'תיאטרון 7-9' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
                       🎭 גילאי 7-9
                     </button>
                     <button type="button" onClick={() => setRegClass('תיאטרון 10-14')}
-                      className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${regClass === 'תיאטרון 10-14' ? 'border-primary text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
+                      className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${regClass === 'תיאטרון 10-14' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
                       🎭 גילאי 10-14
                     </button>
                   </div>
@@ -719,25 +499,6 @@ export default function StudentPortal() {
           </Card>
         ) : (
           <>
-            {/* Student selector */}
-            {students.length > 1 && (
-              <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2">
-                {students.map((s, idx) => (
-                  <button
-                    key={s.id}
-                    onClick={() => setSelectedStudentIdx(idx)}
-                    className={`px-4 py-2 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${
-                      idx === selectedStudentIdx
-                        ? 'bg-primary text-primary-foreground shadow-lg scale-105'
-                        : 'bg-secondary text-secondary-foreground hover:bg-accent'
-                    }`}
-                  >
-                    {s.name} {s.last_name || ''}
-                  </button>
-                ))}
-              </div>
-            )}
-
             <Card className="p-4 sm:p-6 mb-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -768,22 +529,13 @@ export default function StudentPortal() {
                     <p className="text-muted-foreground">{student.class_name}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                <div className="flex items-center gap-2">
                   <Badge variant="outline">{student.status === 'חדש' ? 'פעיל' : (student.status || 'פעיל')}</Badge>
                   <Button size="sm" onClick={() => setShowQrScanner(true)} className="bg-gradient-to-l from-green-600 to-green-500 text-white">
                     <ScanLine size={16} /> נוכחות
                   </Button>
                   <Button size="sm" onClick={() => setShowPaymentDialog(true)} className="bg-gradient-to-l from-primary to-primary-hover text-white">
                     💰 שלם
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => {
-                    setSiblingName('');
-                    setSiblingBirthDate('');
-                    setSiblingPhone('');
-                    setSiblingClass('');
-                    setShowAddSibling(true);
-                  }}>
-                    ➕ אח/אחות
                   </Button>
                 </div>
               </div>
@@ -792,8 +544,8 @@ export default function StudentPortal() {
 
             {/* Pending payments banner */}
             {pendingPayments.filter(p => p.status === 'pending').length > 0 && (
-              <Card className="p-3 mb-4 bg-yellow-900/20 border-yellow-700/40">
-                <p className="text-sm font-medium text-yellow-300">
+              <Card className="p-3 mb-4 bg-yellow-50 border-yellow-200">
+                <p className="text-sm font-medium text-yellow-800">
                   ⏳ יש לך {pendingPayments.filter(p => p.status === 'pending').length} בקשות תשלום ממתינות לאישור המנהל
                 </p>
               </Card>
@@ -814,140 +566,29 @@ export default function StudentPortal() {
               ))}
             </div>
 
-            {activeTab === 'home' && (
-              <div className="space-y-4">
-                {/* Welcome card */}
-                <Card className="p-5 bg-gradient-to-l from-primary/10 to-background border-primary/20">
-                  <div className="flex items-center gap-3">
-                    <div className="text-3xl">🎭</div>
-                    <div>
-                      <h2 className="text-xl font-bold text-foreground">שלום, {student?.name}!</h2>
-                      <p className="text-sm text-muted-foreground">{student?.class_name}</p>
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Stats grid */}
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Attendance rate */}
-                  <Card className="p-4 text-center">
-                    <div className="text-3xl font-bold text-primary">
-                      {attendanceRate !== null ? `${attendanceRate}%` : '—'}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">אחוז נוכחות</div>
-                    {totalSessions > 0 && (
-                      <div className="text-xs text-muted-foreground">{attendedCount}/{totalSessions} שיעורים</div>
-                    )}
-                  </Card>
-
-                  {/* Payment status */}
-                  <Card className="p-4 text-center">
-                    {currentMonthPaid ? (
-                      <>
-                        <div className="text-3xl">✅</div>
-                        <div className="text-xs text-muted-foreground mt-1">תשלום החודש</div>
-                        <div className="text-xs font-medium text-emerald-400">שולם</div>
-                      </>
-                    ) : hasPendingThisMonth ? (
-                      <>
-                        <div className="text-3xl">⏳</div>
-                        <div className="text-xs text-muted-foreground mt-1">תשלום החודש</div>
-                        <div className="text-xs font-medium text-yellow-400">ממתין לאישור</div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="text-3xl">⚠️</div>
-                        <div className="text-xs text-muted-foreground mt-1">תשלום החודש</div>
-                        <div className="text-xs font-medium text-red-400">לא שולם</div>
-                      </>
-                    )}
-                  </Card>
-                </div>
-
-                {/* Next session */}
-                <Card className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="text-2xl">📅</div>
-                    <div>
-                      <div className="text-sm font-medium text-foreground">השיעור הבא</div>
-                      {nextSession ? (
-                        <div className="text-base font-bold text-primary">
-                          {new Date(nextSession.session_date + 'T00:00:00').toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}
-                        </div>
-                      ) : (
-                        <div className="text-sm text-muted-foreground">אין שיעורים קרובים</div>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Quick pay button */}
-                {!currentMonthPaid && !hasPendingThisMonth && (
-                  <Button
-                    className="w-full"
-                    onClick={() => setShowPaymentDialog(true)}
-                  >
-                    💳 שלם עכשיו
-                  </Button>
-                )}
-
-                {/* Quick links */}
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setActiveTab('attendance')}
-                    className="p-4 rounded-xl border bg-card hover:bg-accent transition-colors text-center"
-                  >
-                    <div className="text-2xl mb-1">📋</div>
-                    <div className="text-sm font-medium">נוכחות</div>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('payments')}
-                    className="p-4 rounded-xl border bg-card hover:bg-accent transition-colors text-center"
-                  >
-                    <div className="text-2xl mb-1">💰</div>
-                    <div className="text-sm font-medium">תשלומים</div>
-                  </button>
-                </div>
-              </div>
-            )}
-
             {activeTab === 'attendance' && (
-              <div className="space-y-4">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => {
-                    setForgotDate(new Date().toISOString().slice(0, 10));
-                    setForgotNote('');
-                    setShowForgotScan(true);
-                  }}
-                >
-                  🤚 שכחתי לסרוק נוכחות
-                </Button>
-                <Card className="overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-right">תאריך</TableHead>
-                        <TableHead className="text-right">כיתה</TableHead>
-                        <TableHead className="text-right">סטטוס</TableHead>
+              <Card className="overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-right">תאריך</TableHead>
+                      <TableHead className="text-right">כיתה</TableHead>
+                      <TableHead className="text-right">סטטוס</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {attendance.length === 0 ? (
+                      <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">אין רשומות נוכחות עדיין</TableCell></TableRow>
+                    ) : attendance.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell>{r.session?.session_date || '-'}</TableCell>
+                        <TableCell>{r.session?.class_name || '-'}</TableCell>
+                        <TableCell><Badge className={statusMap[r.status] || ''} variant="outline">{r.status}</Badge></TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {attendance.length === 0 ? (
-                        <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">אין רשומות נוכחות עדיין</TableCell></TableRow>
-                      ) : attendance.map((r) => (
-                        <TableRow key={r.id}>
-                          <TableCell>{r.session?.session_date || '-'}</TableCell>
-                          <TableCell>{r.session?.class_name || '-'}</TableCell>
-                          <TableCell><Badge className={statusMap[r.status] || ''} variant="outline">{r.status}</Badge></TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </Card>
-              </div>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Card>
             )}
 
             {activeTab === 'payments' && (
@@ -961,7 +602,6 @@ export default function StudentPortal() {
                         <TableRow>
                           <TableHead className="text-right">תאריך</TableHead>
                           <TableHead className="text-right">סוג</TableHead>
-                          <TableHead className="text-right">אישור</TableHead>
                           <TableHead className="text-right">סטטוס</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -972,16 +612,6 @@ export default function StudentPortal() {
                             <TableRow key={p.id}>
                               <TableCell>{new Date(p.created_at).toLocaleDateString('he-IL')}</TableCell>
                               <TableCell>{p.payment_type}</TableCell>
-                              <TableCell>
-                                {p.payment_proof_url ? (
-                                  <img
-                                    src={p.payment_proof_url}
-                                    alt="אישור"
-                                    className="w-10 h-10 rounded object-cover cursor-pointer hover:opacity-80"
-                                    onClick={() => setViewingProofUrl(p.payment_proof_url)}
-                                  />
-                                ) : '-'}
-                              </TableCell>
                               <TableCell><Badge className={s.className} variant="outline">{s.label}</Badge></TableCell>
                             </TableRow>
                           );
@@ -1001,28 +631,17 @@ export default function StudentPortal() {
                         <TableHead className="text-right">סוג</TableHead>
                         <TableHead className="text-right">שיטה</TableHead>
                         <TableHead className="text-right">סכום</TableHead>
-                        <TableHead className="text-right">אישור</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {payments.length === 0 ? (
-                        <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">אין תשלומים מאושרים עדיין</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">אין תשלומים מאושרים עדיין</TableCell></TableRow>
                       ) : payments.map((p) => (
                         <TableRow key={p.id}>
                           <TableCell>{p.payment_date}</TableCell>
                           <TableCell>{p.payment_type}</TableCell>
                           <TableCell>{p.payment_method}</TableCell>
                           <TableCell>฿{p.amount}</TableCell>
-                          <TableCell>
-                            {p.payment_proof_url ? (
-                              <img
-                                src={p.payment_proof_url}
-                                alt="אישור"
-                                className="w-10 h-10 rounded object-cover cursor-pointer hover:opacity-80"
-                                onClick={() => setViewingProofUrl(p.payment_proof_url)}
-                              />
-                            ) : '-'}
-                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -1080,15 +699,9 @@ export default function StudentPortal() {
                       <label className="block text-xs font-medium mb-1 text-foreground">טלפון תלמיד</label>
                       <Input type="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="לא חובה" />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-medium mb-1 text-foreground">שם פרטי הורה</label>
-                        <Input value={editParentFirstName} onChange={(e) => setEditParentFirstName(e.target.value)} />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium mb-1 text-foreground">שם משפחה</label>
-                        <Input value={editParentLastName} onChange={(e) => setEditParentLastName(e.target.value)} />
-                      </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1 text-foreground">שם הורה</label>
+                      <Input value={editParentName} onChange={(e) => setEditParentName(e.target.value)} />
                     </div>
                     <div>
                       <label className="block text-xs font-medium mb-1 text-foreground">טלפון הורה</label>
@@ -1249,216 +862,56 @@ export default function StudentPortal() {
         <DialogContent className="max-w-md" dir="rtl">
           <DialogHeader><DialogTitle>בחר אמצעי תשלום</DialogTitle></DialogHeader>
 
-          {(() => {
-            const isSibling = !!student?.is_sibling;
-            const now = new Date();
-            const day = now.getDate();
-            const isMonthlyWindowOpen = day >= 25 || day <= 5;
-            const isMonthlySelected = isMonthlyPaymentType(selectedPaymentType);
-
-            const priceDisplay = selectedPaymentType
-              ? `฿${getPaymentPrice(selectedPaymentType, isSibling).toLocaleString()}`
-              : null;
-
-            const paymentTypeSelector = (
+          {!paymentMethod ? (
+            <div className="space-y-3">
+              <Button className="w-full h-16 text-lg" variant="outline" onClick={() => setPaymentMethod('cash')}>
+                💵 תשלום במזומן
+              </Button>
+              <Button className="w-full h-16 text-lg" variant="outline" onClick={() => setPaymentMethod('promptpay')}>
+                📱 PromptPay
+              </Button>
+            </div>
+          ) : paymentMethod === 'cash' ? (
+            <div className="space-y-4">
+              <div className="text-center text-4xl">💵</div>
+              <h3 className="font-bold text-lg text-center">דיווח תשלום במזומן</h3>
+              <p className="text-muted-foreground text-sm text-center">
+                בחר סוג תשלום ושלח בקשה למנהל. התשלום ייכנס לתוקף רק לאחר אישור המנהל.
+              </p>
               <div className="space-y-2">
                 <label className="block text-sm font-medium">סוג תשלום</label>
                 <Select value={selectedPaymentType} onValueChange={setSelectedPaymentType}>
                   <SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="חד פעמי">חד פעמי — ฿{getPaymentPrice('חד פעמי', isSibling).toLocaleString()}</SelectItem>
-                    <SelectItem value="חודשי דו שבועי">חודשי דו שבועי — ฿{getPaymentPrice('חודשי דו שבועי', isSibling).toLocaleString()}</SelectItem>
-                    <SelectItem value="חודשי חד שבועי">חודשי חד שבועי — ฿{getPaymentPrice('חודשי חד שבועי', isSibling).toLocaleString()}</SelectItem>
+                    <SelectItem value="חד פעמי">חד פעמי</SelectItem>
+                    <SelectItem value="חודשי">חודשי (מנוי)</SelectItem>
                   </SelectContent>
                 </Select>
-                {isSibling && selectedPaymentType && (
-                  <p className="text-xs text-emerald-400">🏷️ הנחת אחים מופעלת</p>
-                )}
-                {isMonthlySelected && !isMonthlyWindowOpen && (
-                  <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
-                    <p className="text-sm text-destructive font-medium">⛔ חלון התשלום למנוי חודשי סגור.</p>
-                    <p className="text-xs text-destructive/80 mt-1">ניתן לשלם מנוי חודשי מה-25 לחודש הקודם ועד ה-5 לחודש הנוכחי. פנה למנהל לאישור מיוחד.</p>
-                  </div>
-                )}
-                {priceDisplay && !isMonthlySelected && (
-                  <p className="text-sm font-bold text-center mt-2">סכום לתשלום: {priceDisplay}</p>
-                )}
-                {priceDisplay && isMonthlySelected && isMonthlyWindowOpen && (
-                  <p className="text-sm font-bold text-center mt-2">סכום לתשלום: {priceDisplay}</p>
-                )}
               </div>
-            );
-
-            const isBlocked = isMonthlySelected && !isMonthlyWindowOpen;
-
-            if (!paymentMethod) {
-              return (
+              <Button className="w-full" onClick={handleCashPaymentRequest} disabled={submitting || !selectedPaymentType}>
+                {submitting ? 'שולח...' : 'שלח בקשת תשלום למנהל'}
+              </Button>
+              <Button variant="ghost" onClick={() => setPaymentMethod(null)} className="w-full">← חזור</Button>
+            </div>
+          ) : (
+            <div className="space-y-4 text-center">
+              <div className="text-4xl">📱</div>
+              <h3 className="font-bold text-lg">PromptPay</h3>
+              <p className="text-muted-foreground text-sm">סרוק את הקוד או הורד את התמונה לביצוע העברה</p>
+              {promptPayUrl ? (
                 <div className="space-y-3">
-                  <Button className="w-full h-16 text-lg" variant="outline" onClick={() => setPaymentMethod('cash')}>
-                    💵 תשלום במזומן
-                  </Button>
-                  <Button className="w-full h-16 text-lg" variant="outline" onClick={() => setPaymentMethod('promptpay')}>
-                    📱 PromptPay
-                  </Button>
+                  <img src={promptPayUrl} alt="PromptPay QR" className="mx-auto max-w-[250px] rounded-lg shadow-lg" />
+                  <a href={promptPayUrl} download="promptpay-qr.png" className="inline-block">
+                    <Button variant="outline" size="sm">📥 הורד תמונה</Button>
+                  </a>
                 </div>
-              );
-            }
-
-            if (paymentMethod === 'cash') {
-              return (
-                <div className="space-y-4">
-                  <div className="text-center text-4xl">💵</div>
-                  <h3 className="font-bold text-lg text-center">דיווח תשלום במזומן</h3>
-                  <p className="text-muted-foreground text-sm text-center">
-                    בחר סוג תשלום ושלח בקשה למנהל. התשלום ייכנס לתוקף רק לאחר אישור המנהל.
-                  </p>
-                  {paymentTypeSelector}
-                  <Button className="w-full" onClick={handleCashPaymentRequest} disabled={submitting || !selectedPaymentType || isBlocked}>
-                    {submitting ? 'שולח...' : 'שלח בקשת תשלום למנהל'}
-                  </Button>
-                  <Button variant="ghost" onClick={() => setPaymentMethod(null)} className="w-full">← חזור</Button>
+              ) : (
+                <div className="p-4 bg-muted rounded-lg">
+                  <p className="text-muted-foreground">קוד PromptPay עדיין לא הוגדר. פנה למנהל.</p>
                 </div>
-              );
-            }
-
-            // promptpay
-            return (
-              <div className="space-y-4 text-center">
-                <div className="text-4xl">📱</div>
-                <h3 className="font-bold text-lg">PromptPay</h3>
-                <p className="text-muted-foreground text-sm">סרוק את הקוד, בצע העברה ולאחר מכן העלה צילום מסך של האישור</p>
-                {promptPayUrl && (
-                  <div className="space-y-3">
-                    <img src={promptPayUrl} alt="PromptPay QR" className="mx-auto max-w-[250px] rounded-lg shadow-lg" />
-                    <a href={promptPayUrl} download="promptpay-qr.png" className="inline-block">
-                      <Button variant="outline" size="sm">📥 הורד תמונה</Button>
-                    </a>
-                  </div>
-                )}
-                {!promptPayUrl && (
-                  <div className="p-4 bg-muted rounded-lg">
-                    <p className="text-muted-foreground">קוד PromptPay עדיין לא הוגדר. פנה למנהל.</p>
-                  </div>
-                )}
-
-                <div className="border-t border-border pt-4 space-y-3 text-right">
-                  <h4 className="font-bold text-sm">לאחר התשלום:</h4>
-                  {paymentTypeSelector}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium">העלה צילום מסך של אישור התשלום</label>
-                    <label className="block">
-                      <div className={`border-2 border-dashed rounded-lg p-4 cursor-pointer transition-colors ${proofFile ? 'border-emerald-500 bg-emerald-900/20' : 'border-border hover:border-primary'}`}>
-                        {proofFile ? (
-                          <div className="flex items-center gap-2 justify-center">
-                            <span className="text-emerald-400">✅</span>
-                            <span className="text-sm font-medium">{proofFile.name}</span>
-                            <button type="button" onClick={(e) => { e.preventDefault(); setProofFile(null); }} className="text-destructive text-xs hover:underline">הסר</button>
-                          </div>
-                        ) : (
-                          <div className="text-center">
-                            <span className="text-2xl">📷</span>
-                            <p className="text-sm text-muted-foreground mt-1">לחץ לבחירת תמונה מהגלריה</p>
-                          </div>
-                        )}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => setProofFile(e.target.files?.[0] || null)}
-                        />
-                      </div>
-                    </label>
-                  </div>
-                  <Button
-                    className="w-full"
-                    onClick={handlePromptPayPaymentRequest}
-                    disabled={submitting || !selectedPaymentType || !proofFile || isBlocked}
-                  >
-                    {submitting ? 'שולח...' : '📤 שלח אישור תשלום למנהל'}
-                  </Button>
-                </div>
-                <Button variant="ghost" onClick={() => { setPaymentMethod(null); setProofFile(null); }} className="w-full">← חזור</Button>
-              </div>
-            );
-          })()}
-        </DialogContent>
-      </Dialog>
-
-      {/* Add sibling dialog */}
-      <Dialog open={showAddSibling} onOpenChange={setShowAddSibling}>
-        <DialogContent className="max-w-md" dir="rtl">
-          <DialogHeader><DialogTitle>➕ הוסף אח/אחות</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium mb-1 text-foreground">שם התלמיד *</label>
-              <Input value={siblingName} onChange={(e) => setSiblingName(e.target.value)} placeholder="שם האח/אחות" />
+              )}
+              <Button variant="ghost" onClick={() => setPaymentMethod(null)} className="w-full">← חזור</Button>
             </div>
-            <div>
-              <label className="block text-xs font-medium mb-1 text-foreground">תאריך לידה *</label>
-              <Input type="date" value={siblingBirthDate} onChange={(e) => setSiblingBirthDate(e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1 text-foreground">טלפון (לא חובה)</label>
-              <Input type="tel" value={siblingPhone} onChange={(e) => setSiblingPhone(e.target.value)} placeholder="טלפון" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-2 text-foreground">בחר קבוצה *</label>
-              <div className="flex gap-3">
-                <button type="button" onClick={() => setSiblingClass('תיאטרון 7-9')}
-                  className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${siblingClass === 'תיאטרון 7-9' ? 'border-primary text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
-                  🎭 גילאי 7-9
-                </button>
-                <button type="button" onClick={() => setSiblingClass('תיאטרון 10-14')}
-                  className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${siblingClass === 'תיאטרון 10-14' ? 'border-primary text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
-                  🎭 גילאי 10-14
-                </button>
-              </div>
-            </div>
-            <Button className="w-full" onClick={handleAddSibling} disabled={addingSibling}>
-              {addingSibling ? 'שולח...' : 'שלח בקשה למנהל'}
-            </Button>
-            <p className="text-xs text-muted-foreground text-center">הבקשה תישלח למנהל לאישור</p>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Forgot to scan dialog */}
-      <Dialog open={showForgotScan} onOpenChange={setShowForgotScan}>
-        <DialogContent className="max-w-md" dir="rtl">
-          <DialogHeader><DialogTitle>🤚 שכחתי לסרוק נוכחות</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              בקשה זו תישלח למנהל לאישור. לאחר אישור, הנוכחות תירשם אוטומטית.
-            </p>
-            <div>
-              <label className="block text-xs font-medium mb-1 text-foreground">תאריך השיעור *</label>
-              <Input type="date" value={forgotDate} onChange={(e) => setForgotDate(e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1 text-foreground">הערה (לא חובה)</label>
-              <Input value={forgotNote} onChange={(e) => setForgotNote(e.target.value)} placeholder="למשל: שכחתי את הטלפון בבית" />
-            </div>
-            {student && (
-              <div className="text-xs text-muted-foreground bg-accent/50 rounded-lg p-2">
-                קבוצה: {student.class_name}
-              </div>
-            )}
-            <Button className="w-full" onClick={handleForgotScan} disabled={sendingForgot}>
-              {sendingForgot ? 'שולח...' : 'שלח בקשה למנהל'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Payment proof viewer dialog */}
-      <Dialog open={!!viewingProofUrl} onOpenChange={(open) => { if (!open) setViewingProofUrl(null); }}>
-        <DialogContent className="max-w-md p-2" dir="rtl">
-          {viewingProofUrl && (
-            <img
-              src={viewingProofUrl}
-              alt="אישור תשלום"
-              className="w-full max-h-[70vh] object-contain rounded-lg"
-            />
           )}
         </DialogContent>
       </Dialog>

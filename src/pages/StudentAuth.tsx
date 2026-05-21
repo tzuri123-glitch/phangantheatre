@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Eye, EyeOff } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
@@ -32,15 +33,20 @@ export default function StudentAuth() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Load existing students for sibling selection
   useEffect(() => {
     if (isSibling) {
       const loadStudents = async () => {
-        const { data, error } = await supabase.functions.invoke('list-siblings');
-        if (!error && data?.students) setExistingStudents(data.students);
+        // Use a public-facing approach - we'll load after signup via edge function
+        // For now, search by last name hint
+        const { data } = await supabase
+          .from('students')
+          .select('id, name, last_name')
+          .order('name');
+        if (data) setExistingStudents(data);
       };
       loadStudents();
     }
@@ -75,9 +81,6 @@ export default function StudentAuth() {
         }
         if (!selectedClass) {
           throw new Error('יש לבחור קבוצה');
-        }
-        if (!acceptedTerms) {
-          throw new Error('יש לאשר את התקנון ומדיניות הפרטיות');
         }
 
         // 1. Sign up (student record will be created after email confirmation + login)
@@ -138,84 +141,17 @@ export default function StudentAuth() {
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4"
-      dir="rtl"
-      style={{
-        background: 'radial-gradient(ellipse 80% 60% at 50% 0%, hsl(42 50% 14% / 0.5), transparent), hsl(220 18% 7%)',
-      }}
-    >
-      {/* Subtle top glow */}
-      <div
-        className="pointer-events-none fixed top-0 left-0 right-0 h-px"
-        style={{ background: 'linear-gradient(90deg, transparent, hsl(42 88% 52% / 0.6), transparent)' }}
-      />
-
-      <div className="w-full max-w-md">
-        {/* Logo + title */}
-        <div className="flex flex-col items-center mb-8">
-          <div
-            className="p-3 rounded-2xl mb-4"
-            style={{ background: 'hsl(220 18% 12%)', boxShadow: '0 0 32px hsl(42 88% 52% / 0.2)' }}
-          >
-            <img src={logo} alt="לוגו" className="h-20 object-contain" />
-          </div>
-          <h1
-            className="text-3xl font-bold text-center mb-1"
-            style={{
-              fontFamily: "'Frank Ruhl Libre', serif",
-              background: 'linear-gradient(135deg, hsl(42 88% 62%), hsl(42 70% 82%))',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}
-          >
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-accent/10 to-background p-4" dir="rtl">
+      <Card className="w-full max-w-md p-8">
+        <div className="flex flex-col items-center mb-6">
+          <img src={logo} alt="לוגו" className="h-24 mb-4" />
+          <h1 className="text-3xl font-bold text-center text-foreground">
             {isSignUp ? 'הרשמה' : 'כניסה לתלמידים'}
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <p className="text-muted-foreground text-sm mt-2">
             {isSignUp ? 'מלא את הפרטים להרשמה למערכת' : 'התחבר לאזור האישי שלך'}
           </p>
-
-          {/* Tab switcher */}
-          <div className="flex mt-5 rounded-xl overflow-hidden border border-border/50 w-full">
-            <button
-              type="button"
-              onClick={() => setIsSignUp(false)}
-              className="flex-1 py-2.5 text-sm font-semibold transition-all"
-              style={!isSignUp ? {
-                background: 'linear-gradient(135deg, hsl(42 88% 46%), hsl(42 88% 38%))',
-                color: 'hsl(220 18% 7%)',
-              } : {
-                background: 'hsl(220 18% 14%)',
-                color: 'hsl(220 10% 52%)',
-              }}
-            >
-              כניסה
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsSignUp(true)}
-              className="flex-1 py-2.5 text-sm font-semibold transition-all"
-              style={isSignUp ? {
-                background: 'linear-gradient(135deg, hsl(42 88% 46%), hsl(42 88% 38%))',
-                color: 'hsl(220 18% 7%)',
-              } : {
-                background: 'hsl(220 18% 14%)',
-                color: 'hsl(220 10% 52%)',
-              }}
-            >
-              הרשמה
-            </button>
-          </div>
         </div>
-
-      <div
-        className="rounded-2xl p-7 border border-border/50"
-        style={{
-          background: 'hsl(220 18% 11%)',
-          boxShadow: '0 20px 60px hsl(0 0% 0% / 0.5), 0 0 0 1px hsl(42 88% 52% / 0.08)',
-        }}
-      >
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -283,7 +219,7 @@ export default function StudentAuth() {
           {isSignUp && (
             <>
               <div className="border-t border-border pt-4 mt-4">
-                <h3 className="text-sm font-bold mb-3" style={{ color: 'hsl(42 88% 62%)' }}>👨‍👩‍👧 פרטי הורה</h3>
+                <h3 className="text-sm font-bold text-foreground mb-3">👨‍👩‍👧 פרטי הורה</h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium mb-1 text-foreground">שם פרטי *</label>
@@ -317,7 +253,7 @@ export default function StudentAuth() {
               </div>
 
               <div className="border-t border-border pt-4">
-                <h3 className="text-sm font-bold mb-3" style={{ color: 'hsl(42 88% 62%)' }}>🎭 פרטי התלמיד</h3>
+                <h3 className="text-sm font-bold text-foreground mb-3">🎭 פרטי התלמיד</h3>
                 <div>
                   <label className="block text-xs font-medium mb-1 text-foreground">שם התלמיד *</label>
                   <Input
@@ -332,13 +268,11 @@ export default function StudentAuth() {
                   <label className="block text-xs font-medium mb-2 text-foreground">בחר קבוצה *</label>
                   <div className="flex gap-3">
                     <button type="button" onClick={() => setSelectedClass('תיאטרון 7-9')}
-                      className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${selectedClass === 'תיאטרון 7-9' ? 'border-primary text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}
-                      style={selectedClass === 'תיאטרון 7-9' ? { background: 'hsl(42 88% 52% / 0.15)' } : {}}>
+                      className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${selectedClass === 'תיאטרון 7-9' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
                       🎭 גילאי 7-9
                     </button>
                     <button type="button" onClick={() => setSelectedClass('תיאטרון 10-14')}
-                      className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${selectedClass === 'תיאטרון 10-14' ? 'border-primary text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}
-                      style={selectedClass === 'תיאטרון 10-14' ? { background: 'hsl(42 88% 52% / 0.15)' } : {}}>
+                      className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${selectedClass === 'תיאטרון 10-14' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
                       🎭 גילאי 10-14
                     </button>
                   </div>
@@ -379,44 +313,25 @@ export default function StudentAuth() {
             </>
           )}
 
-          {isSignUp && (
-            <div className="flex items-start gap-2 mt-2">
-              <Checkbox
-                id="acceptTerms"
-                checked={acceptedTerms}
-                onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
-                className="mt-0.5"
-              />
-              <label htmlFor="acceptTerms" className="text-xs text-muted-foreground cursor-pointer leading-relaxed">
-                קראתי ואני מסכים/ה ל<a href="/terms" target="_blank" className="text-primary hover:underline">תקנון ותנאי השימוש</a> ול<a href="/privacy" target="_blank" className="text-primary hover:underline">מדיניות הפרטיות</a>
-              </label>
-            </div>
-          )}
-
-          <Button
-            type="submit"
-            className="w-full font-bold text-base h-11 mt-2 button-hover"
-            disabled={loading || (isSignUp && !acceptedTerms)}
-            style={{
-              background: (loading || (isSignUp && !acceptedTerms))
-                ? 'hsl(220 18% 20%)'
-                : 'linear-gradient(135deg, hsl(42 88% 48%), hsl(42 88% 40%))',
-              color: 'hsl(220 18% 7%)',
-              boxShadow: (loading || (isSignUp && !acceptedTerms)) ? 'none' : '0 0 20px hsl(42 88% 52% / 0.3)',
-            }}
-          >
+          <Button type="submit" className="w-full" disabled={loading}>
             {loading ? 'טוען...' : isSignUp ? 'הירשם' : 'התחבר'}
           </Button>
         </form>
 
         <div className="mt-4 text-center space-y-2">
+          <button
+            type="button"
+            onClick={() => setIsSignUp(!isSignUp)}
+            className="text-sm text-primary hover:underline"
+          >
+            {isSignUp ? 'כבר יש לך חשבון? התחבר' : 'אין לך חשבון? הירשם'}
+          </button>
           {!isSignUp && (
             <div>
               <button
                 type="button"
                 onClick={() => navigate('/reset-password')}
-                className="text-sm hover:underline"
-                style={{ color: 'hsl(42 88% 52%)' }}
+                className="text-sm text-muted-foreground hover:underline"
               >
                 שכחתי סיסמה
               </button>
@@ -424,7 +339,7 @@ export default function StudentAuth() {
           )}
         </div>
 
-        <div className="mt-6 pt-4 border-t border-border/50 text-center space-y-2">
+        <div className="mt-6 pt-4 border-t border-border text-center">
           <button
             type="button"
             onClick={() => navigate('/auth')}
@@ -432,13 +347,8 @@ export default function StudentAuth() {
           >
             כניסת מנהלים
           </button>
-          <div className="flex justify-center gap-4">
-            <a href="/terms" className="text-xs text-muted-foreground hover:underline">תקנון</a>
-            <a href="/privacy" className="text-xs text-muted-foreground hover:underline">מדיניות פרטיות</a>
-          </div>
         </div>
-      </div>
-      </div>
+      </Card>
     </div>
   );
 }

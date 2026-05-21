@@ -1,4 +1,4 @@
-import { Payment, Student, CLASS_OPTIONS, Session, isMonthlyPaymentType, getPaymentPrice } from '@/types';
+import { Payment, Student, CLASS_OPTIONS, Session } from '@/types';
 import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,27 +59,28 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
       // קבוצת חודשים עם תשלום חודשי
       const monthsWithMonthlyPayment = new Set<string>();
       studentPaymentsList
-        .filter(p => isMonthlyPaymentType(p.type))
+        .filter(p => p.type === 'חודשי')
         .forEach(p => {
           const monthKey = format(parseISO(p.date), 'MM/yyyy');
           monthsWithMonthlyPayment.add(monthKey);
         });
       
       let totalExpected = 0;
+      const monthlyPrice = student.isSibling ? 3200 : 4000;
+      
       studentPaymentsList.forEach((payment) => {
         const paymentMonth = format(parseISO(payment.date), 'MM/yyyy');
         const discount = payment.discount || 0;
         
         if (payment.type === 'סגירת יתרה') {
-          // סגירת יתרה לא מייצרת צפי
-        } else if (isMonthlyPaymentType(payment.type)) {
-          const base = getPaymentPrice(payment.type, student.isSibling);
-          const priceAfterDiscount = base * (1 - discount / 100);
+          // סגירת יתרה לא מייצרת צפי - הסכום הוא מה שהתקבל
+        } else if (payment.type === 'חודשי') {
+          const priceAfterDiscount = monthlyPrice * (1 - discount / 100);
           totalExpected += priceAfterDiscount;
         } else if (payment.type === 'חד פעמי') {
           if (!monthsWithMonthlyPayment.has(paymentMonth)) {
-            const base = getPaymentPrice('חד פעמי', student.isSibling);
-            const priceAfterDiscount = base * (1 - discount / 100);
+            const singlePrice = student.isSibling ? 500 : 600;
+            const priceAfterDiscount = singlePrice * (1 - discount / 100);
             totalExpected += priceAfterDiscount;
           }
         }
@@ -125,7 +126,7 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
 
     activeStudents.forEach(student => {
       const studentPayments = payments.filter(p => p.studentId === student.id);
-      const hasMonthlyPayment = studentPayments.some(p => isMonthlyPaymentType(p.type));
+      const hasMonthlyPayment = studentPayments.some(p => p.type === 'חודשי');
       
       if (hasMonthlyPayment) {
         subscribers.push(student);
@@ -180,14 +181,11 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
         {/* מנויים */}
         <Card className="overflow-hidden">
           <div
-            className="p-6 cursor-pointer transition-colors"
-            style={{ background: 'linear-gradient(135deg, hsl(158 40% 14%), hsl(158 40% 11%))' }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'linear-gradient(135deg, hsl(158 40% 18%), hsl(158 40% 14%))')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'linear-gradient(135deg, hsl(158 40% 14%), hsl(158 40% 11%))')}
+            className="p-6 bg-emerald-200 dark:bg-emerald-800/40 cursor-pointer hover:bg-emerald-300 dark:hover:bg-emerald-700/50 transition-colors"
             onClick={() => setExpandedSubscribers(!expandedSubscribers)}
           >
-            <h3 className="font-semibold text-lg mb-1" style={{ color: 'hsl(158 60% 72%)' }}>💎 מנויים חודשיים</h3>
-            <p className="text-sm" style={{ color: 'hsl(158 30% 55%)' }}>
+            <h3 className="font-semibold text-lg text-foreground mb-1">💎 מנויים חודשיים</h3>
+            <p className="text-sm text-muted-foreground">
               {subscribers.length} תלמידים עם מנוי
             </p>
           </div>
@@ -250,14 +248,11 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
         {/* חד פעמיים */}
         <Card className="overflow-hidden">
           <div
-            className="p-6 cursor-pointer transition-colors"
-            style={{ background: 'linear-gradient(135deg, hsl(355 40% 14%), hsl(355 40% 11%))' }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'linear-gradient(135deg, hsl(355 40% 18%), hsl(355 40% 14%))')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'linear-gradient(135deg, hsl(355 40% 14%), hsl(355 40% 11%))')}
+            className="p-6 bg-rose-200 dark:bg-rose-800/40 cursor-pointer hover:bg-rose-300 dark:hover:bg-rose-700/50 transition-colors"
             onClick={() => setExpandedOneTime(!expandedOneTime)}
           >
-            <h3 className="font-semibold text-lg mb-1" style={{ color: 'hsl(355 70% 72%)' }}>🎯 תשלומים חד פעמיים</h3>
-            <p className="text-sm" style={{ color: 'hsl(355 35% 55%)' }}>
+            <h3 className="font-semibold text-lg text-foreground mb-1">🎯 תשלומים חד פעמיים</h3>
+            <p className="text-sm text-muted-foreground">
               {oneTimePayersOnly.length} תלמידים (פוטנציאל למנוי!)
             </p>
           </div>
