@@ -848,50 +848,36 @@ export default function Index() {
                 </PopoverContent>
               </Popover>
             </div>
-            <div className="space-y-2"><Label>סוג תשלום</Label><Select value={paymentForm.type} onValueChange={(v) => {
-              setPaymentForm({ ...paymentForm, type: v }); 
-              if (paymentForm.studentId) {
-                const calc = calcPayment(paymentForm.studentId, v, paymentForm.date);
-                setPaymentForm(prev => ({ ...prev, type: v, amount: calc.amount, note: calc.note }));
-              }
-            }}><SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger><SelectContent>
+            <div className="space-y-2"><Label>סוג תשלום</Label><Select
+              value={paymentForm.type === 'חודשי' ? `חודשי|${paymentForm.subscriptionFrequency || 'biweekly'}` : paymentForm.type}
+              onValueChange={(v) => {
+                let newType = v;
+                let newFreq = paymentForm.subscriptionFrequency;
+                if (v.startsWith('חודשי|')) {
+                  newType = 'חודשי';
+                  newFreq = v.split('|')[1] as SubscriptionFrequency;
+                }
+                setPaymentForm({ ...paymentForm, type: newType, subscriptionFrequency: newFreq });
+                if (paymentForm.studentId) {
+                  // recalc with new frequency synchronously via setTimeout (calcPayment reads paymentForm)
+                  setTimeout(() => {
+                    const calc = calcPayment(paymentForm.studentId, newType, paymentForm.date);
+                    setPaymentForm(prev => ({ ...prev, type: newType, subscriptionFrequency: newFreq, amount: calc.amount, note: calc.note }));
+                  }, 0);
+                }
+              }}><SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger><SelectContent>
               {(() => {
                 const selectedStudent = students.find(s => s.id === paymentForm.studentId);
                 const isSib = selectedStudent?.isSibling;
                 return <>
                   <SelectItem value="חד פעמי">חד פעמי (฿{isSib ? '650' : '800'})</SelectItem>
-                  <SelectItem value="חודשי">חודשי (฿{isSib ? '4,000' : '4,200'})</SelectItem>
+                  <SelectItem value="חודשי|biweekly">חודשי דו-שבועי — פעמיים בשבוע (฿{isSib ? '4,000' : '4,200'})</SelectItem>
+                  <SelectItem value="חודשי|weekly">חודשי חד-שבועי — פעם בשבוע (฿{isSib ? '2,400' : '3,000'})</SelectItem>
                   <SelectItem value="סגירת יתרה">סגירת יתרה (השלמת חוב / החזר זכות)</SelectItem>
                 </>;
               })()}
             </SelectContent></Select></div>
-            {paymentForm.type === 'חודשי' && (() => {
-              const selectedStudent = students.find(s => s.id === paymentForm.studentId);
-              const isSib = selectedStudent?.isSibling;
-              const biweekly = isSib ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
-              const weekly = isSib ? SIBLING_MONTHLY_WEEKLY_PRICE : MONTHLY_WEEKLY_PRICE;
-              return (
-                <div className="space-y-2">
-                  <Label>תדירות המנוי</Label>
-                  <Select value={paymentForm.subscriptionFrequency} onValueChange={(v: SubscriptionFrequency) => {
-                    setPaymentForm(prev => ({ ...prev, subscriptionFrequency: v }));
-                    if (paymentForm.studentId) {
-                      // recalc using new frequency synchronously by passing updated form state via closure
-                      setTimeout(() => {
-                        const calc = calcPayment(paymentForm.studentId, 'חודשי', paymentForm.date);
-                        setPaymentForm(prev => ({ ...prev, amount: calc.amount, note: calc.note }));
-                      }, 0);
-                    }
-                  }}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="biweekly">{FREQUENCY_LABELS.biweekly} (฿{biweekly.toLocaleString()})</SelectItem>
-                      <SelectItem value="weekly">{FREQUENCY_LABELS.weekly} (฿{weekly.toLocaleString()})</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              );
-            })()}
+
             {paymentForm.studentId && (() => {
               const selectedStudent = students.find(s => s.id === paymentForm.studentId);
               return selectedStudent?.isSibling ? (
