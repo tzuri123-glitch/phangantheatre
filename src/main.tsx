@@ -12,6 +12,7 @@ import ResetPassword from "./pages/ResetPassword";
 import ScanAttendance from "./pages/ScanAttendance";
 import MarkAttendance from "./pages/MarkAttendance";
 import PrintAttendanceQr from "./pages/PrintAttendanceQr";
+import Kiosk from "./pages/Kiosk";
 import NotFound from "./pages/NotFound";
 import "./index.css";
 
@@ -31,6 +32,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/scan/:sessionId" element={<ScanAttendance />} />
             <Route path="/mark-attendance" element={<MarkAttendance />} />
             <Route path="/print-qr" element={<PrintAttendanceQr />} />
+            <Route path="/kiosk" element={<Kiosk />} />
             <Route path="/" element={<App />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
