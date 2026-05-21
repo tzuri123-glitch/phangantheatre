@@ -953,7 +953,8 @@ export default function Index() {
                     payment_date: paymentForm.date,
                     amount: paymentForm.amount,
                     note: paymentForm.note,
-                    discount: paymentForm.discount
+                    discount: paymentForm.discount,
+                    subscription_frequency: paymentForm.type === 'חודשי' ? paymentForm.subscriptionFrequency : null,
                   })
                   .eq('id', editingPayment.id)
                   .eq('user_id', user.id);
@@ -965,7 +966,7 @@ export default function Index() {
                 
                 setPayments((prev) => prev.map(p => 
                   p.id === editingPayment.id 
-                    ? { ...p, type: paymentForm.type as Payment['type'], method: paymentForm.method, date: paymentForm.date, amount: paymentForm.amount, note: paymentForm.note, discount: paymentForm.discount }
+                    ? { ...p, type: paymentForm.type as Payment['type'], method: paymentForm.method, date: paymentForm.date, amount: paymentForm.amount, note: paymentForm.note, discount: paymentForm.discount, subscriptionFrequency: paymentForm.type === 'חודשי' ? paymentForm.subscriptionFrequency : undefined }
                     : p
                 ));
                 
@@ -982,7 +983,8 @@ export default function Index() {
                     payment_date: paymentForm.date,
                     amount: paymentForm.amount,
                     note: paymentForm.note,
-                    discount: paymentForm.discount
+                    discount: paymentForm.discount,
+                    subscription_frequency: paymentForm.type === 'חודשי' ? paymentForm.subscriptionFrequency : null,
                   })
                   .select()
                   .single();
@@ -1000,7 +1002,8 @@ export default function Index() {
                   date: paymentForm.date, 
                   amount: paymentForm.amount, 
                   note: paymentForm.note,
-                  discount: paymentForm.discount
+                  discount: paymentForm.discount,
+                  subscriptionFrequency: paymentForm.type === 'חודשי' ? paymentForm.subscriptionFrequency : undefined,
                 };
                 
                 setPayments((prev) => [...prev, newPayment]);
