@@ -129,14 +129,16 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
     const initFreq = (payment.subscription_frequency || 'biweekly') as SubscriptionFrequency;
 
     // Load already-paid one-time amount this month for this student
-    const alreadyPaid = await loadOneTimePaidThisMonth(payment.student_id);
-    setOneTimePaidThisMonth(alreadyPaid);
+    const { total, count } = await loadOneTimePaidThisMonth(payment.student_id);
+    // Credit only when there is EXACTLY one one-time payment this month
+    const credit = count === 1 ? total : 0;
+    setOneTimePaidThisMonth(credit);
 
     let expectedPrice = 0;
     if (initType === 'חד פעמי') {
       expectedPrice = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
     } else {
-      expectedPrice = Math.max(0, getMonthlyPrice(isSib, initFreq) - alreadyPaid);
+      expectedPrice = Math.max(0, getMonthlyPrice(isSib, initFreq) - credit);
     }
 
     setApproveType(initType);
