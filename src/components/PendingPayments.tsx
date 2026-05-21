@@ -100,13 +100,17 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
   const openApproveDialog = (payment: PendingPayment) => {
     // Calculate expected price
     const isSib = !!payment.is_sibling;
+    const initType = (payment.payment_type === 'חודשי' ? 'חודשי' : 'חד פעמי') as 'חד פעמי' | 'חודשי';
+    const initFreq = (payment.subscription_frequency || 'biweekly') as SubscriptionFrequency;
     let expectedPrice = 0;
-    if (payment.payment_type === 'חד פעמי') {
+    if (initType === 'חד פעמי') {
       expectedPrice = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
-    } else if (payment.payment_type === 'חודשי') {
-      expectedPrice = getMonthlyPrice(isSib, payment.subscription_frequency || 'biweekly');
+    } else {
+      expectedPrice = getMonthlyPrice(isSib, initFreq);
     }
-    
+
+    setApproveType(initType);
+    setApproveFrequency(initFreq);
     setApproveAmount(payment.amount || expectedPrice);
     setApproveDiscount(0);
     setApproveNote('');
