@@ -1,1 +1,16 @@
 project_id = "ssgdyyiutipbapzkyqur"
+
+[functions.dev-create-user]
+verify_jwt = false
+
+[functions.register-student]
+verify_jwt = false
+
+[functions.reset-student-password]
+verify_jwt = false
+
+[functions.link-student]
+verify_jwt = false
+
+[functions.mark-attendance]
+verify_jwt = false
