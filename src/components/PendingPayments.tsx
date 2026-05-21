@@ -19,6 +19,7 @@ interface PendingPayment {
   status: string;
   created_at: string;
   subscription_frequency?: SubscriptionFrequency | null;
+  payment_proof_url?: string | null;
   student_name?: string;
   student_last_name?: string;
   is_sibling?: boolean;
@@ -36,6 +37,13 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
   const [approveAmount, setApproveAmount] = useState(0);
   const [approveDiscount, setApproveDiscount] = useState(0);
   const [approveNote, setApproveNote] = useState('');
+  const [viewingProof, setViewingProof] = useState<string | null>(null);
+
+  const openProof = async (path: string) => {
+    const { data, error } = await supabase.storage.from('payment-proofs').createSignedUrl(path, 300);
+    if (error || !data) { toast.error('שגיאה בטעינת אישור התשלום'); return; }
+    setViewingProof(data.signedUrl);
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -196,6 +204,15 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
                   </span>
                 </div>
                 <div className="flex gap-2">
+                  {p.payment_proof_url && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openProof(p.payment_proof_url!)}
+                    >
+                      🖼️ אישור
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     onClick={() => openApproveDialog(p)}
@@ -316,6 +333,14 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!viewingProof} onOpenChange={(open) => { if (!open) setViewingProof(null); }}>
+        <DialogContent className="max-w-2xl p-2" dir="rtl">
+          {viewingProof && (
+            <img src={viewingProof} alt="אישור תשלום" className="w-full max-h-[80vh] object-contain rounded-lg" />
+          )}
         </DialogContent>
       </Dialog>
     </>
