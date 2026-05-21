@@ -993,23 +993,93 @@ export default function StudentPortal() {
               <Button variant="ghost" onClick={() => setPaymentMethod(null)} className="w-full">← חזור</Button>
             </div>
           ) : (
-            <div className="space-y-4 text-center">
-              <div className="text-4xl">📱</div>
-              <h3 className="font-bold text-lg">PromptPay</h3>
-              <p className="text-muted-foreground text-sm">סרוק את הקוד או הורד את התמונה לביצוע העברה</p>
+            <div className="space-y-4">
+              <div className="text-center">
+                <div className="text-4xl">📱</div>
+                <h3 className="font-bold text-lg">PromptPay</h3>
+                <p className="text-muted-foreground text-xs">סרוק את הקוד, בצע העברה, ושלח צילום אישור</p>
+              </div>
+
               {promptPayUrl ? (
-                <div className="space-y-3">
-                  <img src={promptPayUrl} alt="PromptPay QR" className="mx-auto max-w-[250px] rounded-lg shadow-lg" />
+                <div className="text-center space-y-2">
+                  <img src={promptPayUrl} alt="PromptPay QR" className="mx-auto max-w-[180px] rounded-lg shadow" />
                   <a href={promptPayUrl} download="promptpay-qr.png" className="inline-block">
                     <Button variant="outline" size="sm">📥 הורד תמונה</Button>
                   </a>
                 </div>
               ) : (
-                <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-muted-foreground">קוד PromptPay עדיין לא הוגדר. פנה למנהל.</p>
+                <div className="p-3 bg-muted rounded-lg text-center">
+                  <p className="text-muted-foreground text-sm">קוד PromptPay לא הוגדר. פנה למנהל.</p>
                 </div>
               )}
-              <Button variant="ghost" onClick={() => setPaymentMethod(null)} className="w-full">← חזור</Button>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium">סוג תשלום</label>
+                <Select
+                  value={selectedPaymentType === 'חודשי' ? `חודשי|${selectedFrequency}` : selectedPaymentType}
+                  onValueChange={(v) => {
+                    if (v.startsWith('חודשי|')) {
+                      setSelectedPaymentType('חודשי');
+                      setSelectedFrequency(v.split('|')[1] as 'weekly' | 'biweekly');
+                    } else {
+                      setSelectedPaymentType(v);
+                    }
+                  }}
+                >
+                  <SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="חד פעמי">חד פעמי (฿{student?.is_sibling ? '650' : '800'})</SelectItem>
+                    <SelectItem value="חודשי|biweekly">חודשי דו-שבועי (฿{student?.is_sibling ? '4,000' : '4,200'})</SelectItem>
+                    <SelectItem value="חודשי|weekly">חודשי חד-שבועי (฿{student?.is_sibling ? '2,400' : '3,000'})</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium">צילום אישור התשלום</label>
+                {proofPreview ? (
+                  <div className="relative">
+                    <img src={proofPreview} alt="אישור" className="w-full max-h-48 object-contain rounded-lg border" />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 left-2"
+                      onClick={() => handleSelectProof(null)}
+                    >
+                      ✕ הסר
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <label className="block">
+                      <Button variant="outline" className="w-full" asChild>
+                        <span className="cursor-pointer">
+                          📷 בחר תמונה / צלם
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => handleSelectProof(e.target.files?.[0] || null)}
+                          />
+                        </span>
+                      </Button>
+                    </label>
+                    <p className="text-xs text-muted-foreground text-center">
+                      💡 טיפ: אפשר גם להעתיק תמונה מאפליקציית הבנק ולהדביק כאן (Ctrl+V / הדבק)
+                    </p>
+                  </>
+                )}
+              </div>
+
+              <Button
+                className="w-full"
+                onClick={handlePromptPayRequest}
+                disabled={submitting || !selectedPaymentType || !proofFile}
+              >
+                {submitting ? 'שולח...' : 'שלח בקשת תשלום למנהל'}
+              </Button>
+              <Button variant="ghost" onClick={() => { setPaymentMethod(null); handleSelectProof(null); }} className="w-full">← חזור</Button>
             </div>
           )}
         </DialogContent>
