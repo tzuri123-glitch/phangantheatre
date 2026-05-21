@@ -42,11 +42,34 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
   const [approveDiscount, setApproveDiscount] = useState(0);
   const [approveNote, setApproveNote] = useState('');
   const [viewingProof, setViewingProof] = useState<string | null>(null);
+  const [oneTimePaidThisMonth, setOneTimePaidThisMonth] = useState(0);
 
   const openProof = async (path: string) => {
     const { data, error } = await supabase.storage.from('payment-proofs').createSignedUrl(path, 300);
     if (error || !data) { toast.error('שגיאה בטעינת אישור התשלום'); return; }
     setViewingProof(data.signedUrl);
+  };
+
+  // Load one-time payments already paid this month for the student
+  const loadOneTimePaidThisMonth = async (studentId: string) => {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = today.getMonth() + 1;
+    const lastDay = new Date(y, m, 0).getDate();
+    const start = `${y}-${String(m).padStart(2, '0')}-01`;
+    const end = `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    const { data } = await supabase
+      .from('payments')
+      .select('amount, discount')
+      .eq('student_id', studentId)
+      .eq('payment_type', 'חד פעמי')
+      .gte('payment_date', start)
+      .lte('payment_date', end);
+    const total = (data || []).reduce((sum: number, p: any) => {
+      const eff = Number(p.amount || 0) * (1 - (Number(p.discount) || 0) / 100);
+      return sum + eff;
+    }, 0);
+    return total;
   };
 
   useEffect(() => {
@@ -97,16 +120,21 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
     }
   };
 
-  const openApproveDialog = (payment: PendingPayment) => {
+  const openApproveDialog = async (payment: PendingPayment) => {
     // Calculate expected price
     const isSib = !!payment.is_sibling;
     const initType = (payment.payment_type === 'חודשי' ? 'חודשי' : 'חד פעמי') as 'חד פעמי' | 'חודשי';
     const initFreq = (payment.subscription_frequency || 'biweekly') as SubscriptionFrequency;
+
+    // Load already-paid one-time amount this month for this student
+    const alreadyPaid = await loadOneTimePaidThisMonth(payment.student_id);
+    setOneTimePaidThisMonth(alreadyPaid);
+
     let expectedPrice = 0;
     if (initType === 'חד פעמי') {
       expectedPrice = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
     } else {
-      expectedPrice = getMonthlyPrice(isSib, initFreq);
+      expectedPrice = Math.max(0, getMonthlyPrice(isSib, initFreq) - alreadyPaid);
     }
 
     setApproveType(initType);
@@ -194,15 +222,18 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
   const getBalanceInfo = () => {
     if (!approveDialog) return null;
     const isSib = !!approveDialog.is_sibling;
-    let expectedPrice = 0;
+    let basePrice = 0;
     if (approveType === 'חד פעמי') {
-      expectedPrice = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
+      basePrice = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
     } else if (approveType === 'חודשי') {
-      expectedPrice = getMonthlyPrice(isSib, approveFrequency);
+      basePrice = getMonthlyPrice(isSib, approveFrequency);
     }
+    // For monthly upgrades: subtract already-paid one-time payments this month
+    const credit = approveType === 'חודשי' ? oneTimePaidThisMonth : 0;
+    const expectedPrice = Math.max(0, basePrice - credit);
     const expectedAfterDiscount = expectedPrice * (1 - approveDiscount / 100);
     const diff = approveAmount - expectedAfterDiscount;
-    return { expectedPrice, expectedAfterDiscount, diff };
+    return { basePrice, credit, expectedPrice, expectedAfterDiscount, diff };
   };
 
   if (pending.length === 0 && !approveDialog) return null;
