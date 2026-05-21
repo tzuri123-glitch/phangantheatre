@@ -122,9 +122,17 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
     setProcessing(approveDialog.id);
 
     try {
+      const paymentDate = new Date().toISOString().slice(0, 10);
+
       await supabase
         .from('pending_payments')
-        .update({ status: 'approved', resolved_at: new Date().toISOString(), amount: approveAmount })
+        .update({
+          status: 'approved',
+          resolved_at: new Date().toISOString(),
+          amount: approveAmount,
+          payment_type: approveType,
+          subscription_frequency: approveType === 'חודשי' ? approveFrequency : null,
+        } as any)
         .eq('id', approveDialog.id);
 
       await supabase
@@ -132,17 +140,28 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
         .insert({
           user_id: user.id,
           student_id: approveDialog.student_id,
-          payment_type: approveDialog.payment_type,
+          payment_type: approveType,
           payment_method: approveDialog.payment_method,
-          payment_date: new Date().toISOString().slice(0, 10),
+          payment_date: paymentDate,
           amount: approveAmount,
           discount: approveDiscount,
           note: approveNote || (approveDiscount > 0 ? `אושר עם הנחה של ${approveDiscount}%` : 'אושר מבקשת תלמיד'),
-          subscription_frequency: approveDialog.payment_type === 'חודשי' ? (approveDialog.subscription_frequency || 'biweekly') : null,
+          subscription_frequency: approveType === 'חודשי' ? approveFrequency : null,
         } as any);
 
+      // אם זה תשלום חודשי — בטל חיובי 'חד פעמי' ממתינים שנוצרו אוטומטית באותו חודש
+      let cancelledCount = 0;
+      if (approveType === 'חודשי') {
+        cancelledCount = await cancelMonthOneTimePendingDebts(
+          approveDialog.student_id,
+          paymentDate,
+          approveDialog.id,
+        );
+      }
+
       setPending(prev => prev.filter(p => p.id !== approveDialog.id));
-      toast.success(`תשלום של ${approveDialog.student_name} ${approveDialog.student_last_name} אושר — ${formatILS(approveAmount)}`);
+      const extra = cancelledCount > 0 ? ` (בוטלו ${cancelledCount} חיובי חד פעמי באותו חודש)` : '';
+      toast.success(`תשלום של ${approveDialog.student_name} ${approveDialog.student_last_name} אושר — ${formatILS(approveAmount)}${extra}`);
       setApproveDialog(null);
       onPaymentApproved?.();
     } catch {
