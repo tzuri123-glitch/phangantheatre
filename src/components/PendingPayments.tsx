@@ -165,8 +165,9 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
     } else if (approveDialog.payment_type === 'חודשי') {
       expectedPrice = getMonthlyPrice(isSib, approveDialog.subscription_frequency || 'biweekly');
     }
-    const diff = approveAmount - expectedPrice;
-    return { expectedPrice, diff };
+    const expectedAfterDiscount = expectedPrice * (1 - approveDiscount / 100);
+    const diff = approveAmount - expectedAfterDiscount;
+    return { expectedPrice, expectedAfterDiscount, diff };
   };
 
   if (pending.length === 0 && !approveDialog) return null;
