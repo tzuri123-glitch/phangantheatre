@@ -72,8 +72,9 @@ export default function ResetPassword() {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      toast({ title: 'הסיסמה עודכנה בהצלחה! 🎉' });
-      navigate('/');
+      await supabase.auth.signOut();
+      toast({ title: 'הסיסמה עודכנה בהצלחה! 🎉 התחבר/י עם הסיסמה החדשה' });
+      navigate('/student-auth');
     } catch (error: any) {
       toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
     } finally {

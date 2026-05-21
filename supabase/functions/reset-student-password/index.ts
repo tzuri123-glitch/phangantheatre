@@ -28,14 +28,17 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { studentEmail } = await req.json();
+    const { studentEmail, redirectTo } = await req.json();
     if (!studentEmail) {
       return new Response(JSON.stringify({ error: "Missing studentEmail" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/$/, "") || `${supabaseUrl.replace('.supabase.co', '.lovable.app')}`;
+    const finalRedirect = redirectTo || `${origin}/reset-password`;
+
     // Send password reset email
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(studentEmail, {
-      redirectTo: `${supabaseUrl.replace('.supabase.co', '.lovable.app')}/student-auth`,
+      redirectTo: finalRedirect,
     });
 
     if (resetError) throw resetError;
