@@ -32,7 +32,7 @@ serve(async (req) => {
 
     const { studentName, parentName, parentLastName, parentPhone, studentPhone, birthDate, siblingId, className } = await req.json();
 
-    if (!studentName || !parentName || !parentLastName || !parentPhone || !birthDate) {
+    if (!studentName || !parentName || !parentLastName || !parentPhone) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
