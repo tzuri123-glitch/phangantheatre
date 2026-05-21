@@ -234,8 +234,39 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
             {balanceInfo && (
               <div className="text-sm bg-muted rounded-lg px-3 py-2">
                 מחיר צפוי: <strong>{formatILS(balanceInfo.expectedPrice)}</strong>
+                {approveDiscount > 0 && (
+                  <span className="block mt-1 text-primary">
+                    אחרי הנחה של {approveDiscount}%: <strong>{formatILS(balanceInfo.expectedAfterDiscount)}</strong>
+                  </span>
+                )}
               </div>
             )}
+
+            <div className="space-y-2">
+              <Label>הנחה (%)</Label>
+              <div className="flex gap-2 items-center">
+                <Input
+                  type="number"
+                  value={approveDiscount}
+                  onChange={(e) => {
+                    const d = Math.max(0, Math.min(100, Number(e.target.value)));
+                    setApproveDiscount(d);
+                    if (balanceInfo) {
+                      setApproveAmount(Math.round(balanceInfo.expectedPrice * (1 - d / 100)));
+                    }
+                  }}
+                  min={0}
+                  max={100}
+                  className="flex-1"
+                />
+                <Button type="button" variant="outline" size="sm" onClick={() => {
+                  setApproveDiscount(100);
+                  setApproveAmount(0);
+                }}>
+                  חינם (100%)
+                </Button>
+              </div>
+            </div>
 
             <div className="space-y-2">
               <Label>סכום שהתקבל בפועל</Label>
