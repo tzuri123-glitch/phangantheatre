@@ -222,15 +222,18 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
   const getBalanceInfo = () => {
     if (!approveDialog) return null;
     const isSib = !!approveDialog.is_sibling;
-    let expectedPrice = 0;
+    let basePrice = 0;
     if (approveType === 'חד פעמי') {
-      expectedPrice = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
+      basePrice = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
     } else if (approveType === 'חודשי') {
-      expectedPrice = getMonthlyPrice(isSib, approveFrequency);
+      basePrice = getMonthlyPrice(isSib, approveFrequency);
     }
+    // For monthly upgrades: subtract already-paid one-time payments this month
+    const credit = approveType === 'חודשי' ? oneTimePaidThisMonth : 0;
+    const expectedPrice = Math.max(0, basePrice - credit);
     const expectedAfterDiscount = expectedPrice * (1 - approveDiscount / 100);
     const diff = approveAmount - expectedAfterDiscount;
-    return { expectedPrice, expectedAfterDiscount, diff };
+    return { basePrice, credit, expectedPrice, expectedAfterDiscount, diff };
   };
 
   if (pending.length === 0 && !approveDialog) return null;
