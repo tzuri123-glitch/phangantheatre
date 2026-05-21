@@ -335,6 +335,14 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!viewingProof} onOpenChange={(open) => { if (!open) setViewingProof(null); }}>
+        <DialogContent className="max-w-2xl p-2" dir="rtl">
+          {viewingProof && (
+            <img src={viewingProof} alt="אישור תשלום" className="w-full max-h-[80vh] object-contain rounded-lg" />
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
