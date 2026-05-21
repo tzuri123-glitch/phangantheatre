@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Student, Payment, Session, CLASS_OPTIONS, MONTHLY_PRICE, SIBLING_MONTHLY_PRICE, SINGLE_PRICE, SIBLING_SINGLE_PRICE } from '@/types';
+import { Student, Payment, Session, CLASS_OPTIONS, MONTHLY_PRICE, SIBLING_MONTHLY_PRICE, SINGLE_PRICE, SIBLING_SINGLE_PRICE, MONTHLY_WEEKLY_PRICE, SIBLING_MONTHLY_WEEKLY_PRICE, getMonthlyPrice, SubscriptionFrequency, FREQUENCY_LABELS } from '@/types';
 import { getPaymentStatusForSession, getStatusColor, getStatusBadge } from '@/lib/paymentStatus';
 import { Badge } from '@/components/ui/badge';
 import TabNavigation from '@/components/TabNavigation';
@@ -38,7 +38,7 @@ export default function Index() {
   
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
-  const [paymentForm, setPaymentForm] = useState<{ studentId: string; type: string; method: 'מזומן' | 'סקאן'; date: string; amount: number; note: string; discount: number }>({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0 });
+  const [paymentForm, setPaymentForm] = useState<{ studentId: string; type: string; method: 'מזומן' | 'סקאן'; date: string; amount: number; note: string; discount: number; subscriptionFrequency: SubscriptionFrequency }>({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0, subscriptionFrequency: 'biweekly' });
   const [openStudentCombobox, setOpenStudentCombobox] = useState(false);
   const [studentSearchValue, setStudentSearchValue] = useState('');
   
@@ -112,7 +112,8 @@ export default function Index() {
         date: p.payment_date,
         amount: Number(p.amount),
         note: p.note || '',
-        discount: Number(p.discount) || 0
+        discount: Number(p.discount) || 0,
+        subscriptionFrequency: ((p as any).subscription_frequency as SubscriptionFrequency) || 'biweekly',
       })));
     }
     
@@ -198,7 +199,7 @@ export default function Index() {
       }
       const baseExpectedAmount = 
         payment.type === 'חד פעמי' ? (student.isSibling ? SIBLING_SINGLE_PRICE : SINGLE_PRICE) :
-        student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+        getMonthlyPrice(student.isSibling, payment.subscriptionFrequency || 'biweekly');
       
       const discount = payment.discount || 0;
       const expectedAmount = baseExpectedAmount * (1 - discount / 100);
@@ -238,7 +239,7 @@ export default function Index() {
         return pd.getFullYear() === currDate.getFullYear() && pd.getMonth() === currDate.getMonth();
       });
       const sumSingles = singles.reduce((sum, p) => sum + p.amount, 0);
-      const base = student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+      const base = getMonthlyPrice(student.isSibling, paymentForm.subscriptionFrequency || 'biweekly');
       baseAmount = Math.max(base - sumSingles, 0);
       if (sumSingles > 0) {
         note = `כולל קיזוז ${formatILS(sumSingles)} מתשלומים בחודש`;
@@ -322,7 +323,7 @@ export default function Index() {
           sessions={sessions}
           onAddPayment={() => {
             setEditingPayment(null);
-            setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0 }); 
+            setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0, subscriptionFrequency: 'biweekly' }); 
             setShowPaymentModal(true); 
           }}
           onEditPayment={(payment) => {
@@ -334,7 +335,8 @@ export default function Index() {
               date: payment.date,
               amount: payment.amount,
               note: payment.note,
-              discount: payment.discount || 0
+              discount: payment.discount || 0,
+              subscriptionFrequency: payment.subscriptionFrequency || 'biweekly',
             });
             setShowPaymentModal(true);
           }}
