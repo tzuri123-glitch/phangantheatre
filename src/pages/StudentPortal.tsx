@@ -33,6 +33,7 @@ interface StudentRecord {
   parent_name: string | null;
   parent_phone: string | null;
   profile_photo_url: string | null;
+  is_sibling?: boolean | null;
 }
 
 interface AttendanceRecord {
@@ -89,6 +90,7 @@ export default function StudentPortal() {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'promptpay' | null>(null);
   const [selectedPaymentType, setSelectedPaymentType] = useState<string>('');
+  const [selectedFrequency, setSelectedFrequency] = useState<'weekly' | 'biweekly'>('biweekly');
   const [promptPayUrl, setPromptPayUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -224,7 +226,8 @@ export default function StudentPortal() {
           admin_user_id: student.user_id,
           payment_type: selectedPaymentType,
           payment_method: 'מזומן',
-        })
+          subscription_frequency: selectedPaymentType === 'חודשי' ? selectedFrequency : null,
+        } as any)
         .select()
         .single();
 
@@ -883,11 +886,23 @@ export default function StudentPortal() {
                 <Select value={selectedPaymentType} onValueChange={setSelectedPaymentType}>
                   <SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="חד פעמי">חד פעמי</SelectItem>
+                    <SelectItem value="חד פעמי">חד פעמי (฿{student?.is_sibling ? '650' : '800'})</SelectItem>
                     <SelectItem value="חודשי">חודשי (מנוי)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              {selectedPaymentType === 'חודשי' && (
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium">תדירות המנוי</label>
+                  <Select value={selectedFrequency} onValueChange={(v: 'weekly' | 'biweekly') => setSelectedFrequency(v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="biweekly">דו-שבועי — פעמיים בשבוע (฿{student?.is_sibling ? '4,000' : '4,200'})</SelectItem>
+                      <SelectItem value="weekly">חד-שבועי — פעם בשבוע (฿{student?.is_sibling ? '2,400' : '3,000'})</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <Button className="w-full" onClick={handleCashPaymentRequest} disabled={submitting || !selectedPaymentType}>
                 {submitting ? 'שולח...' : 'שלח בקשת תשלום למנהל'}
               </Button>

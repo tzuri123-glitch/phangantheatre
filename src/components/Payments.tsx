@@ -1,4 +1,4 @@
-import { Payment, Student, CLASS_OPTIONS, Session } from '@/types';
+import { Payment, Student, CLASS_OPTIONS, Session, getMonthlyPrice } from '@/types';
 import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,7 +66,6 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
         });
       
       let totalExpected = 0;
-      const monthlyPrice = student.isSibling ? 4000 : 4200;
       
       studentPaymentsList.forEach((payment) => {
         const paymentMonth = format(parseISO(payment.date), 'MM/yyyy');
@@ -75,6 +74,7 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
         if (payment.type === 'סגירת יתרה') {
           // סגירת יתרה לא מייצרת צפי - הסכום הוא מה שהתקבל
         } else if (payment.type === 'חודשי') {
+          const monthlyPrice = getMonthlyPrice(student.isSibling, payment.subscriptionFrequency || 'biweekly');
           const priceAfterDiscount = monthlyPrice * (1 - discount / 100);
           totalExpected += priceAfterDiscount;
         } else if (payment.type === 'חד פעמי') {

@@ -1,4 +1,4 @@
-import { Student, CLASS_OPTIONS } from '@/types';
+import { Student, CLASS_OPTIONS, getMonthlyPrice, SubscriptionFrequency } from '@/types';
 import { format, isSameMonth, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -20,7 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface StudentsProps {
   students: Student[];
-  payments: { studentId: string; amount: number; type: string; discount: number; date: string }[];
+  payments: { studentId: string; amount: number; type: string; discount: number; date: string; subscriptionFrequency?: SubscriptionFrequency }[];
   onAddStudent: () => void;
   onEditStudent: (student: Student) => void;
   onDeleteStudent: (studentId: string) => void;
@@ -55,8 +55,6 @@ export default function Students({ students, payments, onAddStudent, onEditStude
     });
   };
 
-  const MONTHLY_PRICE = 4200;
-  const SIBLING_MONTHLY_PRICE = 4000;
   const SINGLE_PRICE = 800;
   const SIBLING_SINGLE_PRICE = 650;
 
@@ -81,8 +79,8 @@ export default function Students({ students, payments, onAddStudent, onEditStude
       const discount = payment.discount || 0;
       
       if (payment.type === 'חודשי') {
-        // תשלום חודשי
-        const monthlyPrice = student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+        // תשלום חודשי לפי תדירות
+        const monthlyPrice = getMonthlyPrice(student.isSibling, payment.subscriptionFrequency || 'biweekly');
         const priceAfterDiscount = monthlyPrice * (1 - discount / 100);
         totalExpected += priceAfterDiscount;
       } else if (payment.type === 'חד פעמי') {

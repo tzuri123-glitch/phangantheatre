@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Student, Payment, Session, CLASS_OPTIONS, MONTHLY_PRICE, SIBLING_MONTHLY_PRICE, SINGLE_PRICE, SIBLING_SINGLE_PRICE } from '@/types';
+import { Student, Payment, Session, CLASS_OPTIONS, MONTHLY_PRICE, SIBLING_MONTHLY_PRICE, SINGLE_PRICE, SIBLING_SINGLE_PRICE, MONTHLY_WEEKLY_PRICE, SIBLING_MONTHLY_WEEKLY_PRICE, getMonthlyPrice, SubscriptionFrequency, FREQUENCY_LABELS } from '@/types';
 import { getPaymentStatusForSession, getStatusColor, getStatusBadge } from '@/lib/paymentStatus';
 import { Badge } from '@/components/ui/badge';
 import TabNavigation from '@/components/TabNavigation';
@@ -38,7 +38,7 @@ export default function Index() {
   
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
-  const [paymentForm, setPaymentForm] = useState<{ studentId: string; type: string; method: 'מזומן' | 'סקאן'; date: string; amount: number; note: string; discount: number }>({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0 });
+  const [paymentForm, setPaymentForm] = useState<{ studentId: string; type: string; method: 'מזומן' | 'סקאן'; date: string; amount: number; note: string; discount: number; subscriptionFrequency: SubscriptionFrequency }>({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0, subscriptionFrequency: 'biweekly' });
   const [openStudentCombobox, setOpenStudentCombobox] = useState(false);
   const [studentSearchValue, setStudentSearchValue] = useState('');
   
@@ -112,7 +112,8 @@ export default function Index() {
         date: p.payment_date,
         amount: Number(p.amount),
         note: p.note || '',
-        discount: Number(p.discount) || 0
+        discount: Number(p.discount) || 0,
+        subscriptionFrequency: ((p as any).subscription_frequency as SubscriptionFrequency) || 'biweekly',
       })));
     }
     
@@ -198,7 +199,7 @@ export default function Index() {
       }
       const baseExpectedAmount = 
         payment.type === 'חד פעמי' ? (student.isSibling ? SIBLING_SINGLE_PRICE : SINGLE_PRICE) :
-        student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+        getMonthlyPrice(student.isSibling, payment.subscriptionFrequency || 'biweekly');
       
       const discount = payment.discount || 0;
       const expectedAmount = baseExpectedAmount * (1 - discount / 100);
@@ -238,7 +239,7 @@ export default function Index() {
         return pd.getFullYear() === currDate.getFullYear() && pd.getMonth() === currDate.getMonth();
       });
       const sumSingles = singles.reduce((sum, p) => sum + p.amount, 0);
-      const base = student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+      const base = getMonthlyPrice(student.isSibling, paymentForm.subscriptionFrequency || 'biweekly');
       baseAmount = Math.max(base - sumSingles, 0);
       if (sumSingles > 0) {
         note = `כולל קיזוז ${formatILS(sumSingles)} מתשלומים בחודש`;
@@ -322,7 +323,7 @@ export default function Index() {
           sessions={sessions}
           onAddPayment={() => {
             setEditingPayment(null);
-            setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0 }); 
+            setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0, subscriptionFrequency: 'biweekly' }); 
             setShowPaymentModal(true); 
           }}
           onEditPayment={(payment) => {
@@ -334,7 +335,8 @@ export default function Index() {
               date: payment.date,
               amount: payment.amount,
               note: payment.note,
-              discount: payment.discount || 0
+              discount: payment.discount || 0,
+              subscriptionFrequency: payment.subscriptionFrequency || 'biweekly',
             });
             setShowPaymentModal(true);
           }}
@@ -638,7 +640,8 @@ export default function Index() {
                     date: new Date().toISOString().slice(0, 10),
                     amount: 0,
                     note: '',
-                    discount: 0
+                    discount: 0,
+                    subscriptionFrequency: 'biweekly',
                   });
                   setShowPaymentModal(true);
                 }}
@@ -862,6 +865,33 @@ export default function Index() {
                 </>;
               })()}
             </SelectContent></Select></div>
+            {paymentForm.type === 'חודשי' && (() => {
+              const selectedStudent = students.find(s => s.id === paymentForm.studentId);
+              const isSib = selectedStudent?.isSibling;
+              const biweekly = isSib ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+              const weekly = isSib ? SIBLING_MONTHLY_WEEKLY_PRICE : MONTHLY_WEEKLY_PRICE;
+              return (
+                <div className="space-y-2">
+                  <Label>תדירות המנוי</Label>
+                  <Select value={paymentForm.subscriptionFrequency} onValueChange={(v: SubscriptionFrequency) => {
+                    setPaymentForm(prev => ({ ...prev, subscriptionFrequency: v }));
+                    if (paymentForm.studentId) {
+                      // recalc using new frequency synchronously by passing updated form state via closure
+                      setTimeout(() => {
+                        const calc = calcPayment(paymentForm.studentId, 'חודשי', paymentForm.date);
+                        setPaymentForm(prev => ({ ...prev, amount: calc.amount, note: calc.note }));
+                      }, 0);
+                    }
+                  }}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="biweekly">{FREQUENCY_LABELS.biweekly} (฿{biweekly.toLocaleString()})</SelectItem>
+                      <SelectItem value="weekly">{FREQUENCY_LABELS.weekly} (฿{weekly.toLocaleString()})</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              );
+            })()}
             {paymentForm.studentId && (() => {
               const selectedStudent = students.find(s => s.id === paymentForm.studentId);
               return selectedStudent?.isSibling ? (
@@ -895,8 +925,8 @@ export default function Index() {
               const selectedStudent = students.find(s => s.id === paymentForm.studentId);
               if (!selectedStudent) return null;
               const basePrice = paymentForm.type === 'חד פעמי'
-                ? (selectedStudent.isSibling ? 650 : 800)
-                : (selectedStudent.isSibling ? 4000 : 4200);
+                ? (selectedStudent.isSibling ? SIBLING_SINGLE_PRICE : SINGLE_PRICE)
+                : getMonthlyPrice(selectedStudent.isSibling, paymentForm.subscriptionFrequency);
               const discountedPrice = basePrice * (1 - (paymentForm.discount || 0) / 100);
               const diff = paymentForm.amount - discountedPrice;
               if (diff > 0) {
@@ -923,7 +953,8 @@ export default function Index() {
                     payment_date: paymentForm.date,
                     amount: paymentForm.amount,
                     note: paymentForm.note,
-                    discount: paymentForm.discount
+                    discount: paymentForm.discount,
+                    subscription_frequency: paymentForm.type === 'חודשי' ? paymentForm.subscriptionFrequency : null,
                   })
                   .eq('id', editingPayment.id)
                   .eq('user_id', user.id);
@@ -935,7 +966,7 @@ export default function Index() {
                 
                 setPayments((prev) => prev.map(p => 
                   p.id === editingPayment.id 
-                    ? { ...p, type: paymentForm.type as Payment['type'], method: paymentForm.method, date: paymentForm.date, amount: paymentForm.amount, note: paymentForm.note, discount: paymentForm.discount }
+                    ? { ...p, type: paymentForm.type as Payment['type'], method: paymentForm.method, date: paymentForm.date, amount: paymentForm.amount, note: paymentForm.note, discount: paymentForm.discount, subscriptionFrequency: paymentForm.type === 'חודשי' ? paymentForm.subscriptionFrequency : undefined }
                     : p
                 ));
                 
@@ -952,7 +983,8 @@ export default function Index() {
                     payment_date: paymentForm.date,
                     amount: paymentForm.amount,
                     note: paymentForm.note,
-                    discount: paymentForm.discount
+                    discount: paymentForm.discount,
+                    subscription_frequency: paymentForm.type === 'חודשי' ? paymentForm.subscriptionFrequency : null,
                   })
                   .select()
                   .single();
@@ -970,7 +1002,8 @@ export default function Index() {
                   date: paymentForm.date, 
                   amount: paymentForm.amount, 
                   note: paymentForm.note,
-                  discount: paymentForm.discount
+                  discount: paymentForm.discount,
+                  subscriptionFrequency: paymentForm.type === 'חודשי' ? paymentForm.subscriptionFrequency : undefined,
                 };
                 
                 setPayments((prev) => [...prev, newPayment]);
@@ -999,7 +1032,7 @@ export default function Index() {
               
               setShowPaymentModal(false); 
               setEditingPayment(null);
-              setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0 }); 
+              setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0, subscriptionFrequency: 'biweekly' }); 
             }}>אישור</Button><Button variant="outline" className="flex-1" onClick={() => { setShowPaymentModal(false); setEditingPayment(null); }}>ביטול</Button></div>
           </div>
         </DialogContent>
@@ -1136,6 +1169,7 @@ export default function Index() {
               amount: payment.amount,
               note: payment.note,
               discount: payment.discount || 0,
+              subscriptionFrequency: payment.subscriptionFrequency || 'biweekly',
             });
             setShowPaymentModal(true);
           }}

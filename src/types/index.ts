@@ -14,6 +14,8 @@ export interface Student {
   profilePhotoUrl?: string;
 }
 
+export type SubscriptionFrequency = 'weekly' | 'biweekly';
+
 export interface Payment {
   id: string;
   studentId: string;
@@ -23,6 +25,7 @@ export interface Payment {
   amount: number;
   note: string;
   discount?: number; // אחוזי הנחה (0-100)
+  subscriptionFrequency?: SubscriptionFrequency; // רלוונטי רק לתשלום חודשי
 }
 
 export interface SessionStudent {
@@ -45,7 +48,26 @@ export const CLASS_OPTIONS = [
   "תיאטרון מבוגרים"
 ] as const;
 
+// מחירי חודשי דו-שבועי (שני מפגשים בשבוע) — ברירת המחדל ההיסטורית
 export const MONTHLY_PRICE = 4200;
 export const SIBLING_MONTHLY_PRICE = 4000;
+
+// מחירי חודשי חד-שבועי (מפגש אחד בשבוע)
+export const MONTHLY_WEEKLY_PRICE = 3000;
+export const SIBLING_MONTHLY_WEEKLY_PRICE = 2400;
+
+// תשלום חד-פעמי
 export const SINGLE_PRICE = 800;
 export const SIBLING_SINGLE_PRICE = 650;
+
+export function getMonthlyPrice(isSibling: boolean, frequency: SubscriptionFrequency = 'biweekly'): number {
+  if (frequency === 'weekly') {
+    return isSibling ? SIBLING_MONTHLY_WEEKLY_PRICE : MONTHLY_WEEKLY_PRICE;
+  }
+  return isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+}
+
+export const FREQUENCY_LABELS: Record<SubscriptionFrequency, string> = {
+  biweekly: 'דו-שבועי (פעמיים בשבוע)',
+  weekly: 'חד-שבועי (פעם בשבוע)',
+};

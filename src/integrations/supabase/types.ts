@@ -108,6 +108,7 @@ export type Database = {
           payment_proof_url: string | null
           payment_type: string
           student_id: string
+          subscription_frequency: string | null
           subscription_id: string | null
           user_id: string
         }
@@ -122,6 +123,7 @@ export type Database = {
           payment_proof_url?: string | null
           payment_type: string
           student_id: string
+          subscription_frequency?: string | null
           subscription_id?: string | null
           user_id: string
         }
@@ -136,6 +138,7 @@ export type Database = {
           payment_proof_url?: string | null
           payment_type?: string
           student_id?: string
+          subscription_frequency?: string | null
           subscription_id?: string | null
           user_id?: string
         }
@@ -222,6 +225,7 @@ export type Database = {
           resolved_at: string | null
           status: string
           student_id: string
+          subscription_frequency: string | null
         }
         Insert: {
           admin_user_id: string
@@ -234,6 +238,7 @@ export type Database = {
           resolved_at?: string | null
           status?: string
           student_id: string
+          subscription_frequency?: string | null
         }
         Update: {
           admin_user_id?: string
@@ -246,6 +251,7 @@ export type Database = {
           resolved_at?: string | null
           status?: string
           student_id?: string
+          subscription_frequency?: string | null
         }
         Relationships: [
           {

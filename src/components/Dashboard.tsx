@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Student, Payment, SINGLE_PRICE, SIBLING_SINGLE_PRICE, MONTHLY_PRICE, SIBLING_MONTHLY_PRICE } from '@/types';
+import { Student, Payment, SINGLE_PRICE, SIBLING_SINGLE_PRICE, MONTHLY_PRICE, SIBLING_MONTHLY_PRICE, getMonthlyPrice } from '@/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Chart from 'chart.js/auto';
@@ -47,7 +47,7 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
         const discount = payment.discount || 0;
         
         if (payment.type === 'חודשי') {
-          const base = isSib ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+          const base = getMonthlyPrice(isSib, payment.subscriptionFrequency || 'biweekly');
           totalExpected += base * (1 - discount / 100);
         } else if (payment.type === 'חד פעמי') {
           const paymentMonth = payment.date.slice(0, 7);
