@@ -86,12 +86,12 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
 
   const openApproveDialog = (payment: PendingPayment) => {
     // Calculate expected price
-    const isSib = payment.is_sibling;
+    const isSib = !!payment.is_sibling;
     let expectedPrice = 0;
     if (payment.payment_type === 'חד פעמי') {
       expectedPrice = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
     } else if (payment.payment_type === 'חודשי') {
-      expectedPrice = isSib ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+      expectedPrice = getMonthlyPrice(isSib, payment.subscription_frequency || 'biweekly');
     }
     
     setApproveAmount(payment.amount || expectedPrice);
@@ -119,7 +119,8 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
           payment_date: new Date().toISOString().slice(0, 10),
           amount: approveAmount,
           note: approveNote || 'אושר מבקשת תלמיד',
-        });
+          subscription_frequency: approveDialog.payment_type === 'חודשי' ? (approveDialog.subscription_frequency || 'biweekly') : null,
+        } as any);
 
       setPending(prev => prev.filter(p => p.id !== approveDialog.id));
       toast.success(`תשלום של ${approveDialog.student_name} ${approveDialog.student_last_name} אושר — ${formatILS(approveAmount)}`);
