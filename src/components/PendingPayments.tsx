@@ -316,9 +316,11 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
                 const t = v as 'חד פעמי' | 'חודשי';
                 setApproveType(t);
                 const isSib = !!approveDialog?.is_sibling;
-                const price = t === 'חד פעמי'
+                const base = t === 'חד פעמי'
                   ? (isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE)
                   : getMonthlyPrice(isSib, approveFrequency);
+                const credit = t === 'חודשי' ? oneTimePaidThisMonth : 0;
+                const price = Math.max(0, base - credit);
                 setApproveAmount(Math.round(price * (1 - approveDiscount / 100)));
               }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -332,7 +334,8 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
                   const f = v as SubscriptionFrequency;
                   setApproveFrequency(f);
                   const isSib = !!approveDialog?.is_sibling;
-                  const price = getMonthlyPrice(isSib, f);
+                  const base = getMonthlyPrice(isSib, f);
+                  const price = Math.max(0, base - oneTimePaidThisMonth);
                   setApproveAmount(Math.round(price * (1 - approveDiscount / 100)));
                 }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -345,12 +348,20 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
             </div>
 
             {balanceInfo && (
-              <div className="text-sm bg-muted rounded-lg px-3 py-2">
-                מחיר צפוי: <strong>{formatILS(balanceInfo.expectedPrice)}</strong>
+              <div className="text-sm bg-muted rounded-lg px-3 py-2 space-y-1">
+                <div>מחיר בסיס: <strong>{formatILS(balanceInfo.basePrice)}</strong></div>
+                {balanceInfo.credit > 0 && (
+                  <div className="text-primary">
+                    זיכוי בעבור תשלום חד-פעמי ששולם החודש: −{formatILS(balanceInfo.credit)}
+                  </div>
+                )}
+                <div>
+                  לתשלום: <strong>{formatILS(balanceInfo.expectedPrice)}</strong>
+                </div>
                 {approveDiscount > 0 && (
-                  <span className="block mt-1 text-primary">
+                  <div className="text-primary">
                     אחרי הנחה של {approveDiscount}%: <strong>{formatILS(balanceInfo.expectedAfterDiscount)}</strong>
-                  </span>
+                  </div>
                 )}
               </div>
             )}
