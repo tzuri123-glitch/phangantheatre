@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import { formatILS } from '@/lib/utils';
 import { SINGLE_PRICE, MONTHLY_PRICE, SIBLING_SINGLE_PRICE, SIBLING_MONTHLY_PRICE, MONTHLY_WEEKLY_PRICE, SIBLING_MONTHLY_WEEKLY_PRICE, getMonthlyPrice, SubscriptionFrequency, FREQUENCY_LABELS } from '@/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cancelMonthOneTimePendingDebts } from '@/lib/cancelPendingDebts';
 
 interface PendingPayment {
   id: string;
@@ -34,6 +36,8 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
   const [pending, setPending] = useState<PendingPayment[]>([]);
   const [processing, setProcessing] = useState<string | null>(null);
   const [approveDialog, setApproveDialog] = useState<PendingPayment | null>(null);
+  const [approveType, setApproveType] = useState<'חד פעמי' | 'חודשי'>('חד פעמי');
+  const [approveFrequency, setApproveFrequency] = useState<SubscriptionFrequency>('biweekly');
   const [approveAmount, setApproveAmount] = useState(0);
   const [approveDiscount, setApproveDiscount] = useState(0);
   const [approveNote, setApproveNote] = useState('');
@@ -96,13 +100,17 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
   const openApproveDialog = (payment: PendingPayment) => {
     // Calculate expected price
     const isSib = !!payment.is_sibling;
+    const initType = (payment.payment_type === 'חודשי' ? 'חודשי' : 'חד פעמי') as 'חד פעמי' | 'חודשי';
+    const initFreq = (payment.subscription_frequency || 'biweekly') as SubscriptionFrequency;
     let expectedPrice = 0;
-    if (payment.payment_type === 'חד פעמי') {
+    if (initType === 'חד פעמי') {
       expectedPrice = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
-    } else if (payment.payment_type === 'חודשי') {
-      expectedPrice = getMonthlyPrice(isSib, payment.subscription_frequency || 'biweekly');
+    } else {
+      expectedPrice = getMonthlyPrice(isSib, initFreq);
     }
-    
+
+    setApproveType(initType);
+    setApproveFrequency(initFreq);
     setApproveAmount(payment.amount || expectedPrice);
     setApproveDiscount(0);
     setApproveNote('');
@@ -114,9 +122,17 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
     setProcessing(approveDialog.id);
 
     try {
+      const paymentDate = new Date().toISOString().slice(0, 10);
+
       await supabase
         .from('pending_payments')
-        .update({ status: 'approved', resolved_at: new Date().toISOString(), amount: approveAmount })
+        .update({
+          status: 'approved',
+          resolved_at: new Date().toISOString(),
+          amount: approveAmount,
+          payment_type: approveType,
+          subscription_frequency: approveType === 'חודשי' ? approveFrequency : null,
+        } as any)
         .eq('id', approveDialog.id);
 
       await supabase
@@ -124,17 +140,28 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
         .insert({
           user_id: user.id,
           student_id: approveDialog.student_id,
-          payment_type: approveDialog.payment_type,
+          payment_type: approveType,
           payment_method: approveDialog.payment_method,
-          payment_date: new Date().toISOString().slice(0, 10),
+          payment_date: paymentDate,
           amount: approveAmount,
           discount: approveDiscount,
           note: approveNote || (approveDiscount > 0 ? `אושר עם הנחה של ${approveDiscount}%` : 'אושר מבקשת תלמיד'),
-          subscription_frequency: approveDialog.payment_type === 'חודשי' ? (approveDialog.subscription_frequency || 'biweekly') : null,
+          subscription_frequency: approveType === 'חודשי' ? approveFrequency : null,
         } as any);
 
+      // אם זה תשלום חודשי — בטל חיובי 'חד פעמי' ממתינים שנוצרו אוטומטית באותו חודש
+      let cancelledCount = 0;
+      if (approveType === 'חודשי') {
+        cancelledCount = await cancelMonthOneTimePendingDebts(
+          approveDialog.student_id,
+          paymentDate,
+          approveDialog.id,
+        );
+      }
+
       setPending(prev => prev.filter(p => p.id !== approveDialog.id));
-      toast.success(`תשלום של ${approveDialog.student_name} ${approveDialog.student_last_name} אושר — ${formatILS(approveAmount)}`);
+      const extra = cancelledCount > 0 ? ` (בוטלו ${cancelledCount} חיובי חד פעמי באותו חודש)` : '';
+      toast.success(`תשלום של ${approveDialog.student_name} ${approveDialog.student_last_name} אושר — ${formatILS(approveAmount)}${extra}`);
       setApproveDialog(null);
       onPaymentApproved?.();
     } catch {
@@ -168,10 +195,10 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
     if (!approveDialog) return null;
     const isSib = !!approveDialog.is_sibling;
     let expectedPrice = 0;
-    if (approveDialog.payment_type === 'חד פעמי') {
+    if (approveType === 'חד פעמי') {
       expectedPrice = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
-    } else if (approveDialog.payment_type === 'חודשי') {
-      expectedPrice = getMonthlyPrice(isSib, approveDialog.subscription_frequency || 'biweekly');
+    } else if (approveType === 'חודשי') {
+      expectedPrice = getMonthlyPrice(isSib, approveFrequency);
     }
     const expectedAfterDiscount = expectedPrice * (1 - approveDiscount / 100);
     const diff = approveAmount - expectedAfterDiscount;
@@ -244,10 +271,44 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-sm text-muted-foreground">
-              סוג: <strong>{approveDialog?.payment_type}</strong> | אמצעי: <strong>{approveDialog?.payment_method}</strong>
+              סוג מקורי: <strong>{approveDialog?.payment_type}</strong> | אמצעי: <strong>{approveDialog?.payment_method}</strong>
               {approveDialog?.is_sibling && <span className="text-primary mr-2">👫 תלמיד אח/אחות — מחיר מוזל</span>}
             </div>
-            
+
+            <div className="space-y-2">
+              <Label>אשר כסוג תשלום</Label>
+              <Select value={approveType} onValueChange={(v) => {
+                const t = v as 'חד פעמי' | 'חודשי';
+                setApproveType(t);
+                const isSib = !!approveDialog?.is_sibling;
+                const price = t === 'חד פעמי'
+                  ? (isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE)
+                  : getMonthlyPrice(isSib, approveFrequency);
+                setApproveAmount(Math.round(price * (1 - approveDiscount / 100)));
+              }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="חד פעמי">חד פעמי</SelectItem>
+                  <SelectItem value="חודשי">חודשי (יבטל חיובי חד-פעמי באותו חודש)</SelectItem>
+                </SelectContent>
+              </Select>
+              {approveType === 'חודשי' && (
+                <Select value={approveFrequency} onValueChange={(v) => {
+                  const f = v as SubscriptionFrequency;
+                  setApproveFrequency(f);
+                  const isSib = !!approveDialog?.is_sibling;
+                  const price = getMonthlyPrice(isSib, f);
+                  setApproveAmount(Math.round(price * (1 - approveDiscount / 100)));
+                }}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="biweekly">{FREQUENCY_LABELS.biweekly}</SelectItem>
+                    <SelectItem value="weekly">{FREQUENCY_LABELS.weekly}</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
             {balanceInfo && (
               <div className="text-sm bg-muted rounded-lg px-3 py-2">
                 מחיר צפוי: <strong>{formatILS(balanceInfo.expectedPrice)}</strong>
