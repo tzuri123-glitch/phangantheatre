@@ -120,7 +120,8 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
           payment_method: approveDialog.payment_method,
           payment_date: new Date().toISOString().slice(0, 10),
           amount: approveAmount,
-          note: approveNote || 'אושר מבקשת תלמיד',
+          discount: approveDiscount,
+          note: approveNote || (approveDiscount > 0 ? `אושר עם הנחה של ${approveDiscount}%` : 'אושר מבקשת תלמיד'),
           subscription_frequency: approveDialog.payment_type === 'חודשי' ? (approveDialog.subscription_frequency || 'biweekly') : null,
         } as any);
 
