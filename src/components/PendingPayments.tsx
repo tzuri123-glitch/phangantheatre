@@ -19,6 +19,7 @@ interface PendingPayment {
   status: string;
   created_at: string;
   subscription_frequency?: SubscriptionFrequency | null;
+  payment_proof_url?: string | null;
   student_name?: string;
   student_last_name?: string;
   is_sibling?: boolean;
