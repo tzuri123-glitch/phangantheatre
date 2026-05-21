@@ -50,7 +50,8 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
     setViewingProof(data.signedUrl);
   };
 
-  // Load one-time payments already paid this month for the student
+  // Load one-time payments already paid this month for the student.
+  // Returns { total, count } — credit applies only if exactly 1 one-time payment exists.
   const loadOneTimePaidThisMonth = async (studentId: string) => {
     const today = new Date();
     const y = today.getFullYear();
@@ -65,11 +66,12 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
       .eq('payment_type', 'חד פעמי')
       .gte('payment_date', start)
       .lte('payment_date', end);
-    const total = (data || []).reduce((sum: number, p: any) => {
+    const rows = data || [];
+    const total = rows.reduce((sum: number, p: any) => {
       const eff = Number(p.amount || 0) * (1 - (Number(p.discount) || 0) / 100);
       return sum + eff;
     }, 0);
-    return total;
+    return { total, count: rows.length };
   };
 
   useEffect(() => {
