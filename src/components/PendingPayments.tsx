@@ -155,12 +155,12 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
   // Calculate balance indicator
   const getBalanceInfo = () => {
     if (!approveDialog) return null;
-    const isSib = approveDialog.is_sibling;
+    const isSib = !!approveDialog.is_sibling;
     let expectedPrice = 0;
     if (approveDialog.payment_type === 'חד פעמי') {
       expectedPrice = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
     } else if (approveDialog.payment_type === 'חודשי') {
-      expectedPrice = isSib ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
+      expectedPrice = getMonthlyPrice(isSib, approveDialog.subscription_frequency || 'biweekly');
     }
     const diff = approveAmount - expectedPrice;
     return { expectedPrice, diff };
@@ -185,7 +185,7 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
                   <span className="font-medium">{p.student_name} {p.student_last_name}</span>
                   {p.is_sibling && <span className="text-xs text-primary mr-1">👫</span>}
                   <span className="text-muted-foreground text-sm mr-2">
-                    – {p.payment_type} ({p.payment_method})
+                    – {p.payment_type}{p.payment_type === 'חודשי' && p.subscription_frequency ? ` (${FREQUENCY_LABELS[p.subscription_frequency]})` : ''} ({p.payment_method})
                   </span>
                   <span className="text-xs text-muted-foreground block">
                     {new Date(p.created_at).toLocaleString('he-IL')}
