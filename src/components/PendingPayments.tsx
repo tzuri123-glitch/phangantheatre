@@ -120,16 +120,21 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
     }
   };
 
-  const openApproveDialog = (payment: PendingPayment) => {
+  const openApproveDialog = async (payment: PendingPayment) => {
     // Calculate expected price
     const isSib = !!payment.is_sibling;
     const initType = (payment.payment_type === 'חודשי' ? 'חודשי' : 'חד פעמי') as 'חד פעמי' | 'חודשי';
     const initFreq = (payment.subscription_frequency || 'biweekly') as SubscriptionFrequency;
+
+    // Load already-paid one-time amount this month for this student
+    const alreadyPaid = await loadOneTimePaidThisMonth(payment.student_id);
+    setOneTimePaidThisMonth(alreadyPaid);
+
     let expectedPrice = 0;
     if (initType === 'חד פעמי') {
       expectedPrice = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
     } else {
-      expectedPrice = getMonthlyPrice(isSib, initFreq);
+      expectedPrice = Math.max(0, getMonthlyPrice(isSib, initFreq) - alreadyPaid);
     }
 
     setApproveType(initType);
