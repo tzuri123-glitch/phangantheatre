@@ -45,7 +45,7 @@ export const CLASS_OPTIONS = [
   "תיאטרון מבוגרים"
 ] as const;
 
-export const MONTHLY_PRICE = 4000;
-export const SIBLING_MONTHLY_PRICE = 3200;
-export const SINGLE_PRICE = 700;
-export const SIBLING_SINGLE_PRICE = 500;
+export const MONTHLY_PRICE = 4200;
+export const SIBLING_MONTHLY_PRICE = 4000;
+export const SINGLE_PRICE = 800;
+export const SIBLING_SINGLE_PRICE = 650;

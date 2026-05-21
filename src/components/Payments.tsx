@@ -66,7 +66,7 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
         });
       
       let totalExpected = 0;
-      const monthlyPrice = student.isSibling ? 3200 : 4000;
+      const monthlyPrice = student.isSibling ? 4000 : 4200;
       
       studentPaymentsList.forEach((payment) => {
         const paymentMonth = format(parseISO(payment.date), 'MM/yyyy');
@@ -79,7 +79,7 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
           totalExpected += priceAfterDiscount;
         } else if (payment.type === 'חד פעמי') {
           if (!monthsWithMonthlyPayment.has(paymentMonth)) {
-            const singlePrice = student.isSibling ? 500 : 600;
+            const singlePrice = student.isSibling ? 650 : 800;
             const priceAfterDiscount = singlePrice * (1 - discount / 100);
             totalExpected += priceAfterDiscount;
           }

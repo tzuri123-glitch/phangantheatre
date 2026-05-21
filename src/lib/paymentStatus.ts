@@ -66,7 +66,7 @@ const hasOneTimeOrTrialPayment = payments.some(payment => {
   if (!isExactMatch) return false;
   
   // Check if payment amount is sufficient or has 100% discount
-  const requiredAmount = student.isSibling ? 500 : 700;
+  const requiredAmount = student.isSibling ? 650 : 800;
   const effectiveAmount = payment.amount * (1 - (payment.discount || 0) / 100);
   const isFullDiscount = payment.discount === 100;
   const isPaidEnough = effectiveAmount >= requiredAmount || isFullDiscount;

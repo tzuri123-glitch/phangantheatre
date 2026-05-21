@@ -197,7 +197,7 @@ export default function Index() {
         return;
       }
       const baseExpectedAmount = 
-        payment.type === 'חד פעמי' ? (student.isSibling ? 500 : SINGLE_PRICE) :
+        payment.type === 'חד פעמי' ? (student.isSibling ? SIBLING_SINGLE_PRICE : SINGLE_PRICE) :
         student.isSibling ? SIBLING_MONTHLY_PRICE : MONTHLY_PRICE;
       
       const discount = payment.discount || 0;
@@ -226,7 +226,7 @@ export default function Index() {
     }
     
     if (type === 'חד פעמי') {
-      baseAmount = student.isSibling ? 500 : SINGLE_PRICE;
+      baseAmount = student.isSibling ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
     } else if (type === 'חודשי') {
       const singles = payments.filter((p) => {
         if (p.studentId !== studentId) return false;
@@ -856,8 +856,8 @@ export default function Index() {
                 const selectedStudent = students.find(s => s.id === paymentForm.studentId);
                 const isSib = selectedStudent?.isSibling;
                 return <>
-                  <SelectItem value="חד פעמי">חד פעמי (฿{isSib ? '500' : '700'})</SelectItem>
-                  <SelectItem value="חודשי">חודשי (฿{isSib ? '3,200' : '4,000'})</SelectItem>
+                  <SelectItem value="חד פעמי">חד פעמי (฿{isSib ? '650' : '800'})</SelectItem>
+                  <SelectItem value="חודשי">חודשי (฿{isSib ? '4,000' : '4,200'})</SelectItem>
                   <SelectItem value="סגירת יתרה">סגירת יתרה (השלמת חוב / החזר זכות)</SelectItem>
                 </>;
               })()}
@@ -895,8 +895,8 @@ export default function Index() {
               const selectedStudent = students.find(s => s.id === paymentForm.studentId);
               if (!selectedStudent) return null;
               const basePrice = paymentForm.type === 'חד פעמי'
-                ? (selectedStudent.isSibling ? 500 : 700)
-                : (selectedStudent.isSibling ? 3200 : 4000);
+                ? (selectedStudent.isSibling ? 650 : 800)
+                : (selectedStudent.isSibling ? 4000 : 4200);
               const discountedPrice = basePrice * (1 - (paymentForm.discount || 0) / 100);
               const diff = paymentForm.amount - discountedPrice;
               if (diff > 0) {
