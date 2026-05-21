@@ -1,7 +1,5 @@
 project_id = "ssgdyyiutipbapzkyqur"
 
-[functions.dev-create-user]
-verify_jwt = false
 
 [functions.register-student]
 verify_jwt = false
