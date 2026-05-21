@@ -36,6 +36,8 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
   const [pending, setPending] = useState<PendingPayment[]>([]);
   const [processing, setProcessing] = useState<string | null>(null);
   const [approveDialog, setApproveDialog] = useState<PendingPayment | null>(null);
+  const [approveType, setApproveType] = useState<'חד פעמי' | 'חודשי'>('חד פעמי');
+  const [approveFrequency, setApproveFrequency] = useState<SubscriptionFrequency>('biweekly');
   const [approveAmount, setApproveAmount] = useState(0);
   const [approveDiscount, setApproveDiscount] = useState(0);
   const [approveNote, setApproveNote] = useState('');
