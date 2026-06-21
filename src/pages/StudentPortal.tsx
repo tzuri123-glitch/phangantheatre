@@ -147,15 +147,17 @@ export default function StudentPortal() {
         setPendingPayments((pendingData as PendingPayment[]).filter(p => p.status !== 'deleted_by_admin'));
       }
 
-      // PromptPay QR
+      // PromptPay QR (signed URL for private bucket)
       const { data: files } = await supabase.storage
         .from('admin-settings')
         .list('', { limit: 10 });
 
       const ppFile = files?.find(f => f.name.startsWith('promptpay'));
       if (ppFile) {
-        const { data } = supabase.storage.from('admin-settings').getPublicUrl(ppFile.name);
-        setPromptPayUrl(data.publicUrl);
+        const { data: signed } = await supabase.storage
+          .from('admin-settings')
+          .createSignedUrl(ppFile.name, 60 * 60);
+        if (signed) setPromptPayUrl(signed.signedUrl);
       }
 
       setLoading(false);
