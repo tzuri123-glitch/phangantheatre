@@ -26,10 +26,10 @@ export default function AdminSettings() {
 
     const promptPayFile = files?.find(f => f.name.startsWith('promptpay'));
     if (promptPayFile) {
-      const { data } = supabase.storage
+      const { data: signed } = await supabase.storage
         .from('admin-settings')
-        .getPublicUrl(promptPayFile.name);
-      setPromptPayUrl(data.publicUrl);
+        .createSignedUrl(promptPayFile.name, 60 * 60);
+      if (signed) setPromptPayUrl(signed.signedUrl);
     }
   };
 
