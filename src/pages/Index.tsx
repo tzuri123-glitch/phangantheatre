@@ -922,9 +922,10 @@ export default function Index() {
             {paymentForm.amount > 0 && paymentForm.type && paymentForm.type !== 'סגירת יתרה' && paymentForm.studentId && (() => {
               const selectedStudent = students.find(s => s.id === paymentForm.studentId);
               if (!selectedStudent) return null;
+              const isSibling = hasSiblingDiscount(selectedStudent.id);
               const basePrice = paymentForm.type === 'חד פעמי'
-                ? (selectedStudent.isSibling ? SIBLING_SINGLE_PRICE : SINGLE_PRICE)
-                : getMonthlyPrice(selectedStudent.isSibling, paymentForm.subscriptionFrequency);
+                ? (isSibling ? SIBLING_SINGLE_PRICE : SINGLE_PRICE)
+                : getMonthlyPrice(isSibling, paymentForm.subscriptionFrequency);
               const discountedPrice = basePrice * (1 - (paymentForm.discount || 0) / 100);
               const diff = paymentForm.amount - discountedPrice;
               if (diff > 0) {
