@@ -168,6 +168,24 @@ export default function Kiosk() {
     loadData(currentClass);
   };
 
+  const handleUnmark = async (s: Student) => {
+    if (!savedPin || !adminUserId || !currentClass) return;
+    if (!window.confirm(`לבטל את הנוכחות של ${s.name}?`)) return;
+    setUnmarkingId(s.id);
+    const { data, error } = await supabase.functions.invoke('kiosk-unmark-attendance', {
+      body: { pin: savedPin, admin_user_id: adminUserId, student_id: s.id, class_name: currentClass },
+    });
+    setUnmarkingId(null);
+    if (error || !data?.ok) {
+      toast.error('שגיאה בביטול הנוכחות');
+      return;
+    }
+    toast.success(data.cancelledDebt ? `הנוכחות של ${s.name} בוטלה והחוב הוסר` : `הנוכחות של ${s.name} בוטלה`);
+    loadData(currentClass);
+  };
+
+
+
   const monthlyBase = monthlyStudent
     ? (monthlyStudent.is_sibling ? MONTHLY_PRICES[monthlyFreq].sibling : MONTHLY_PRICES[monthlyFreq].regular)
     : 0;
