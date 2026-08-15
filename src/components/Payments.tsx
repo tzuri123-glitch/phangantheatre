@@ -375,62 +375,64 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
                           </div>
 
                         {expandedStudents[student.id] && (
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="text-right">תאריך</TableHead>
-                                <TableHead className="text-right">סוג</TableHead>
-                                <TableHead className="text-right">אמצעי</TableHead>
-                                <TableHead className="text-right">הנחה</TableHead>
-                                <TableHead className="text-right">סכום שהתקבל</TableHead>
-                                <TableHead className="text-right">הערה</TableHead>
-                                <TableHead className="text-right">פעולות</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {studentPaymentsList.map((payment) => (
-                                <TableRow key={payment.id}>
-                                  <TableCell className="text-sm">{payment.date}</TableCell>
-                                  <TableCell>
-                                    <span className="inline-block px-2 py-1 rounded-full text-xs bg-primary/10 text-primary">
-                                      {payment.type}
-                                    </span>
-                                  </TableCell>
-                                  <TableCell className="text-sm">{payment.method}</TableCell>
-                                  <TableCell>
-                                    {payment.discount ? (
-                                      <span className="text-yellow-600 font-medium text-sm">{payment.discount}%</span>
-                                    ) : (
-                                      <span className="text-muted-foreground text-sm">-</span>
-                                    )}
-                                  </TableCell>
-                                  <TableCell className="font-bold text-primary text-sm">
-                                    {formatILS(payment.amount)}
-                                  </TableCell>
-                                  <TableCell className="text-muted-foreground text-sm">{payment.note}</TableCell>
-                                  <TableCell>
-                                    <div className="flex gap-2">
-                                      <Button 
-                                        variant="ghost" 
-                                        size="sm"
-                                        onClick={() => onEditPayment(payment)}
-                                      >
-                                        ✏️
-                                      </Button>
-                                      <Button 
-                                        variant="ghost" 
-                                        size="sm"
-                                        onClick={() => onDeletePayment(payment.id)}
-                                        className="text-destructive hover:text-destructive"
-                                      >
-                                        🗑️
-                                      </Button>
-                                    </div>
-                                  </TableCell>
+                          <div className="w-full max-w-full overflow-x-auto">
+                            <Table className="min-w-[760px]">
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="text-right">תאריך</TableHead>
+                                  <TableHead className="text-right">סוג</TableHead>
+                                  <TableHead className="text-right">אמצעי</TableHead>
+                                  <TableHead className="text-right">הנחה</TableHead>
+                                  <TableHead className="text-right">סכום שהתקבל</TableHead>
+                                  <TableHead className="text-right">הערה</TableHead>
+                                  <TableHead className="text-right">פעולות</TableHead>
                                 </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
+                              </TableHeader>
+                              <TableBody>
+                                {studentPaymentsList.map((payment) => (
+                                  <TableRow key={payment.id}>
+                                    <TableCell className="text-sm">{payment.date}</TableCell>
+                                    <TableCell>
+                                      <span className="inline-block px-2 py-1 rounded-full text-xs bg-primary/10 text-primary">
+                                        {payment.type}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell className="text-sm">{payment.method}</TableCell>
+                                    <TableCell>
+                                      {payment.discount ? (
+                                        <span className="text-yellow-600 font-medium text-sm">{payment.discount}%</span>
+                                      ) : (
+                                        <span className="text-muted-foreground text-sm">-</span>
+                                      )}
+                                    </TableCell>
+                                    <TableCell className="font-bold text-primary text-sm">
+                                      {formatILS(payment.amount)}
+                                    </TableCell>
+                                    <TableCell className="text-muted-foreground text-sm">{payment.note}</TableCell>
+                                    <TableCell>
+                                      <div className="flex gap-2 flex-nowrap whitespace-nowrap">
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm"
+                                          onClick={() => onEditPayment(payment)}
+                                        >
+                                          ✏️
+                                        </Button>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="sm"
+                                          onClick={() => onDeletePayment(payment.id)}
+                                          className="text-destructive hover:text-destructive"
+                                        >
+                                          🗑️
+                                        </Button>
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
                         )}
                         </Card>
                       );
