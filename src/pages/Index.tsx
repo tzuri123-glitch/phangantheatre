@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Student, Payment, Session, CLASS_OPTIONS, MONTHLY_PRICE, SIBLING_MONTHLY_PRICE, SINGLE_PRICE, SIBLING_SINGLE_PRICE, MONTHLY_WEEKLY_PRICE, SIBLING_MONTHLY_WEEKLY_PRICE, getMonthlyPrice, SubscriptionFrequency, FREQUENCY_LABELS } from '@/types';
+import { hasSiblingDiscount as hasSiblingDiscountShared } from '@/lib/siblings';
 import { getPaymentStatusForSession, getStatusColor, getStatusBadge } from '@/lib/paymentStatus';
 import { Badge } from '@/components/ui/badge';
 import TabNavigation from '@/components/TabNavigation';
