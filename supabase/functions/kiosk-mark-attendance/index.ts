@@ -19,12 +19,16 @@ function getBangkokDate(): string {
   return `${get('year')}-${get('month')}-${get('day')}`;
 }
 
+// טווח תאריכי תשלום שמכסים את החודש הקלנדרי של today:
+// תשלום שבוצע מה-25 בחודש הקודם ועד ה-24 בחודש עצמו מיוחס לחודש הזה.
 function currentMonthRange(today: string): { start: string; end: string } {
   // today is YYYY-MM-DD
   const [y, m] = today.split('-').map(Number);
-  const start = `${y}-${String(m).padStart(2, '0')}-01`;
-  const lastDay = new Date(y, m, 0).getDate();
-  const end = `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+  let py = y;
+  let pm = m - 1;
+  if (pm < 1) { pm = 12; py -= 1; }
+  const start = `${py}-${String(pm).padStart(2, '0')}-25`;
+  const end = `${y}-${String(m).padStart(2, '0')}-24`;
   return { start, end };
 }
 

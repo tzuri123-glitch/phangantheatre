@@ -6,6 +6,7 @@ import Chart from 'chart.js/auto';
 import { formatILS } from '@/lib/utils';
 import { startOfWeek, endOfWeek, eachWeekOfInterval, subWeeks, format, parseISO, isWithinInterval } from 'date-fns';
 import { hasSiblingDiscount } from '@/lib/siblings';
+import { getCoveredMonthKey, getCalendarMonthKey } from '@/lib/paymentMonth';
 import { he } from 'date-fns/locale';
 
 interface DashboardProps {
@@ -38,7 +39,7 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
       // Months with monthly payment (to skip one-time in those months)
       const monthsWithMonthly = new Set<string>();
       studentPayments.filter(p => p.type === 'חודשי').forEach(p => {
-        monthsWithMonthly.add(p.date.slice(0, 7));
+        monthsWithMonthly.add(getCoveredMonthKey(p.date));
       });
       
       studentPayments.forEach(payment => {
@@ -51,8 +52,7 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
           const base = getMonthlyPrice(isSib, payment.subscriptionFrequency || 'biweekly');
           totalExpected += Math.max(0, base - discount);
         } else if (payment.type === 'חד פעמי') {
-          const paymentMonth = payment.date.slice(0, 7);
-          if (!monthsWithMonthly.has(paymentMonth)) {
+          if (!monthsWithMonthly.has(getCalendarMonthKey(payment.date))) {
             const base = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
             totalExpected += Math.max(0, base - discount);
           }
@@ -94,9 +94,10 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
       const paymentDate = parseISO(payment.date);
       
       if (payment.type === 'חודשי') {
-        // תשלום חודשי - מתפרס על כל השבועות בחודש
-        const paymentMonthStart = new Date(paymentDate.getFullYear(), paymentDate.getMonth(), 1);
-        const paymentMonthEnd = new Date(paymentDate.getFullYear(), paymentDate.getMonth() + 1, 0);
+        // תשלום חודשי - מתפרס על כל השבועות בחודש שהוא מכסה
+        const [coveredYear, coveredMonth] = getCoveredMonthKey(payment.date).split('-').map(Number);
+        const paymentMonthStart = new Date(coveredYear, coveredMonth - 1, 1);
+        const paymentMonthEnd = new Date(coveredYear, coveredMonth, 0);
         
         // כל השבועות בחודש של התשלום
         const monthWeeks = eachWeekOfInterval(

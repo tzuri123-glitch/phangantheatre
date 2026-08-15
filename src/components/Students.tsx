@@ -1,6 +1,7 @@
 import { Student, CLASS_OPTIONS, getMonthlyPrice, SubscriptionFrequency } from '@/types';
 import { format, isSameMonth, parseISO } from 'date-fns';
 import { hasSiblingDiscount } from '@/lib/siblings';
+import { getCoveredMonthKey, getCalendarMonthKey } from '@/lib/paymentMonth';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
@@ -64,19 +65,17 @@ export default function Students({ students, payments, onAddStudent, onEditStude
     
     const totalPaid = studentPayments.reduce((sum, p) => sum + p.amount, 0);
     
-    // קבוצת חודשים עם תשלום חודשי
+    // קבוצת חודשים שמכוסים בתשלום חודשי (לפי החודש שהתשלום מכסה, לא תאריך הקבלה)
     const monthsWithMonthlyPayment = new Set<string>();
     studentPayments
       .filter(p => p.type === 'חודשי')
       .forEach(p => {
-        const monthKey = format(parseISO(p.date), 'MM/yyyy');
-        monthsWithMonthlyPayment.add(monthKey);
+        monthsWithMonthlyPayment.add(getCoveredMonthKey(p.date));
       });
     
     let totalExpected = 0;
     
     studentPayments.forEach((payment) => {
-      const paymentMonth = format(parseISO(payment.date), 'MM/yyyy');
       const discount = payment.discount || 0;
       
       if (payment.type === 'חודשי') {
@@ -85,8 +84,9 @@ export default function Students({ students, payments, onAddStudent, onEditStude
         const priceAfterDiscount = Math.max(0, monthlyPrice - discount);
         totalExpected += priceAfterDiscount;
       } else if (payment.type === 'חד פעמי') {
-        // תשלום חד-פעמי נספר רק אם אין תשלום חודשי באותו חודש
-        if (!monthsWithMonthlyPayment.has(paymentMonth)) {
+        // תשלום חד-פעמי נספר רק אם החודש הקלנדרי שלו לא מכוסה במנוי חודשי
+        const sessionMonth = getCalendarMonthKey(payment.date);
+        if (!monthsWithMonthlyPayment.has(sessionMonth)) {
           const singlePrice = hasSiblingDiscount(students, student.id) ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
           const priceAfterDiscount = Math.max(0, singlePrice - discount);
           totalExpected += priceAfterDiscount;
