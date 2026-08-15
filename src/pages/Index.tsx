@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Student, Payment, Session, CLASS_OPTIONS, MONTHLY_PRICE, SIBLING_MONTHLY_PRICE, SINGLE_PRICE, SIBLING_SINGLE_PRICE, MONTHLY_WEEKLY_PRICE, SIBLING_MONTHLY_WEEKLY_PRICE, getMonthlyPrice, SubscriptionFrequency, FREQUENCY_LABELS } from '@/types';
+import { hasSiblingDiscount as hasSiblingDiscountShared } from '@/lib/siblings';
 import { getPaymentStatusForSession, getStatusColor, getStatusBadge } from '@/lib/paymentStatus';
 import { Badge } from '@/components/ui/badge';
 import TabNavigation from '@/components/TabNavigation';
@@ -159,24 +160,11 @@ export default function Index() {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
-  // תלמיד זכאי להנחת אחים אם הוא מסומן כאח/אחות או אם יש תלמיד אחר המקושר אליו
+  // זכאות להנחת אחים — לוגיקה משותפת (src/lib/siblings.ts)
   function hasSiblingDiscount(studentId?: string) {
-    if (!studentId) return false;
-    const s = students.find((x) => x.id === studentId);
-    if (!s) return false;
-    if (s.isSibling) return true;
-    // מקושר ישירות (בשני הכיוונים) או חולק את אותו אח
-    if (students.some((o) =>
-      o.id !== s.id && (o.siblingId === s.id || o.id === s.siblingId || (!!s.siblingId && o.siblingId === s.siblingId))
-    )) return true;
-    // גיבוי: אותו טלפון הורה (מעל תלמיד אחד = אחים)
-    const phone = (s.parentPhone || '').replace(/\D/g, '');
-    if (phone.length >= 6) {
-      const same = students.filter((o) => (o.parentPhone || '').replace(/\D/g, '') === phone);
-      if (same.length > 1) return true;
-    }
-    return false;
+    return hasSiblingDiscountShared(students, studentId);
   }
+
 
 
   function calcPayment(studentId: string, type: string, date: string) {

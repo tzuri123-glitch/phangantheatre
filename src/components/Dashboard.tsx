@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import Chart from 'chart.js/auto';
 import { formatILS } from '@/lib/utils';
 import { startOfWeek, endOfWeek, eachWeekOfInterval, subWeeks, format, parseISO, isWithinInterval } from 'date-fns';
+import { hasSiblingDiscount } from '@/lib/siblings';
 import { he } from 'date-fns/locale';
 
 interface DashboardProps {
@@ -43,7 +44,7 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
       studentPayments.forEach(payment => {
         if (payment.type === 'סגירת יתרה') return; // no expected amount
         
-        const isSib = student?.isSibling || false;
+        const isSib = hasSiblingDiscount(students, studentId);
         const discount = payment.discount || 0;
         
         if (payment.type === 'חודשי') {

@@ -1,5 +1,6 @@
 import { Student, CLASS_OPTIONS, getMonthlyPrice, SubscriptionFrequency } from '@/types';
 import { format, isSameMonth, parseISO } from 'date-fns';
+import { hasSiblingDiscount } from '@/lib/siblings';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
@@ -80,13 +81,13 @@ export default function Students({ students, payments, onAddStudent, onEditStude
       
       if (payment.type === 'חודשי') {
         // תשלום חודשי לפי תדירות
-        const monthlyPrice = getMonthlyPrice(student.isSibling, payment.subscriptionFrequency || 'biweekly');
+        const monthlyPrice = getMonthlyPrice(hasSiblingDiscount(students, student.id), payment.subscriptionFrequency || 'biweekly');
         const priceAfterDiscount = monthlyPrice * (1 - discount / 100);
         totalExpected += priceAfterDiscount;
       } else if (payment.type === 'חד פעמי') {
         // תשלום חד-פעמי נספר רק אם אין תשלום חודשי באותו חודש
         if (!monthsWithMonthlyPayment.has(paymentMonth)) {
-          const singlePrice = student.isSibling ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
+          const singlePrice = hasSiblingDiscount(students, student.id) ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
           const priceAfterDiscount = singlePrice * (1 - discount / 100);
           totalExpected += priceAfterDiscount;
         }
