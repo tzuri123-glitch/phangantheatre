@@ -57,19 +57,17 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
       const studentPaymentsList = payments.filter((p) => p.studentId === student.id);
       const totalPaid = studentPaymentsList.reduce((sum, p) => sum + p.amount, 0);
       
-      // קבוצת חודשים עם תשלום חודשי
+      // קבוצת חודשים שמכוסים בתשלום חודשי (לפי החודש שהתשלום מכסה)
       const monthsWithMonthlyPayment = new Set<string>();
       studentPaymentsList
         .filter(p => p.type === 'חודשי')
         .forEach(p => {
-          const monthKey = format(parseISO(p.date), 'MM/yyyy');
-          monthsWithMonthlyPayment.add(monthKey);
+          monthsWithMonthlyPayment.add(getCoveredMonthKey(p.date));
         });
       
       let totalExpected = 0;
       
       studentPaymentsList.forEach((payment) => {
-        const paymentMonth = format(parseISO(payment.date), 'MM/yyyy');
         const discount = payment.discount || 0;
         
         if (payment.type === 'סגירת יתרה') {
@@ -79,7 +77,7 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
           const priceAfterDiscount = Math.max(0, monthlyPrice - discount);
           totalExpected += priceAfterDiscount;
         } else if (payment.type === 'חד פעמי') {
-          if (!monthsWithMonthlyPayment.has(paymentMonth)) {
+          if (!monthsWithMonthlyPayment.has(getCalendarMonthKey(payment.date))) {
             const singlePrice = hasSiblingDiscount(students, student.id) ? 700 : 800;
             const priceAfterDiscount = Math.max(0, singlePrice - discount);
             totalExpected += priceAfterDiscount;
