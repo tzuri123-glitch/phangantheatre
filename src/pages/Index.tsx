@@ -159,9 +159,22 @@ export default function Index() {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
+  // תלמיד זכאי להנחת אחים אם הוא מסומן כאח/אחות או אם יש תלמיד אחר המקושר אליו
+  function hasSiblingDiscount(studentId?: string) {
+    if (!studentId) return false;
+    const s = students.find((x) => x.id === studentId);
+    if (!s) return false;
+    if (s.isSibling) return true;
+    return students.some((o) =>
+      o.id !== s.id && (o.siblingId === s.id || o.id === s.siblingId || (!!s.siblingId && o.siblingId === s.siblingId))
+    );
+  }
+
   function calcPayment(studentId: string, type: string, date: string) {
     const student = students.find((s) => s.id === studentId);
     if (!student) return { amount: 0, note: '' };
+    const isSib = hasSiblingDiscount(studentId);
+
     
     // Parser עמיד לפורמטים שונים (YYYY-MM-DD וגם DD.MM[.YYYY])
     const parseDate = (s: string) => {
