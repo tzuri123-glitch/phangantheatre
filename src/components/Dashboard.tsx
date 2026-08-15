@@ -38,7 +38,7 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
       // Months with monthly payment (to skip one-time in those months)
       const monthsWithMonthly = new Set<string>();
       studentPayments.filter(p => p.type === 'חודשי').forEach(p => {
-        monthsWithMonthly.add(p.date.slice(0, 7));
+        monthsWithMonthly.add(getCoveredMonthKey(p.date));
       });
       
       studentPayments.forEach(payment => {
@@ -51,8 +51,7 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
           const base = getMonthlyPrice(isSib, payment.subscriptionFrequency || 'biweekly');
           totalExpected += Math.max(0, base - discount);
         } else if (payment.type === 'חד פעמי') {
-          const paymentMonth = payment.date.slice(0, 7);
-          if (!monthsWithMonthly.has(paymentMonth)) {
+          if (!monthsWithMonthly.has(getCalendarMonthKey(payment.date))) {
             const base = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
             totalExpected += Math.max(0, base - discount);
           }
