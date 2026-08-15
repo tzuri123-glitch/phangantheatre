@@ -50,6 +50,7 @@ export default function Kiosk() {
   const [arrived, setArrived] = useState<ArrivedRow[]>([]);
   const [debts, setDebts] = useState<DebtRow[]>([]);
   const [payingId, setPayingId] = useState<string | null>(null);
+  const [unmarkingId, setUnmarkingId] = useState<string | null>(null);
   const [monthlyStudent, setMonthlyStudent] = useState<Student | null>(null);
   const [monthlyFreq, setMonthlyFreq] = useState<Frequency>('biweekly');
   const [monthlyMethod, setMonthlyMethod] = useState<'מזומן' | 'סקאן'>('מזומן');
@@ -167,6 +168,24 @@ export default function Kiosk() {
     toast.success(`התשלום של ${s.name} אושר (฿${data.amount})`);
     loadData(currentClass);
   };
+
+  const handleUnmark = async (s: Student) => {
+    if (!savedPin || !adminUserId || !currentClass) return;
+    if (!window.confirm(`לבטל את הנוכחות של ${s.name}?`)) return;
+    setUnmarkingId(s.id);
+    const { data, error } = await supabase.functions.invoke('kiosk-unmark-attendance', {
+      body: { pin: savedPin, admin_user_id: adminUserId, student_id: s.id, class_name: currentClass },
+    });
+    setUnmarkingId(null);
+    if (error || !data?.ok) {
+      toast.error('שגיאה בביטול הנוכחות');
+      return;
+    }
+    toast.success(data.cancelledDebt ? `הנוכחות של ${s.name} בוטלה והחוב הוסר` : `הנוכחות של ${s.name} בוטלה`);
+    loadData(currentClass);
+  };
+
+
 
   const monthlyBase = monthlyStudent
     ? (monthlyStudent.is_sibling ? MONTHLY_PRICES[monthlyFreq].sibling : MONTHLY_PRICES[monthlyFreq].regular)
@@ -428,7 +447,17 @@ export default function Kiosk() {
                     } ${isLoading ? 'opacity-60' : ''}`}
                   >
                     {isHere && (
-                      <div className={`absolute top-2 right-2 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold ${hasDebt ? 'bg-destructive' : 'bg-green-500'}`}>✓</div>
+                      <>
+                        <div className={`absolute top-2 right-2 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold ${hasDebt ? 'bg-destructive' : 'bg-green-500'}`}>✓</div>
+                        <button
+                          onClick={() => handleUnmark(s)}
+                          disabled={unmarkingId === s.id}
+                          title="ביטול נוכחות"
+                          className="absolute top-2 left-2 w-7 h-7 rounded-full bg-muted text-muted-foreground hover:bg-destructive hover:text-white flex items-center justify-center text-sm font-bold transition-colors disabled:opacity-50"
+                        >
+                          ✕
+                        </button>
+                      </>
                     )}
                     <button
                       onClick={() => handleMark(s)}
