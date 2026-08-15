@@ -49,12 +49,12 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
         
         if (payment.type === 'חודשי') {
           const base = getMonthlyPrice(isSib, payment.subscriptionFrequency || 'biweekly');
-          totalExpected += base * (1 - discount / 100);
+          totalExpected += Math.max(0, base - discount);
         } else if (payment.type === 'חד פעמי') {
           const paymentMonth = payment.date.slice(0, 7);
           if (!monthsWithMonthly.has(paymentMonth)) {
             const base = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
-            totalExpected += base * (1 - discount / 100);
+            totalExpected += Math.max(0, base - discount);
           }
         }
       });

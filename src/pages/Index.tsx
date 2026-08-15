@@ -213,7 +213,7 @@ export default function Index() {
         getMonthlyPrice(isSib, payment.subscriptionFrequency || 'biweekly');
       
       const discount = payment.discount || 0;
-      const expectedAmount = baseExpectedAmount * (1 - discount / 100);
+      const expectedAmount = Math.max(0, baseExpectedAmount - discount);
       
       balance += payment.amount - expectedAmount;
     });
