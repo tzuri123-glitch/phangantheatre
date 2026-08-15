@@ -50,6 +50,11 @@ export default function Kiosk() {
   const [arrived, setArrived] = useState<ArrivedRow[]>([]);
   const [debts, setDebts] = useState<DebtRow[]>([]);
   const [payingId, setPayingId] = useState<string | null>(null);
+  const [monthlyStudent, setMonthlyStudent] = useState<Student | null>(null);
+  const [monthlyFreq, setMonthlyFreq] = useState<Frequency>('biweekly');
+  const [monthlyMethod, setMonthlyMethod] = useState<'מזומן' | 'סקאן'>('מזומן');
+  const [monthlyDiscount, setMonthlyDiscount] = useState('');
+  const [savingMonthly, setSavingMonthly] = useState(false);
   const [search, setSearch] = useState('');
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation>(null);
