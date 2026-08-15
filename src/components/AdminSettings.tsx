@@ -4,16 +4,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
 export default function AdminSettings() {
   const { user } = useAuth();
   const [promptPayUrl, setPromptPayUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [kioskPin, setKioskPin] = useState('');
-  const [kioskPin2, setKioskPin2] = useState('');
-  const [savingPin, setSavingPin] = useState(false);
 
   useEffect(() => {
     loadPromptPayImage();

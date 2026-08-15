@@ -8,6 +8,7 @@ import Students from '@/components/Students';
 import Payments from '@/components/Payments';
 import Attendance from '@/components/Attendance';
 import AdminSettings from '@/components/AdminSettings';
+import KioskSettings from '@/components/KioskSettings';
 import PendingPayments from '@/components/PendingPayments';
 import PaymentHistory from '@/components/PaymentHistory';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -452,6 +453,7 @@ export default function Index() {
             toast.success('תלמיד הוסר מהשיעור!');
           }}
         />}
+        {tab === 'kiosk' && <KioskSettings />}
         {tab === 'settings' && <AdminSettings />}
       </main>
 
