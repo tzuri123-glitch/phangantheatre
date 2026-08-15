@@ -169,18 +169,23 @@ export default function Kiosk() {
   const handleUnmark = async (s: Student) => {
     if (!savedPin || !adminUserId || !currentClass) return;
     if (!window.confirm(`לבטל את הנוכחות של ${s.name}?`)) return;
-    setUnmarkingId(s.id);
+    // Optimistic: remove immediately
+    const prevArrived = arrived;
+    const prevDebts = debts;
+    setArrived(prev => prev.filter(a => a.student_id !== s.id));
+    setDebts(prev => prev.filter(d => d.student_id !== s.id));
     const { data, error } = await supabase.functions.invoke('kiosk-unmark-attendance', {
       body: { pin: savedPin, admin_user_id: adminUserId, student_id: s.id, class_name: currentClass },
     });
-    setUnmarkingId(null);
     if (error || !data?.ok) {
+      setArrived(prevArrived);
+      setDebts(prevDebts);
       toast.error('שגיאה בביטול הנוכחות');
       return;
     }
     toast.success(data.cancelledDebt ? `הנוכחות של ${s.name} בוטלה והחוב הוסר` : `הנוכחות של ${s.name} בוטלה`);
-    loadData(currentClass);
   };
+
 
 
 
