@@ -401,7 +401,7 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
                                     <TableCell className="text-sm">{payment.method}</TableCell>
                                     <TableCell>
                                       {payment.discount ? (
-                                        <span className="text-yellow-600 font-medium text-sm">{payment.discount}%</span>
+                                        <span className="text-yellow-600 font-medium text-sm">{formatILS(payment.discount)}</span>
                                       ) : (
                                         <span className="text-muted-foreground text-sm">-</span>
                                       )}
