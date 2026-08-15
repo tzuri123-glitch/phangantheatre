@@ -212,8 +212,8 @@ export default function Index() {
         return;
       }
       const baseExpectedAmount = 
-        payment.type === 'חד פעמי' ? (student.isSibling ? SIBLING_SINGLE_PRICE : SINGLE_PRICE) :
-        getMonthlyPrice(student.isSibling, payment.subscriptionFrequency || 'biweekly');
+        payment.type === 'חד פעמי' ? (isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE) :
+        getMonthlyPrice(isSib, payment.subscriptionFrequency || 'biweekly');
       
       const discount = payment.discount || 0;
       const expectedAmount = baseExpectedAmount * (1 - discount / 100);
@@ -241,7 +241,7 @@ export default function Index() {
     }
     
     if (type === 'חד פעמי') {
-      baseAmount = student.isSibling ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
+      baseAmount = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
     } else if (type === 'חודשי') {
       const singles = payments.filter((p) => {
         if (p.studentId !== studentId) return false;
@@ -253,7 +253,7 @@ export default function Index() {
         return pd.getFullYear() === currDate.getFullYear() && pd.getMonth() === currDate.getMonth();
       });
       const sumSingles = singles.reduce((sum, p) => sum + p.amount, 0);
-      const base = getMonthlyPrice(student.isSibling, paymentForm.subscriptionFrequency || 'biweekly');
+      const base = getMonthlyPrice(isSib, paymentForm.subscriptionFrequency || 'biweekly');
       baseAmount = Math.max(base - sumSingles, 0);
       if (sumSingles > 0) {
         note = `כולל קיזוז ${formatILS(sumSingles)} מתשלומים בחודש`;
@@ -883,7 +883,7 @@ export default function Index() {
               }}><SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger><SelectContent>
               {(() => {
                 const selectedStudent = students.find(s => s.id === paymentForm.studentId);
-                const isSib = selectedStudent?.isSibling;
+                const isSib = hasSiblingDiscount(paymentForm.studentId);
                 return <>
                   <SelectItem value="חד פעמי">חד פעמי (฿{isSib ? '700' : '800'})</SelectItem>
                   <SelectItem value="חודשי|biweekly">חודשי דו-שבועי — פעמיים בשבוע (฿{isSib ? '3,900' : '4,200'})</SelectItem>
@@ -895,7 +895,7 @@ export default function Index() {
 
             {paymentForm.studentId && (() => {
               const selectedStudent = students.find(s => s.id === paymentForm.studentId);
-              return selectedStudent?.isSibling ? (
+              return hasSiblingDiscount(paymentForm.studentId) ? (
                 <div className="text-xs text-primary font-medium bg-primary/10 rounded-lg px-3 py-1.5">👫 תלמיד אח/אחות — מחיר מוזל</div>
               ) : null;
             })()}
