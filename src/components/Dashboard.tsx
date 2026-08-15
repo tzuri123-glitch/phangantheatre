@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Student, Payment, SINGLE_PRICE, SIBLING_SINGLE_PRICE, MONTHLY_PRICE, SIBLING_MONTHLY_PRICE, getMonthlyPrice } from '@/types';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import Chart from 'chart.js/auto';
 import { formatILS } from '@/lib/utils';
 import { startOfWeek, endOfWeek, eachWeekOfInterval, subWeeks, format, parseISO, isWithinInterval } from 'date-fns';
@@ -12,10 +11,9 @@ import { he } from 'date-fns/locale';
 interface DashboardProps {
   students: Student[];
   payments: Payment[];
-  onAddStudent: () => void;
 }
 
-export default function Dashboard({ students, payments, onAddStudent }: DashboardProps) {
+export default function Dashboard({ students, payments }: DashboardProps) {
   const barChartRef = useRef<HTMLCanvasElement>(null);
   const weeklyChartRef = useRef<HTMLCanvasElement>(null);
   const pieChartRef = useRef<HTMLCanvasElement>(null);
