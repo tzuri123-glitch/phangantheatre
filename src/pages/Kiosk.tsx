@@ -349,8 +349,17 @@ export default function Kiosk() {
                         >
                           {payingId === s.id ? 'מאשר...' : '✓ אישור ששולם'}
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => { setMonthlyStudent(s); setMonthlyFreq('biweekly'); setMonthlyMethod('מזומן'); setMonthlyDiscount(''); }}
+                          className="w-full h-9 border-primary text-primary hover:bg-primary/10"
+                        >
+                          מנוי חודשי
+                        </Button>
                       </>
                     )}
+
                   </div>
                 );
               })}
