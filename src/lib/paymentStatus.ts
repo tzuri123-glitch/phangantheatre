@@ -82,12 +82,13 @@ const hasOneTimeOrTrialPayment = payments.some(payment => {
   return isPaidEnough;
 });
 
-// Check for 100% discount payments for the exact session date
+// Check for full-discount (free) payments for the exact session date
 const has100PercentDiscount = payments.some(payment => {
   if (payment.studentId !== student.id) return false;
   
-  // Only 100% discount counts as payment - amount 0 without discount is NOT a payment
-  const isFullDiscount = payment.discount === 100;
+  // Only a discount covering the full price counts as payment
+  const fullPrice = student.isSibling ? 700 : 800;
+  const isFullDiscount = (payment.discount || 0) >= fullPrice;
   if (!isFullDiscount) return false;
   
   const paymentDate = parseISO(payment.date);
