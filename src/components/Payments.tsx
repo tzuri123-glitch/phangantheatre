@@ -319,9 +319,10 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {CLASS_OPTIONS.map((className) => {
           const { studentPayments, totalClassIncome, studentCount } = getClassData(className);
+          const isExpanded = expandedClasses[className] && studentCount > 0;
           
           return (
-            <Card key={className} className="overflow-hidden">
+            <Card key={className} className={`overflow-hidden ${isExpanded ? 'md:col-span-2' : ''}`}>
               <div
                 className="p-6 bg-accent cursor-pointer hover:bg-accent/80 transition-colors"
                 onClick={() => toggleClass(className)}
