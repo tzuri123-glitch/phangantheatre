@@ -307,17 +307,26 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
         </Card>
         
         <Card className="p-4 sm:p-6 bg-gradient-to-br from-magenta/10 via-magenta/5 to-transparent border-magenta/20 card-hover backdrop-blur-sm">
-          <h3 className="text-sm sm:text-lg font-semibold text-muted-foreground mb-1 sm:mb-2">ברוטו</h3>
+          <h3 className="text-sm sm:text-lg font-semibold text-muted-foreground mb-1 sm:mb-2">סה"כ הכנסות</h3>
           <p className="text-2xl sm:text-4xl font-bold bg-gradient-to-l from-magenta to-magenta-glow bg-clip-text text-transparent">
             {formatILS(totalIncome)}
           </p>
         </Card>
 
         <Card className="p-4 sm:p-6 bg-gradient-to-br from-green-500/10 via-green-500/5 to-transparent border-green-500/20 card-hover backdrop-blur-sm">
-          <h3 className="text-sm sm:text-lg font-semibold text-muted-foreground mb-1 sm:mb-2">נטו</h3>
-          <p className="text-2xl sm:text-4xl font-bold text-green-600 dark:text-green-400">
-            {formatILS(balanceSummary.netIncome)}
+          <h3 className="text-sm sm:text-lg font-semibold text-muted-foreground mb-1 sm:mb-2">תלמידים מנוי</h3>
+          <p className="text-3xl sm:text-5xl font-bold text-green-600 dark:text-green-400">
+            {monthlyPayerIds.size}
           </p>
+          <p className="text-xs text-muted-foreground mt-1">סה"כ ששילמו: {totalPayers}</p>
+        </Card>
+
+        <Card className="p-4 sm:p-6 bg-gradient-to-br from-yellow-500/10 via-yellow-500/5 to-transparent border-yellow-500/20 card-hover backdrop-blur-sm">
+          <h3 className="text-sm sm:text-lg font-semibold text-muted-foreground mb-1 sm:mb-2">תלמידים חד פעמי</h3>
+          <p className="text-3xl sm:text-5xl font-bold text-yellow-600 dark:text-yellow-400">
+            {singlePayerIds.size}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">סה"כ ששילמו: {totalPayers}</p>
         </Card>
 
         <Card className="p-4 sm:p-6 card-hover backdrop-blur-sm">
@@ -334,6 +343,9 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
                 {formatILS(balanceSummary.totalDebts)}
               </p>
             </div>
+          </div>
+        </Card>
+
           </div>
         </Card>
       </div>
