@@ -94,9 +94,10 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
       const paymentDate = parseISO(payment.date);
       
       if (payment.type === 'חודשי') {
-        // תשלום חודשי - מתפרס על כל השבועות בחודש
-        const paymentMonthStart = new Date(paymentDate.getFullYear(), paymentDate.getMonth(), 1);
-        const paymentMonthEnd = new Date(paymentDate.getFullYear(), paymentDate.getMonth() + 1, 0);
+        // תשלום חודשי - מתפרס על כל השבועות בחודש שהוא מכסה
+        const [coveredYear, coveredMonth] = getCoveredMonthKey(payment.date).split('-').map(Number);
+        const paymentMonthStart = new Date(coveredYear, coveredMonth - 1, 1);
+        const paymentMonthEnd = new Date(coveredYear, coveredMonth, 0);
         
         // כל השבועות בחודש של התשלום
         const monthWeeks = eachWeekOfInterval(
