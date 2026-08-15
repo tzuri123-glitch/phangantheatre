@@ -165,10 +165,19 @@ export default function Index() {
     const s = students.find((x) => x.id === studentId);
     if (!s) return false;
     if (s.isSibling) return true;
-    return students.some((o) =>
+    // מקושר ישירות (בשני הכיוונים) או חולק את אותו אח
+    if (students.some((o) =>
       o.id !== s.id && (o.siblingId === s.id || o.id === s.siblingId || (!!s.siblingId && o.siblingId === s.siblingId))
-    );
+    )) return true;
+    // גיבוי: אותו טלפון הורה (מעל תלמיד אחד = אחים)
+    const phone = (s.parentPhone || '').replace(/\D/g, '');
+    if (phone.length >= 6) {
+      const same = students.filter((o) => (o.parentPhone || '').replace(/\D/g, '') === phone);
+      if (same.length > 1) return true;
+    }
+    return false;
   }
+
 
   function calcPayment(studentId: string, type: string, date: string) {
     const student = students.find((s) => s.id === studentId);
