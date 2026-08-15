@@ -12,7 +12,16 @@ type Student = {
   last_name: string | null;
   profile_photo_url: string | null;
   status?: string | null;
+  is_sibling?: boolean | null;
 };
+
+const MONTHLY_PRICES = {
+  biweekly: { regular: 4200, sibling: 3900 },
+  weekly: { regular: 3000, sibling: 2700 },
+} as const;
+
+type Frequency = 'biweekly' | 'weekly';
+
 
 type ArrivedRow = { student_id: string; created_at: string };
 
@@ -41,6 +50,11 @@ export default function Kiosk() {
   const [arrived, setArrived] = useState<ArrivedRow[]>([]);
   const [debts, setDebts] = useState<DebtRow[]>([]);
   const [payingId, setPayingId] = useState<string | null>(null);
+  const [monthlyStudent, setMonthlyStudent] = useState<Student | null>(null);
+  const [monthlyFreq, setMonthlyFreq] = useState<Frequency>('biweekly');
+  const [monthlyMethod, setMonthlyMethod] = useState<'מזומן' | 'סקאן'>('מזומן');
+  const [monthlyDiscount, setMonthlyDiscount] = useState('');
+  const [savingMonthly, setSavingMonthly] = useState(false);
   const [search, setSearch] = useState('');
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation>(null);
@@ -154,6 +168,36 @@ export default function Kiosk() {
     loadData(currentClass);
   };
 
+  const monthlyBase = monthlyStudent
+    ? (monthlyStudent.is_sibling ? MONTHLY_PRICES[monthlyFreq].sibling : MONTHLY_PRICES[monthlyFreq].regular)
+    : 0;
+  const monthlyFinal = Math.max(0, monthlyBase - (Number(monthlyDiscount) || 0));
+
+  const handleSaveMonthly = async () => {
+    if (!savedPin || !adminUserId || !monthlyStudent) return;
+    setSavingMonthly(true);
+    const { data, error } = await supabase.functions.invoke('kiosk-mark-monthly', {
+      body: {
+        pin: savedPin,
+        admin_user_id: adminUserId,
+        student_id: monthlyStudent.id,
+        payment_method: monthlyMethod,
+        frequency: monthlyFreq,
+        discount: Number(monthlyDiscount) || 0,
+      },
+    });
+    setSavingMonthly(false);
+    if (error || !data?.ok) {
+      toast.error('שגיאה בשמירת המנוי החודשי');
+      return;
+    }
+    toast.success(`נרשם מנוי חודשי ל${monthlyStudent.name} (฿${data.amount})`);
+    setMonthlyStudent(null);
+    loadData(currentClass);
+  };
+
+
+
   const debtByStudent = new Map<string, number>();
   debts.forEach(d => {
     debtByStudent.set(d.student_id, (debtByStudent.get(d.student_id) || 0) + Number(d.amount || 0));
@@ -241,8 +285,81 @@ export default function Kiosk() {
   // ===== STUDENTS STAGE =====
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/10 to-background p-4 sm:p-6" dir="rtl">
+      {/* Monthly subscription dialog */}
+      {monthlyStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+          <Card className="w-full max-w-md p-6 space-y-5">
+            <div>
+              <h2 className="text-2xl font-bold text-foreground">מנוי חודשי</h2>
+              <p className="text-muted-foreground">{monthlyStudent.name} {monthlyStudent.last_name || ''}</p>
+            </div>
+
+            <div className="space-y-2">
+              <p className="font-semibold text-sm text-foreground">סוג המנוי</p>
+              <div className="grid grid-cols-2 gap-2">
+                {(['biweekly', 'weekly'] as Frequency[]).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setMonthlyFreq(f)}
+                    className={`p-3 rounded-xl border-2 text-sm font-bold transition-all ${
+                      monthlyFreq === f ? 'border-primary bg-primary/10 text-primary' : 'border-border text-foreground'
+                    }`}
+                  >
+                    {f === 'biweekly' ? 'דו-שבועי' : 'חד-שבועי'}
+                    <div className="text-xs font-normal mt-1">
+                      ฿{monthlyStudent.is_sibling ? MONTHLY_PRICES[f].sibling : MONTHLY_PRICES[f].regular}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="font-semibold text-sm text-foreground">אמצעי תשלום</p>
+              <div className="grid grid-cols-2 gap-2">
+                {(['מזומן', 'סקאן'] as const).map(m => (
+                  <button
+                    key={m}
+                    onClick={() => setMonthlyMethod(m)}
+                    className={`p-3 rounded-xl border-2 text-sm font-bold transition-all ${
+                      monthlyMethod === m ? 'border-primary bg-primary/10 text-primary' : 'border-border text-foreground'
+                    }`}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="font-semibold text-sm text-foreground">הנחה (฿)</p>
+              <Input
+                type="number"
+                min={0}
+                value={monthlyDiscount}
+                onChange={(e) => setMonthlyDiscount(e.target.value)}
+                placeholder="0"
+                className="h-12"
+              />
+            </div>
+
+            <div className="bg-primary/10 rounded-xl p-3 text-center font-bold text-primary text-lg">
+              לתשלום: ฿{monthlyFinal}
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={handleSaveMonthly} disabled={savingMonthly} className="flex-1 h-12">
+                {savingMonthly ? 'שומר...' : 'אישור תשלום חודשי'}
+              </Button>
+              <Button variant="outline" onClick={() => setMonthlyStudent(null)} className="h-12">ביטול</Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
       {/* Confirmation overlay */}
       {confirmation && (
+
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in">
           <Card className={`max-w-lg w-[90%] p-10 text-center space-y-4 border-4 ${confirmation.already ? 'border-primary' : 'border-green-500'}`}>
             {confirmation.photo ? (
@@ -340,8 +457,17 @@ export default function Kiosk() {
                         >
                           {payingId === s.id ? 'מאשר...' : '✓ אישור ששולם'}
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => { setMonthlyStudent(s); setMonthlyFreq('biweekly'); setMonthlyMethod('מזומן'); setMonthlyDiscount(''); }}
+                          className="w-full h-9 border-primary text-primary hover:bg-primary/10"
+                        >
+                          מנוי חודשי
+                        </Button>
                       </>
                     )}
+
                   </div>
                 );
               })}
