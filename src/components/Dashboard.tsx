@@ -298,7 +298,7 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
         </Button>
       </div>
       
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card className="p-4 sm:p-6 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 card-hover backdrop-blur-sm">
           <h3 className="text-sm sm:text-lg font-semibold text-muted-foreground mb-1 sm:mb-2">סה"כ תלמידים</h3>
           <p className="text-3xl sm:text-5xl font-bold bg-gradient-to-l from-primary to-primary-glow bg-clip-text text-transparent">
