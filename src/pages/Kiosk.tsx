@@ -133,26 +133,23 @@ export default function Kiosk() {
 
   const handleMark = async (s: Student) => {
     if (!savedPin || !adminUserId || !currentClass) return;
-    setSubmitting(s.id);
+    if (arrived.some(a => a.student_id === s.id)) return;
+    // Optimistic: show the student as arrived immediately
+    setArrived(prev => [...prev, { student_id: s.id, created_at: new Date().toISOString() }]);
     const { data, error } = await supabase.functions.invoke('kiosk-mark-attendance', {
       body: { pin: savedPin, admin_user_id: adminUserId, class_name: currentClass, student_id: s.id },
     });
-    setSubmitting(null);
     if (error || !data?.ok) {
+      // Roll back
+      setArrived(prev => prev.filter(a => a.student_id !== s.id));
       toast.error('שגיאה ברישום נוכחות');
       return;
     }
-    setConfirmation({
-      name: `${s.name} ${s.last_name || ''}`.trim(),
-      photo: s.profile_photo_url,
-      already: !!data.already,
-      createdDebt: !!data.createdDebt,
-      debtAmount: data.debtAmount || 0,
-    });
-    // refresh arrivals
-    loadData(currentClass);
-    setConfirmation(null);
+    if (data.createdDebt) {
+      setDebts(prev => [...prev, { id: `tmp-${s.id}`, student_id: s.id, amount: data.debtAmount || 0, created_at: new Date().toISOString() }]);
+    }
   };
+
 
   const handleMarkPaid = async (s: Student) => {
     if (!savedPin || !adminUserId || !currentClass) return;
