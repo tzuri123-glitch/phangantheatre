@@ -8,21 +8,16 @@ import { Student } from '@/types';
  */
 export function hasSiblingDiscount(students: Student[], studentId?: string): boolean {
   if (!studentId) return false;
-  const s = students.find((x) => x.id === studentId);
-  if (!s) return false;
-  if (s.isSibling) return true;
+  const student = students.find(({ id }) => id === studentId);
+  if (!student) return false;
+  if (student.isSibling) return true;
 
-  if (
-    students.some(
-      (o) =>
-        o.id !== s.id &&
-        (o.siblingId === s.id || o.id === s.siblingId || (!!s.siblingId && o.siblingId === s.siblingId))
-    )
-  ) {
-    return true;
-  }
+  const linkedStudentIds = new Set(
+    students.flatMap(({ id, siblingId }) => siblingId ? [id, siblingId] : [])
+  );
+  if (linkedStudentIds.has(student.id)) return true;
 
-  const phone = (s.parentPhone || '').replace(/\D/g, '');
+  const phone = (student.parentPhone || '').replace(/\D/g, '');
   if (phone.length >= 6) {
     if (students.filter((o) => (o.parentPhone || '').replace(/\D/g, '') === phone).length > 1) return true;
   }
