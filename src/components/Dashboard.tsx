@@ -67,7 +67,22 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
     return { totalExpected, totalCredits, totalDebts, netIncome };
   })();
 
+  // מספר תלמידים ששילמו בחודש הנוכחי לפי סוג
+  const currentMonthKey = format(new Date(), 'yyyy-MM');
+  const monthlyPayerIds = new Set(
+    payments
+      .filter((p) => p.type === 'חודשי' && getCoveredMonthKey(p.date) === currentMonthKey)
+      .map((p) => p.studentId)
+  );
+  const singlePayerIds = new Set(
+    payments
+      .filter((p) => p.type === 'חד פעמי' && getCalendarMonthKey(p.date) === currentMonthKey)
+      .map((p) => p.studentId)
+  );
+  const totalPayers = new Set([...monthlyPayerIds, ...singlePayerIds]).size;
+
   const incomeByMonth = payments.reduce((acc, p) => {
+
     const monthKey = p.date.slice(0, 7);
     acc[monthKey] = (acc[monthKey] || 0) + p.amount;
     return acc;
