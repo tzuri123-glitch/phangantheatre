@@ -6,6 +6,7 @@ import Chart from 'chart.js/auto';
 import { formatILS } from '@/lib/utils';
 import { startOfWeek, endOfWeek, eachWeekOfInterval, subWeeks, format, parseISO, isWithinInterval } from 'date-fns';
 import { hasSiblingDiscount } from '@/lib/siblings';
+import { getCoveredMonthKey, getCalendarMonthKey } from '@/lib/paymentMonth';
 import { he } from 'date-fns/locale';
 
 interface DashboardProps {
