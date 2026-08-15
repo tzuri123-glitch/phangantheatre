@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Students can create own payment requests" ON public.pending_payments;
