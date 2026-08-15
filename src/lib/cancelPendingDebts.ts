@@ -1,9 +1,9 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getCoveredMonthKey } from '@/lib/paymentMonth';
 
 /**
- * מבטל חיובי 'חד פעמי' ממתינים שנוצרו אוטומטית בקיוסק עבור התלמיד באותו חודש,
- * כאשר נרשם תשלום חודשי שמכסה את אותו חודש.
- * monthDate: תאריך כלשהו בתוך החודש (yyyy-mm-dd).
+ * מבטל חיובי 'חד פעמי' ממתינים שנוצרו אוטומטית בקיוסק עבור התלמיד בחודש שהתשלום החודשי מכסה.
+ * monthDate: תאריך התשלום החודשי (yyyy-mm-dd) — החודש המכוסה נגזר ממנו (25+ = החודש הבא).
  * excludeId: pending_payment שכבר עיבדנו (לא לבטל שוב).
  */
 export async function cancelMonthOneTimePendingDebts(
@@ -11,7 +11,7 @@ export async function cancelMonthOneTimePendingDebts(
   monthDate: string,
   excludeId?: string,
 ): Promise<number> {
-  const [y, m] = monthDate.split('-').map(Number);
+  const [y, m] = getCoveredMonthKey(monthDate).split('-').map(Number);
   if (!y || !m) return 0;
   const lastDay = new Date(y, m, 0).getDate();
   const start = `${y}-${String(m).padStart(2, '0')}-01T00:00:00`;
