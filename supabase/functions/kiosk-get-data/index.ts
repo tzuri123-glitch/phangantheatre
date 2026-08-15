@@ -46,6 +46,7 @@ Deno.serve(async (req) => {
 
     let students: any[] = [];
     let arrivedToday: any[] = [];
+    let openDebts: any[] = [];
     if (class_name) {
       const { data: studs } = await admin
         .from('students')
@@ -70,9 +71,21 @@ Deno.serve(async (req) => {
           .eq('session_id', session.id);
         arrivedToday = att || [];
       }
+
+      const ids = students.map((s: any) => s.id);
+      if (ids.length > 0) {
+        const { data: debts } = await admin
+          .from('pending_payments')
+          .select('id, student_id, amount, created_at')
+          .eq('admin_user_id', admin_user_id)
+          .eq('payment_type', 'חד פעמי')
+          .eq('status', 'pending')
+          .in('student_id', ids);
+        openDebts = debts || [];
+      }
     }
 
-    return new Response(JSON.stringify({ ok: true, classes, students, arrivedToday, today: getBangkokDate() }), {
+    return new Response(JSON.stringify({ ok: true, classes, students, arrivedToday, openDebts, today: getBangkokDate() }), {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch {
