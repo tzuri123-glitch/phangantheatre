@@ -285,8 +285,81 @@ export default function Kiosk() {
   // ===== STUDENTS STAGE =====
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/10 to-background p-4 sm:p-6" dir="rtl">
+      {/* Monthly subscription dialog */}
+      {monthlyStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+          <Card className="w-full max-w-md p-6 space-y-5">
+            <div>
+              <h2 className="text-2xl font-bold text-foreground">מנוי חודשי</h2>
+              <p className="text-muted-foreground">{monthlyStudent.name} {monthlyStudent.last_name || ''}</p>
+            </div>
+
+            <div className="space-y-2">
+              <p className="font-semibold text-sm text-foreground">סוג המנוי</p>
+              <div className="grid grid-cols-2 gap-2">
+                {(['biweekly', 'weekly'] as Frequency[]).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setMonthlyFreq(f)}
+                    className={`p-3 rounded-xl border-2 text-sm font-bold transition-all ${
+                      monthlyFreq === f ? 'border-primary bg-primary/10 text-primary' : 'border-border text-foreground'
+                    }`}
+                  >
+                    {f === 'biweekly' ? 'דו-שבועי' : 'חד-שבועי'}
+                    <div className="text-xs font-normal mt-1">
+                      ฿{monthlyStudent.is_sibling ? MONTHLY_PRICES[f].sibling : MONTHLY_PRICES[f].regular}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="font-semibold text-sm text-foreground">אמצעי תשלום</p>
+              <div className="grid grid-cols-2 gap-2">
+                {(['מזומן', 'סקאן'] as const).map(m => (
+                  <button
+                    key={m}
+                    onClick={() => setMonthlyMethod(m)}
+                    className={`p-3 rounded-xl border-2 text-sm font-bold transition-all ${
+                      monthlyMethod === m ? 'border-primary bg-primary/10 text-primary' : 'border-border text-foreground'
+                    }`}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="font-semibold text-sm text-foreground">הנחה (฿)</p>
+              <Input
+                type="number"
+                min={0}
+                value={monthlyDiscount}
+                onChange={(e) => setMonthlyDiscount(e.target.value)}
+                placeholder="0"
+                className="h-12"
+              />
+            </div>
+
+            <div className="bg-primary/10 rounded-xl p-3 text-center font-bold text-primary text-lg">
+              לתשלום: ฿{monthlyFinal}
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={handleSaveMonthly} disabled={savingMonthly} className="flex-1 h-12">
+                {savingMonthly ? 'שומר...' : 'אישור תשלום חודשי'}
+              </Button>
+              <Button variant="outline" onClick={() => setMonthlyStudent(null)} className="h-12">ביטול</Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
       {/* Confirmation overlay */}
       {confirmation && (
+
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in">
           <Card className={`max-w-lg w-[90%] p-10 text-center space-y-4 border-4 ${confirmation.already ? 'border-primary' : 'border-green-500'}`}>
             {confirmation.photo ? (
