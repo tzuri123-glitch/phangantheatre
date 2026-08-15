@@ -43,7 +43,7 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
       studentPayments.forEach(payment => {
         if (payment.type === 'סגירת יתרה') return; // no expected amount
         
-        const isSib = student?.isSibling || false;
+        const isSib = hasSiblingDiscount(students, studentId);
         const discount = payment.discount || 0;
         
         if (payment.type === 'חודשי') {

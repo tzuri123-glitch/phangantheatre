@@ -80,13 +80,13 @@ export default function Students({ students, payments, onAddStudent, onEditStude
       
       if (payment.type === 'חודשי') {
         // תשלום חודשי לפי תדירות
-        const monthlyPrice = getMonthlyPrice(student.isSibling, payment.subscriptionFrequency || 'biweekly');
+        const monthlyPrice = getMonthlyPrice(hasSiblingDiscount(students, student.id), payment.subscriptionFrequency || 'biweekly');
         const priceAfterDiscount = monthlyPrice * (1 - discount / 100);
         totalExpected += priceAfterDiscount;
       } else if (payment.type === 'חד פעמי') {
         // תשלום חד-פעמי נספר רק אם אין תשלום חודשי באותו חודש
         if (!monthsWithMonthlyPayment.has(paymentMonth)) {
-          const singlePrice = student.isSibling ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
+          const singlePrice = hasSiblingDiscount(students, student.id) ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
           const priceAfterDiscount = singlePrice * (1 - discount / 100);
           totalExpected += priceAfterDiscount;
         }
