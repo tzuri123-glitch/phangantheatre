@@ -103,16 +103,15 @@ const has100PercentDiscount = payments.some(payment => {
   return isExactMatch;
 });
 
-// Monthly payment counts for the whole month of the session
+// Monthly payment covers the calendar month it was made FOR (window: 25th prev month → 5th)
+const sessionMonthKey = getCalendarMonthKey(session.date);
 const hasMonthlyPayment = payments.some(payment => {
   if (payment.studentId !== student.id || payment.type !== 'חודשי') return false;
-  const paymentDate = parseISO(payment.date);
-  paymentDate.setHours(0, 0, 0, 0);
-  const sameMonth = isSameMonth(paymentDate, sessionDate);
-  if (sameMonth) {
-    console.log('✅ Found monthly payment for session month:', payment.date);
+  const covers = getCoveredMonthKey(payment.date) === sessionMonthKey;
+  if (covers) {
+    console.log('✅ Found monthly payment covering session month:', payment.date);
   }
-  return sameMonth;
+  return covers;
 });
 
 const hasPaid = !!activeSubscription || hasMonthlyPayment || hasOneTimeOrTrialPayment || has100PercentDiscount;
