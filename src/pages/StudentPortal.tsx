@@ -86,15 +86,6 @@ export default function StudentPortal() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Payment dialog
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'promptpay' | null>(null);
-  const [selectedPaymentType, setSelectedPaymentType] = useState<string>('');
-  const [selectedFrequency, setSelectedFrequency] = useState<'weekly' | 'biweekly'>('biweekly');
-  const [promptPayUrl, setPromptPayUrl] = useState<string | null>(null);
-  const [proofFile, setProofFile] = useState<File | null>(null);
-  const [proofPreview, setProofPreview] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -147,18 +138,6 @@ export default function StudentPortal() {
         setPendingPayments((pendingData as PendingPayment[]).filter(p => p.status !== 'deleted_by_admin'));
       }
 
-      // PromptPay QR (signed URL for private bucket)
-      const { data: files } = await supabase.storage
-        .from('admin-settings')
-        .list('', { limit: 10 });
-
-      const ppFile = files?.find(f => f.name.startsWith('promptpay'));
-      if (ppFile) {
-        const { data: signed } = await supabase.storage
-          .from('admin-settings')
-          .createSignedUrl(ppFile.name, 60 * 60);
-        if (signed) setPromptPayUrl(signed.signedUrl);
-      }
 
       setLoading(false);
     };
@@ -215,121 +194,6 @@ export default function StudentPortal() {
     return () => { supabase.removeChannel(channel); };
   }, [student]);
 
-  const handleCashPaymentRequest = async () => {
-    if (!student || !selectedPaymentType) {
-      toast.error('בחר סוג תשלום');
-      return;
-    }
-    setSubmitting(true);
-
-    try {
-      const { data, error } = await supabase
-        .from('pending_payments')
-        .insert({
-          student_id: student.id,
-          admin_user_id: student.user_id,
-          payment_type: selectedPaymentType,
-          payment_method: 'מזומן',
-          subscription_frequency: selectedPaymentType === 'חודשי' ? selectedFrequency : null,
-        } as any)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setPendingPayments(prev => [data, ...prev]);
-      toast.success('בקשת תשלום נשלחה למנהל! ⏳');
-      setShowPaymentDialog(false);
-      setPaymentMethod(null);
-      setSelectedPaymentType('');
-    } catch (error: any) {
-      toast.error('שגיאה: ' + error.message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleSelectProof = (file: File | null) => {
-    if (!file) { setProofFile(null); setProofPreview(null); return; }
-    if (!file.type.startsWith('image/')) {
-      toast.error('יש להעלות תמונה בלבד');
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('התמונה גדולה מדי (מקסימום 10MB)');
-      return;
-    }
-    setProofFile(file);
-    const reader = new FileReader();
-    reader.onload = (e) => setProofPreview(e.target?.result as string);
-    reader.readAsDataURL(file);
-  };
-
-  // Listen for paste events while PromptPay dialog is open
-  useEffect(() => {
-    if (!showPaymentDialog || paymentMethod !== 'promptpay') return;
-    const onPaste = (e: ClipboardEvent) => {
-      const items = e.clipboardData?.items;
-      if (!items) return;
-      for (const item of items) {
-        if (item.type.startsWith('image/')) {
-          const file = item.getAsFile();
-          if (file) {
-            handleSelectProof(file);
-            toast.success('תמונה הודבקה ✓');
-            e.preventDefault();
-            return;
-          }
-        }
-      }
-    };
-    window.addEventListener('paste', onPaste);
-    return () => window.removeEventListener('paste', onPaste);
-  }, [showPaymentDialog, paymentMethod]);
-
-  const handlePromptPayRequest = async () => {
-    if (!student || !user || !selectedPaymentType) {
-      toast.error('בחר סוג תשלום');
-      return;
-    }
-    if (!proofFile) {
-      toast.error('יש להעלות צילום אישור התשלום');
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const ext = proofFile.name.split('.').pop() || 'jpg';
-      const path = `${user.id}/${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('payment-proofs').upload(path, proofFile);
-      if (upErr) throw upErr;
-
-      const { data, error } = await supabase
-        .from('pending_payments')
-        .insert({
-          student_id: student.id,
-          admin_user_id: student.user_id,
-          payment_type: selectedPaymentType,
-          payment_method: 'PromptPay',
-          subscription_frequency: selectedPaymentType === 'חודשי' ? selectedFrequency : null,
-          payment_proof_url: path,
-        } as any)
-        .select()
-        .single();
-      if (error) throw error;
-
-      setPendingPayments(prev => [data, ...prev]);
-      toast.success('בקשת תשלום נשלחה למנהל! ⏳');
-      setShowPaymentDialog(false);
-      setPaymentMethod(null);
-      setSelectedPaymentType('');
-      setProofFile(null);
-      setProofPreview(null);
-    } catch (error: any) {
-      toast.error('שגיאה: ' + error.message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   // Registration completion form state
   const [regName, setRegName] = useState('');
@@ -623,9 +487,6 @@ export default function StudentPortal() {
                   <Button size="sm" onClick={() => setShowQrScanner(true)} className="bg-gradient-to-l from-green-600 to-green-500 text-white">
                     <ScanLine size={16} /> נוכחות
                   </Button>
-                  <Button size="sm" onClick={() => setShowPaymentDialog(true)} className="bg-gradient-to-l from-primary to-primary-hover text-white">
-                    💰 שלם
-                  </Button>
                 </div>
               </div>
               {uploadingPhoto && <p className="text-xs text-muted-foreground mt-2 text-center">מעלה תמונה...</p>}
@@ -635,7 +496,7 @@ export default function StudentPortal() {
             {pendingPayments.filter(p => p.status === 'pending').length > 0 && (
               <Card className="p-3 mb-4 bg-yellow-50 border-yellow-200">
                 <p className="text-sm font-medium text-yellow-800">
-                  ⏳ יש לך {pendingPayments.filter(p => p.status === 'pending').length} בקשות תשלום ממתינות לאישור המנהל
+                  ⏳ יש לך {pendingPayments.filter(p => p.status === 'pending').length} תשלומים ממתינים. התשלום מתבצע מול המנהל בלבד.
                 </p>
               </Card>
             )}
@@ -685,7 +546,7 @@ export default function StudentPortal() {
                 {/* Pending payment requests */}
                 {pendingPayments.length > 0 && (
                   <Card className="overflow-hidden">
-                    <div className="p-3 bg-accent border-b"><h3 className="font-bold text-sm">בקשות תשלום</h3></div>
+                    <div className="p-3 bg-accent border-b"><h3 className="font-bold text-sm">תשלומים ממתינים לעדכון המנהל</h3></div>
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -946,146 +807,6 @@ export default function StudentPortal() {
         }}
       />
 
-      {/* Payment Dialog */}
-      <Dialog open={showPaymentDialog} onOpenChange={(open) => { if (!open) { setShowPaymentDialog(false); setPaymentMethod(null); setSelectedPaymentType(''); } }}>
-        <DialogContent className="max-w-md" dir="rtl">
-          <DialogHeader><DialogTitle>בחר אמצעי תשלום</DialogTitle></DialogHeader>
-
-          {!paymentMethod ? (
-            <div className="space-y-3">
-              <Button className="w-full h-16 text-lg" variant="outline" onClick={() => setPaymentMethod('cash')}>
-                💵 תשלום במזומן
-              </Button>
-              <Button className="w-full h-16 text-lg" variant="outline" onClick={() => setPaymentMethod('promptpay')}>
-                📱 PromptPay
-              </Button>
-            </div>
-          ) : paymentMethod === 'cash' ? (
-            <div className="space-y-4">
-              <div className="text-center text-4xl">💵</div>
-              <h3 className="font-bold text-lg text-center">דיווח תשלום במזומן</h3>
-              <p className="text-muted-foreground text-sm text-center">
-                בחר סוג תשלום ושלח בקשה למנהל. התשלום ייכנס לתוקף רק לאחר אישור המנהל.
-              </p>
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">סוג תשלום</label>
-                <Select
-                  value={selectedPaymentType === 'חודשי' ? `חודשי|${selectedFrequency}` : selectedPaymentType}
-                  onValueChange={(v) => {
-                    if (v.startsWith('חודשי|')) {
-                      setSelectedPaymentType('חודשי');
-                      setSelectedFrequency(v.split('|')[1] as 'weekly' | 'biweekly');
-                    } else {
-                      setSelectedPaymentType(v);
-                    }
-                  }}
-                >
-                  <SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="חד פעמי">חד פעמי (฿{student?.is_sibling ? '650' : '800'})</SelectItem>
-                    <SelectItem value="חודשי|biweekly">חודשי דו-שבועי — פעמיים בשבוע (฿{student?.is_sibling ? '4,000' : '4,200'})</SelectItem>
-                    <SelectItem value="חודשי|weekly">חודשי חד-שבועי — פעם בשבוע (฿{student?.is_sibling ? '2,400' : '3,000'})</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button className="w-full" onClick={handleCashPaymentRequest} disabled={submitting || !selectedPaymentType}>
-                {submitting ? 'שולח...' : 'שלח בקשת תשלום למנהל'}
-              </Button>
-              <Button variant="ghost" onClick={() => setPaymentMethod(null)} className="w-full">← חזור</Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="text-center">
-                <div className="text-4xl">📱</div>
-                <h3 className="font-bold text-lg">PromptPay</h3>
-                <p className="text-muted-foreground text-xs">סרוק את הקוד, בצע העברה, ושלח צילום אישור</p>
-              </div>
-
-              {promptPayUrl ? (
-                <div className="text-center space-y-2">
-                  <img src={promptPayUrl} alt="PromptPay QR" className="mx-auto max-w-[180px] rounded-lg shadow" />
-                  <a href={promptPayUrl} download="promptpay-qr.png" className="inline-block">
-                    <Button variant="outline" size="sm">📥 הורד תמונה</Button>
-                  </a>
-                </div>
-              ) : (
-                <div className="p-3 bg-muted rounded-lg text-center">
-                  <p className="text-muted-foreground text-sm">קוד PromptPay לא הוגדר. פנה למנהל.</p>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">סוג תשלום</label>
-                <Select
-                  value={selectedPaymentType === 'חודשי' ? `חודשי|${selectedFrequency}` : selectedPaymentType}
-                  onValueChange={(v) => {
-                    if (v.startsWith('חודשי|')) {
-                      setSelectedPaymentType('חודשי');
-                      setSelectedFrequency(v.split('|')[1] as 'weekly' | 'biweekly');
-                    } else {
-                      setSelectedPaymentType(v);
-                    }
-                  }}
-                >
-                  <SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="חד פעמי">חד פעמי (฿{student?.is_sibling ? '650' : '800'})</SelectItem>
-                    <SelectItem value="חודשי|biweekly">חודשי דו-שבועי (฿{student?.is_sibling ? '4,000' : '4,200'})</SelectItem>
-                    <SelectItem value="חודשי|weekly">חודשי חד-שבועי (฿{student?.is_sibling ? '2,400' : '3,000'})</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">צילום אישור התשלום</label>
-                {proofPreview ? (
-                  <div className="relative">
-                    <img src={proofPreview} alt="אישור" className="w-full max-h-48 object-contain rounded-lg border" />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 left-2"
-                      onClick={() => handleSelectProof(null)}
-                    >
-                      ✕ הסר
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    <label className="block">
-                      <Button variant="outline" className="w-full" asChild>
-                        <span className="cursor-pointer">
-                          📷 בחר תמונה / צלם
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => handleSelectProof(e.target.files?.[0] || null)}
-                          />
-                        </span>
-                      </Button>
-                    </label>
-                    <p className="text-xs text-muted-foreground text-center">
-                      💡 טיפ: אפשר גם להעתיק תמונה מאפליקציית הבנק ולהדביק כאן (Ctrl+V / הדבק)
-                    </p>
-                  </>
-                )}
-              </div>
-
-              <Button
-                className="w-full"
-                onClick={handlePromptPayRequest}
-                disabled={submitting || !selectedPaymentType || !proofFile}
-              >
-                {submitting ? 'שולח...' : 'שלח בקשת תשלום למנהל'}
-              </Button>
-              <Button variant="ghost" onClick={() => { setPaymentMethod(null); handleSelectProof(null); }} className="w-full">← חזור</Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
