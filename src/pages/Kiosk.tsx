@@ -168,6 +168,33 @@ export default function Kiosk() {
     loadData(currentClass);
   };
 
+  const monthlyBase = monthlyStudent
+    ? (monthlyStudent.is_sibling ? MONTHLY_PRICES[monthlyFreq].sibling : MONTHLY_PRICES[monthlyFreq].regular)
+    : 0;
+  const monthlyFinal = Math.max(0, monthlyBase - (Number(monthlyDiscount) || 0));
+
+  const handleSaveMonthly = async () => {
+    if (!savedPin || !adminUserId || !monthlyStudent) return;
+    setSavingMonthly(true);
+    const { data, error } = await supabase.functions.invoke('kiosk-mark-monthly', {
+      body: {
+        pin: savedPin,
+        admin_user_id: adminUserId,
+        student_id: monthlyStudent.id,
+        payment_method: monthlyMethod,
+        frequency: monthlyFreq,
+        discount: Number(monthlyDiscount) || 0,
+      },
+    });
+    setSavingMonthly(false);
+    if (error || !data?.ok) {
+      toast.error('שגיאה בשמירת המנוי החודשי');
+      return;
+    }
+    toast.success(`נרשם מנוי חודשי ל${monthlyStudent.name} (฿${data.amount})`);
+    setMonthlyStudent(null);
+    loadData(currentClass);
+
   const debtByStudent = new Map<string, number>();
   debts.forEach(d => {
     debtByStudent.set(d.student_id, (debtByStudent.get(d.student_id) || 0) + Number(d.amount || 0));
