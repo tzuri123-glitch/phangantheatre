@@ -16,6 +16,8 @@ type Student = {
 
 type ArrivedRow = { student_id: string; created_at: string };
 
+type DebtRow = { id: string; student_id: string; amount: number | null; created_at: string };
+
 type Confirmation = {
   name: string;
   photo: string | null;
@@ -37,6 +39,8 @@ export default function Kiosk() {
   const [currentClass, setCurrentClass] = useState<string | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
   const [arrived, setArrived] = useState<ArrivedRow[]>([]);
+  const [debts, setDebts] = useState<DebtRow[]>([]);
+  const [payingId, setPayingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation>(null);
@@ -75,6 +79,7 @@ export default function Kiosk() {
     setClasses(data.classes || []);
     setStudents(data.students || []);
     setArrived(data.arrivedToday || []);
+    setDebts(data.openDebts || []);
     setToday(data.today || '');
   }, [savedPin, adminUserId]);
 
@@ -133,6 +138,26 @@ export default function Kiosk() {
     loadData(currentClass);
     setConfirmation(null);
   };
+
+  const handleMarkPaid = async (s: Student) => {
+    if (!savedPin || !adminUserId || !currentClass) return;
+    setPayingId(s.id);
+    const { data, error } = await supabase.functions.invoke('kiosk-mark-paid', {
+      body: { pin: savedPin, admin_user_id: adminUserId, student_id: s.id },
+    });
+    setPayingId(null);
+    if (error || !data?.ok) {
+      toast.error('שגיאה באישור התשלום');
+      return;
+    }
+    toast.success(`התשלום של ${s.name} אושר (฿${data.amount})`);
+    loadData(currentClass);
+  };
+
+  const debtByStudent = new Map<string, number>();
+  debts.forEach(d => {
+    debtByStudent.set(d.student_id, (debtByStudent.get(d.student_id) || 0) + Number(d.amount || 0));
+  });
 
   const arrivedSet = new Set(arrived.map(a => a.student_id));
   const arrivedStudents = students.filter(s => arrivedSet.has(s.id));
@@ -272,31 +297,52 @@ export default function Kiosk() {
               {filtered.map(s => {
                 const isHere = arrivedSet.has(s.id);
                 const isLoading = submitting === s.id;
+                const debtAmount = debtByStudent.get(s.id) || 0;
+                const hasDebt = debtAmount > 0;
                 return (
-                  <button
+                  <div
                     key={s.id}
-                    onClick={() => handleMark(s)}
-                    disabled={isLoading}
-                    className={`relative p-3 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 active:scale-95 ${
-                      isHere
-                        ? 'bg-green-500/10 border-green-500/50'
-                        : 'bg-card hover:bg-accent border-border hover:border-primary'
+                    className={`relative p-3 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${
+                      isHere && hasDebt
+                        ? 'bg-destructive/10 border-destructive/60'
+                        : isHere
+                          ? 'bg-green-500/10 border-green-500/50'
+                          : 'bg-card border-border'
                     } ${isLoading ? 'opacity-60' : ''}`}
                   >
                     {isHere && (
-                      <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold">✓</div>
+                      <div className={`absolute top-2 right-2 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold ${hasDebt ? 'bg-destructive' : 'bg-green-500'}`}>✓</div>
                     )}
-                    {s.profile_photo_url ? (
-                      <img src={s.profile_photo_url} alt="" className="w-20 h-20 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center text-2xl font-bold text-primary">
-                        {s.name.charAt(0)}
+                    <button
+                      onClick={() => handleMark(s)}
+                      disabled={isLoading}
+                      className="flex flex-col items-center gap-2 w-full active:scale-95 transition-transform"
+                    >
+                      {s.profile_photo_url ? (
+                        <img src={s.profile_photo_url} alt="" className="w-20 h-20 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center text-2xl font-bold text-primary">
+                          {s.name.charAt(0)}
+                        </div>
+                      )}
+                      <div className={`text-sm font-semibold text-center leading-tight ${isHere && hasDebt ? 'text-destructive' : 'text-foreground'}`}>
+                        {s.name} {s.last_name || ''}
                       </div>
+                    </button>
+                    {hasDebt && (
+                      <>
+                        <div className="text-xs font-bold text-destructive">חוב ฿{debtAmount}</div>
+                        <Button
+                          size="sm"
+                          disabled={payingId === s.id}
+                          onClick={() => handleMarkPaid(s)}
+                          className="w-full bg-green-600 hover:bg-green-700 text-white h-9"
+                        >
+                          {payingId === s.id ? 'מאשר...' : '✓ אישור ששולם'}
+                        </Button>
+                      </>
                     )}
-                    <div className="text-sm font-semibold text-foreground text-center leading-tight">
-                      {s.name} {s.last_name || ''}
-                    </div>
-                  </button>
+                  </div>
                 );
               })}
               {filtered.length === 0 && (
@@ -315,18 +361,24 @@ export default function Kiosk() {
               <p className="text-sm text-muted-foreground">עדיין אף אחד לא נרשם</p>
             ) : (
               <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-                {arrivedStudents.map(s => (
-                  <div key={s.id} className="flex items-center gap-2 p-2 rounded-lg bg-green-500/5">
-                    {s.profile_photo_url ? (
-                      <img src={s.profile_photo_url} alt="" className="w-10 h-10 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">
-                        {s.name.charAt(0)}
-                      </div>
-                    )}
-                    <span className="font-medium text-foreground text-sm">{s.name} {s.last_name || ''}</span>
-                  </div>
-                ))}
+                {arrivedStudents.map(s => {
+                  const debtAmount = debtByStudent.get(s.id) || 0;
+                  return (
+                    <div key={s.id} className={`flex items-center gap-2 p-2 rounded-lg ${debtAmount > 0 ? 'bg-destructive/10' : 'bg-green-500/5'}`}>
+                      {s.profile_photo_url ? (
+                        <img src={s.profile_photo_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">
+                          {s.name.charAt(0)}
+                        </div>
+                      )}
+                      <span className={`font-medium text-sm ${debtAmount > 0 ? 'text-destructive' : 'text-foreground'}`}>
+                        {s.name} {s.last_name || ''}
+                      </span>
+                      {debtAmount > 0 && <span className="ml-auto text-xs font-bold text-destructive">฿{debtAmount}</span>}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </Card>
