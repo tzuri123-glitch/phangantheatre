@@ -12,7 +12,16 @@ type Student = {
   last_name: string | null;
   profile_photo_url: string | null;
   status?: string | null;
+  is_sibling?: boolean | null;
 };
+
+const MONTHLY_PRICES = {
+  biweekly: { regular: 4200, sibling: 3900 },
+  weekly: { regular: 3000, sibling: 2700 },
+} as const;
+
+type Frequency = 'biweekly' | 'weekly';
+
 
 type ArrivedRow = { student_id: string; created_at: string };
 
