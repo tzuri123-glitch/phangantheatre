@@ -241,7 +241,7 @@ export default function Students({ students, payments, onAddStudent, onEditStude
           const studentCount = classStudents.length;
           
           return (
-            <Card key={className} className="rounded-lg">
+            <Card key={className} className={`rounded-lg ${expandedClasses[className] && studentCount > 0 ? 'md:col-span-2' : ''}`}>
               <div
                 className="p-6 bg-accent cursor-pointer hover:bg-accent/80 transition-colors"
                 onClick={() => toggleClass(className)}
