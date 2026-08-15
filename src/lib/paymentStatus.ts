@@ -1,5 +1,6 @@
 import { Student, Session, Payment } from '@/types';
 import { parseISO, isWithinInterval, addDays, subDays, format, isSameMonth } from 'date-fns';
+import { getCoveredMonthKey, getCalendarMonthKey } from '@/lib/paymentMonth';
 
 export type PaymentStatus = 'trial' | 'paid' | 'unpaid' | 'neutral';
 
