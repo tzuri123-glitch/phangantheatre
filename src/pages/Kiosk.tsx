@@ -194,6 +194,9 @@ export default function Kiosk() {
     toast.success(`נרשם מנוי חודשי ל${monthlyStudent.name} (฿${data.amount})`);
     setMonthlyStudent(null);
     loadData(currentClass);
+  };
+
+
 
   const debtByStudent = new Map<string, number>();
   debts.forEach(d => {
