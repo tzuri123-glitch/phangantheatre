@@ -241,7 +241,7 @@ export default function Students({ students, payments, onAddStudent, onEditStude
           const studentCount = classStudents.length;
           
           return (
-            <Card key={className} className="rounded-lg">
+            <Card key={className} className={`rounded-lg ${expandedClasses[className] && studentCount > 0 ? 'md:col-span-2' : ''}`}>
               <div
                 className="p-6 bg-accent cursor-pointer hover:bg-accent/80 transition-colors"
                 onClick={() => toggleClass(className)}
@@ -267,7 +267,7 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                   </div>
                   
                   <div className="w-full max-w-full overflow-x-auto px-4 pb-4">
-                    <Table className="min-w-[760px]">
+                    <Table className="min-w-[640px]">
                      <TableHeader className="sticky top-0 bg-background z-10">
                        <TableRow>
                         <TableHead className="text-right">שם פרטי</TableHead>
