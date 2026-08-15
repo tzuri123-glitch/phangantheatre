@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Student, Payment, SINGLE_PRICE, SIBLING_SINGLE_PRICE, MONTHLY_PRICE, SIBLING_MONTHLY_PRICE, getMonthlyPrice } from '@/types';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import Chart from 'chart.js/auto';
 import { formatILS } from '@/lib/utils';
 import { startOfWeek, endOfWeek, eachWeekOfInterval, subWeeks, format, parseISO, isWithinInterval } from 'date-fns';
@@ -12,10 +11,9 @@ import { he } from 'date-fns/locale';
 interface DashboardProps {
   students: Student[];
   payments: Payment[];
-  onAddStudent: () => void;
 }
 
-export default function Dashboard({ students, payments, onAddStudent }: DashboardProps) {
+export default function Dashboard({ students, payments }: DashboardProps) {
   const barChartRef = useRef<HTMLCanvasElement>(null);
   const weeklyChartRef = useRef<HTMLCanvasElement>(null);
   const pieChartRef = useRef<HTMLCanvasElement>(null);
@@ -285,18 +283,9 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
 
   return (
     <div className="space-y-4 sm:space-y-6 p-2 sm:p-6 animate-fade-in">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl sm:text-3xl font-bold bg-gradient-to-l from-primary to-magenta bg-clip-text text-transparent">
-          ברוך הבא למערכת ניהול החוג! 🎭
-        </h2>
-        <Button 
-          onClick={onAddStudent}
-          size="sm"
-          className="bg-gradient-to-l from-magenta to-magenta-hover text-white button-hover shadow-lg hover:shadow-xl text-xs sm:text-base px-3 sm:px-4"
-        >
-          ➕ הוסף תלמיד
-        </Button>
-      </div>
+      {/* Header row intentionally left empty after removing welcome title and add-student button */}
+      <div className="h-0" />
+
       
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card className="p-4 sm:p-6 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 card-hover backdrop-blur-sm">
