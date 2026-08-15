@@ -1,6 +1,7 @@
 import { Student, CLASS_OPTIONS, getMonthlyPrice, SubscriptionFrequency } from '@/types';
 import { format, isSameMonth, parseISO } from 'date-fns';
 import { hasSiblingDiscount } from '@/lib/siblings';
+import { getCoveredMonthKey, getCalendarMonthKey } from '@/lib/paymentMonth';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
