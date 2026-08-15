@@ -24,7 +24,7 @@ export interface Payment {
   date: string;
   amount: number;
   note: string;
-  discount?: number; // אחוזי הנחה (0-100)
+  discount?: number; // הנחה בבאט (סכום שמופחת מהמחיר הצפוי)
   subscriptionFrequency?: SubscriptionFrequency; // רלוונטי רק לתשלום חודשי
 }
 

@@ -213,7 +213,7 @@ export default function Index() {
         getMonthlyPrice(isSib, payment.subscriptionFrequency || 'biweekly');
       
       const discount = payment.discount || 0;
-      const expectedAmount = baseExpectedAmount * (1 - discount / 100);
+      const expectedAmount = Math.max(0, baseExpectedAmount - discount);
       
       balance += payment.amount - expectedAmount;
     });
@@ -904,16 +904,16 @@ export default function Index() {
                 setPaymentForm(prev => ({ ...prev, date: e.target.value, amount: calc.amount, note: calc.note }));
               }
             }} /></div>
-            <div className="space-y-2"><Label>הנחה (%)</Label><Input type="number" min="0" max="100" value={paymentForm.discount} onChange={(e) => { 
-              const newDiscount = Number(e.target.value);
+            <div className="space-y-2"><Label>הנחה (฿)</Label><Input type="number" min="0" step="10" value={paymentForm.discount} onChange={(e) => { 
+              const newDiscount = Math.max(0, Number(e.target.value));
               setPaymentForm(prev => ({ ...prev, discount: newDiscount }));
               
               if (paymentForm.studentId && paymentForm.type) {
                 const calc = calcPayment(paymentForm.studentId, paymentForm.type, paymentForm.date);
-                const amountWithDiscount = calc.amount * (1 - newDiscount / 100);
+                const amountWithDiscount = Math.max(0, calc.amount - newDiscount);
                 setPaymentForm(prev => ({ ...prev, discount: newDiscount, amount: Math.round(amountWithDiscount) }));
               }
-            }} /></div>
+            }} /><p className="text-xs text-muted-foreground">סכום בבאט שיופחת מהמחיר הצפוי</p></div>
             <div className="space-y-2">
               <Label>סכום שהתקבל</Label>
               <Input type="number" value={paymentForm.amount} onChange={(e) => setPaymentForm({ ...paymentForm, amount: Number(e.target.value) })} />
@@ -926,7 +926,7 @@ export default function Index() {
               const basePrice = paymentForm.type === 'חד פעמי'
                 ? (isSibling ? SIBLING_SINGLE_PRICE : SINGLE_PRICE)
                 : getMonthlyPrice(isSibling, paymentForm.subscriptionFrequency);
-              const discountedPrice = basePrice * (1 - (paymentForm.discount || 0) / 100);
+              const discountedPrice = Math.max(0, basePrice - (paymentForm.discount || 0));
               const diff = paymentForm.amount - discountedPrice;
               if (diff > 0) {
                 return <div className="text-sm font-medium text-green-700 bg-green-50 dark:text-green-300 dark:bg-green-900/30 rounded-lg px-3 py-2">💰 זכות של ฿{diff} תירשם לתלמיד</div>;

@@ -76,12 +76,12 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
           // סגירת יתרה לא מייצרת צפי - הסכום הוא מה שהתקבל
         } else if (payment.type === 'חודשי') {
           const monthlyPrice = getMonthlyPrice(hasSiblingDiscount(students, student.id), payment.subscriptionFrequency || 'biweekly');
-          const priceAfterDiscount = monthlyPrice * (1 - discount / 100);
+          const priceAfterDiscount = Math.max(0, monthlyPrice - discount);
           totalExpected += priceAfterDiscount;
         } else if (payment.type === 'חד פעמי') {
           if (!monthsWithMonthlyPayment.has(paymentMonth)) {
             const singlePrice = hasSiblingDiscount(students, student.id) ? 700 : 800;
-            const priceAfterDiscount = singlePrice * (1 - discount / 100);
+            const priceAfterDiscount = Math.max(0, singlePrice - discount);
             totalExpected += priceAfterDiscount;
           }
         }

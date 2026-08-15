@@ -68,7 +68,7 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
       .lte('payment_date', end);
     const rows = data || [];
     const total = rows.reduce((sum: number, p: any) => {
-      const eff = Number(p.amount || 0) * (1 - (Number(p.discount) || 0) / 100);
+      const eff = Math.max(0, Number(p.amount || 0));
       return sum + eff;
     }, 0);
     return { total, count: rows.length };
@@ -177,7 +177,7 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
           payment_date: paymentDate,
           amount: approveAmount,
           discount: approveDiscount,
-          note: approveNote || (approveDiscount > 0 ? `אושר עם הנחה של ${approveDiscount}%` : 'אושר מבקשת תלמיד'),
+          note: approveNote || (approveDiscount > 0 ? `אושר עם הנחה של ${formatILS(approveDiscount)}` : 'אושר מבקשת תלמיד'),
           subscription_frequency: approveType === 'חודשי' ? approveFrequency : null,
         } as any);
 
@@ -235,7 +235,7 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
     // For monthly upgrades: subtract already-paid one-time payments this month
     const credit = approveType === 'חודשי' ? oneTimePaidThisMonth : 0;
     const expectedPrice = Math.max(0, basePrice - credit);
-    const expectedAfterDiscount = expectedPrice * (1 - approveDiscount / 100);
+    const expectedAfterDiscount = Math.max(0, expectedPrice - approveDiscount);
     const diff = approveAmount - expectedAfterDiscount;
     return { basePrice, credit, expectedPrice, expectedAfterDiscount, diff };
   };
@@ -321,7 +321,7 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
                   : getMonthlyPrice(isSib, approveFrequency);
                 const credit = t === 'חודשי' ? oneTimePaidThisMonth : 0;
                 const price = Math.max(0, base - credit);
-                setApproveAmount(Math.round(price * (1 - approveDiscount / 100)));
+                setApproveAmount(Math.max(0, Math.round(price - approveDiscount)));
               }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -336,7 +336,7 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
                   const isSib = !!approveDialog?.is_sibling;
                   const base = getMonthlyPrice(isSib, f);
                   const price = Math.max(0, base - oneTimePaidThisMonth);
-                  setApproveAmount(Math.round(price * (1 - approveDiscount / 100)));
+                  setApproveAmount(Math.max(0, Math.round(price - approveDiscount)));
                 }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -360,34 +360,34 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
                 </div>
                 {approveDiscount > 0 && (
                   <div className="text-primary">
-                    אחרי הנחה של {approveDiscount}%: <strong>{formatILS(balanceInfo.expectedAfterDiscount)}</strong>
+                    אחרי הנחה של {formatILS(approveDiscount)}: <strong>{formatILS(balanceInfo.expectedAfterDiscount)}</strong>
                   </div>
                 )}
               </div>
             )}
 
             <div className="space-y-2">
-              <Label>הנחה (%)</Label>
+              <Label>הנחה (฿)</Label>
               <div className="flex gap-2 items-center">
                 <Input
                   type="number"
                   value={approveDiscount}
                   onChange={(e) => {
-                    const d = Math.max(0, Math.min(100, Number(e.target.value)));
+                    const d = Math.max(0, Number(e.target.value));
                     setApproveDiscount(d);
                     if (balanceInfo) {
-                      setApproveAmount(Math.round(balanceInfo.expectedPrice * (1 - d / 100)));
+                      setApproveAmount(Math.max(0, Math.round(balanceInfo.expectedPrice - d)));
                     }
                   }}
                   min={0}
-                  max={100}
+                  step={10}
                   className="flex-1"
                 />
                 <Button type="button" variant="outline" size="sm" onClick={() => {
-                  setApproveDiscount(100);
+                  setApproveDiscount(balanceInfo?.expectedPrice ?? 0);
                   setApproveAmount(0);
                 }}>
-                  חינם (100%)
+                  חינם (הנחה מלאה)
                 </Button>
               </div>
             </div>
