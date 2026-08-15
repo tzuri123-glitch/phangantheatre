@@ -1,5 +1,6 @@
 import { Student, CLASS_OPTIONS, getMonthlyPrice, SubscriptionFrequency } from '@/types';
 import { format, isSameMonth, parseISO } from 'date-fns';
+import { hasSiblingDiscount } from '@/lib/siblings';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';

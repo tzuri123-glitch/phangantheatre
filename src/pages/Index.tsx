@@ -160,7 +160,7 @@ export default function Index() {
   }, [user]);
 
   // תלמיד זכאי להנחת אחים אם הוא מסומן כאח/אחות או אם יש תלמיד אחר המקושר אליו
-  function hasSiblingDiscount(studentId?: string) {
+  function hasSiblingDiscountLocal(studentId?: string) {
     if (!studentId) return false;
     const s = students.find((x) => x.id === studentId);
     if (!s) return false;
