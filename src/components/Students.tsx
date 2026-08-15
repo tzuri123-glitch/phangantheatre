@@ -241,7 +241,7 @@ export default function Students({ students, payments, onAddStudent, onEditStude
           const studentCount = classStudents.length;
           
           return (
-            <Card key={className} className="overflow-hidden">
+            <Card key={className} className="rounded-lg">
               <div
                 className="p-6 bg-accent cursor-pointer hover:bg-accent/80 transition-colors"
                 onClick={() => toggleClass(className)}
@@ -266,8 +266,8 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                     />
                   </div>
                   
-                  <div className="overflow-x-auto px-4 pb-4">
-                    <Table className="min-w-full">
+                  <div className="w-full max-w-full overflow-x-auto px-4 pb-4">
+                    <Table className="min-w-[760px]">
                      <TableHeader className="sticky top-0 bg-background z-10">
                        <TableRow>
                         <TableHead className="text-right">שם פרטי</TableHead>
@@ -354,7 +354,7 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                               </span>
                             </TableCell>
                             <TableCell>
-                              <div className="flex gap-2">
+                              <div className="flex gap-2 flex-nowrap whitespace-nowrap">
                                 {onViewPayments && (
                                   <Button
                                     variant="outline"
