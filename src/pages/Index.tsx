@@ -870,9 +870,9 @@ export default function Index() {
                 const selectedStudent = students.find(s => s.id === paymentForm.studentId);
                 const isSib = selectedStudent?.isSibling;
                 return <>
-                  <SelectItem value="חד פעמי">חד פעמי (฿{isSib ? '650' : '800'})</SelectItem>
-                  <SelectItem value="חודשי|biweekly">חודשי דו-שבועי — פעמיים בשבוע (฿{isSib ? '4,000' : '4,200'})</SelectItem>
-                  <SelectItem value="חודשי|weekly">חודשי חד-שבועי — פעם בשבוע (฿{isSib ? '2,400' : '3,000'})</SelectItem>
+                  <SelectItem value="חד פעמי">חד פעמי (฿{isSib ? '700' : '800'})</SelectItem>
+                  <SelectItem value="חודשי|biweekly">חודשי דו-שבועי — פעמיים בשבוע (฿{isSib ? '3,900' : '4,200'})</SelectItem>
+                  <SelectItem value="חודשי|weekly">חודשי חד-שבועי — פעם בשבוע (฿{isSib ? '2,700' : '3,000'})</SelectItem>
                   <SelectItem value="סגירת יתרה">סגירת יתרה (השלמת חוב / החזר זכות)</SelectItem>
                 </>;
               })()}

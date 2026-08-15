@@ -50,15 +50,15 @@ export const CLASS_OPTIONS = [
 
 // מחירי חודשי דו-שבועי (שני מפגשים בשבוע) — ברירת המחדל ההיסטורית
 export const MONTHLY_PRICE = 4200;
-export const SIBLING_MONTHLY_PRICE = 4000;
+export const SIBLING_MONTHLY_PRICE = 3900;
 
 // מחירי חודשי חד-שבועי (מפגש אחד בשבוע)
 export const MONTHLY_WEEKLY_PRICE = 3000;
-export const SIBLING_MONTHLY_WEEKLY_PRICE = 2400;
+export const SIBLING_MONTHLY_WEEKLY_PRICE = 2700;
 
 // תשלום חד-פעמי
 export const SINGLE_PRICE = 800;
-export const SIBLING_SINGLE_PRICE = 650;
+export const SIBLING_SINGLE_PRICE = 700;
 
 export function getMonthlyPrice(isSibling: boolean, frequency: SubscriptionFrequency = 'biweekly'): number {
   if (frequency === 'weekly') {

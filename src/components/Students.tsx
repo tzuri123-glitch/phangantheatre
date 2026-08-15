@@ -56,7 +56,7 @@ export default function Students({ students, payments, onAddStudent, onEditStude
   };
 
   const SINGLE_PRICE = 800;
-  const SIBLING_SINGLE_PRICE = 650;
+  const SIBLING_SINGLE_PRICE = 700;
 
   const calculateStudentBalance = (studentId: string, student: Student) => {
     const studentPayments = payments.filter(p => p.studentId === studentId);
