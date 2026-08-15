@@ -65,10 +65,12 @@ const hasOneTimeOrTrialPayment = payments.some(payment => {
   const isExactMatch = paymentDate.getTime() === sessionDate.getTime();
   if (!isExactMatch) return false;
   
-  // Check if payment amount is sufficient or has 100% discount
-  const requiredAmount = student.isSibling ? 700 : 800;
-  const effectiveAmount = payment.amount * (1 - (payment.discount || 0) / 100);
-  const isFullDiscount = payment.discount === 100;
+  // Check if payment amount is sufficient (discount is an absolute THB amount)
+  const basePrice = student.isSibling ? 700 : 800;
+  const discountAmount = payment.discount || 0;
+  const requiredAmount = Math.max(0, basePrice - discountAmount);
+  const effectiveAmount = payment.amount;
+  const isFullDiscount = discountAmount >= basePrice;
   const isPaidEnough = effectiveAmount >= requiredAmount || isFullDiscount;
   
   if (isExactMatch && isPaidEnough) {
