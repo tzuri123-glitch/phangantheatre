@@ -447,7 +447,17 @@ export default function Kiosk() {
                     } ${isLoading ? 'opacity-60' : ''}`}
                   >
                     {isHere && (
-                      <div className={`absolute top-2 right-2 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold ${hasDebt ? 'bg-destructive' : 'bg-green-500'}`}>✓</div>
+                      <>
+                        <div className={`absolute top-2 right-2 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold ${hasDebt ? 'bg-destructive' : 'bg-green-500'}`}>✓</div>
+                        <button
+                          onClick={() => handleUnmark(s)}
+                          disabled={unmarkingId === s.id}
+                          title="ביטול נוכחות"
+                          className="absolute top-2 left-2 w-7 h-7 rounded-full bg-muted text-muted-foreground hover:bg-destructive hover:text-white flex items-center justify-center text-sm font-bold transition-colors disabled:opacity-50"
+                        >
+                          ✕
+                        </button>
+                      </>
                     )}
                     <button
                       onClick={() => handleMark(s)}
