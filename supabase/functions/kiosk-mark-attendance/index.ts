@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     // Validate student belongs to admin and class
     const { data: student } = await admin
       .from('students')
-      .select('id, name, last_name, profile_photo_url, class_name, status, is_sibling, user_id')
+      .select('id, name, last_name, profile_photo_url, class_name, status, is_sibling, custom_single_price, user_id')
       .eq('id', student_id)
       .eq('user_id', admin_user_id)
       .maybeSingle();
@@ -155,7 +155,9 @@ Deno.serve(async (req) => {
           .limit(1);
 
         if (!existingOneTime || existingOneTime.length === 0) {
-          debtAmount = student.is_sibling ? 700 : 800;
+          debtAmount = student.custom_single_price != null
+            ? Number(student.custom_single_price)
+            : (student.is_sibling ? 700 : 800);
           await admin.from('pending_payments').insert({
             student_id: student.id,
             admin_user_id,

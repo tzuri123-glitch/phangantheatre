@@ -399,6 +399,7 @@ export type Database = {
           birth_date: string | null
           class_name: string
           created_at: string | null
+          custom_single_price: number | null
           id: string
           is_sibling: boolean | null
           last_name: string | null
@@ -416,6 +417,7 @@ export type Database = {
           birth_date?: string | null
           class_name: string
           created_at?: string | null
+          custom_single_price?: number | null
           id?: string
           is_sibling?: boolean | null
           last_name?: string | null
@@ -433,6 +435,7 @@ export type Database = {
           birth_date?: string | null
           class_name?: string
           created_at?: string | null
+          custom_single_price?: number | null
           id?: string
           is_sibling?: boolean | null
           last_name?: string | null
