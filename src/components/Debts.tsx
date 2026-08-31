@@ -386,7 +386,11 @@ export default function Debts({ variant = 'tab', onPaymentApproved }: DebtsProps
                 <p className="text-xs text-muted-foreground">
                   נבחרו {selectedRows.length} מתוך {openStudent.rows.length} — {formatILS(selectedTotal)}
                 </p>
+                <Button type="button" variant="outline" className="w-full" onClick={copyParentMessage}>
+                  📋 העתק הודעה להורים
+                </Button>
               </div>
+
 
               <div className="space-y-2">
                 <Label>אשר כסוג תשלום</Label>
