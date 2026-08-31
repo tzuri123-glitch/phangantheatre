@@ -52,7 +52,7 @@ const toDateStr = (iso: string) => iso.slice(0, 10);
 export default function Debts({ variant = 'tab', onPaymentApproved }: DebtsProps) {
   const { user } = useAuth();
   const [rows, setRows] = useState<DebtRow[]>([]);
-  const [studentsMap, setStudentsMap] = useState<Record<string, { name: string; last_name: string | null; class_name: string; is_sibling: boolean; custom_single_price?: number | null }>>({});
+  const [studentsMap, setStudentsMap] = useState<Record<string, { name: string; last_name: string | null; class_name: string; is_sibling: boolean; custom_single_price?: number | null; parent_phone?: string | null; phone?: string | null }>>({});
   const [sortBy, setSortBy] = useState<'name' | 'amount'>('name');
   const [processing, setProcessing] = useState(false);
   const [viewingProof, setViewingProof] = useState<string | null>(null);
