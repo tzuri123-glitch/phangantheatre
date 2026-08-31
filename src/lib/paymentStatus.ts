@@ -1,6 +1,6 @@
 import { Student, Session, Payment } from '@/types';
 import { parseISO, isWithinInterval, addDays, subDays, format, isSameMonth } from 'date-fns';
-import { getCoveredMonthKey, getCalendarMonthKey } from '@/lib/paymentMonth';
+import { getCalendarMonthKey, getPaymentCoveredMonth } from '@/lib/paymentMonth';
 
 export type PaymentStatus = 'trial' | 'paid' | 'unpaid' | 'neutral';
 
@@ -108,7 +108,7 @@ const has100PercentDiscount = payments.some(payment => {
 const sessionMonthKey = getCalendarMonthKey(session.date);
 const hasMonthlyPayment = payments.some(payment => {
   if (payment.studentId !== student.id || payment.type !== 'חודשי') return false;
-  const covers = getCoveredMonthKey(payment.date) === sessionMonthKey;
+  const covers = getPaymentCoveredMonth(payment) === sessionMonthKey;
   if (covers) {
     console.log('✅ Found monthly payment covering session month:', payment.date);
   }

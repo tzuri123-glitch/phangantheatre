@@ -26,6 +26,7 @@ export interface Payment {
   note: string;
   discount?: number; // הנחה בבאט (סכום שמופחת מהמחיר הצפוי)
   subscriptionFrequency?: SubscriptionFrequency; // רלוונטי רק לתשלום חודשי
+  coveredMonth?: string; // yyyy-MM — החודש שהתשלום מכסה (רלוונטי לחודשי)
 }
 
 export interface SessionStudent {

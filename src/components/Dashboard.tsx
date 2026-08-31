@@ -6,7 +6,7 @@ import Chart from 'chart.js/auto';
 import { formatILS } from '@/lib/utils';
 import { startOfWeek, endOfWeek, eachWeekOfInterval, subWeeks, format, parseISO, isWithinInterval } from 'date-fns';
 import { hasSiblingDiscount } from '@/lib/siblings';
-import { getCoveredMonthKey, getCalendarMonthKey } from '@/lib/paymentMonth';
+import { getCoveredMonthKey, getCalendarMonthKey, getPaymentCoveredMonth } from '@/lib/paymentMonth';
 import { he } from 'date-fns/locale';
 
 interface DashboardProps {
@@ -39,7 +39,7 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
       // Months with monthly payment (to skip one-time in those months)
       const monthsWithMonthly = new Set<string>();
       studentPayments.filter(p => p.type === 'חודשי').forEach(p => {
-        monthsWithMonthly.add(getCoveredMonthKey(p.date));
+        monthsWithMonthly.add(getPaymentCoveredMonth(p));
       });
       
       studentPayments.forEach(payment => {
@@ -71,7 +71,7 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
   const currentMonthKey = format(new Date(), 'yyyy-MM');
   const monthlyPayerIds = new Set(
     payments
-      .filter((p) => p.type === 'חודשי' && getCoveredMonthKey(p.date) === currentMonthKey)
+      .filter((p) => p.type === 'חודשי' && getPaymentCoveredMonth(p) === currentMonthKey)
       .map((p) => p.studentId)
   );
   const singlePayerIds = new Set(
@@ -110,7 +110,7 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
       
       if (payment.type === 'חודשי') {
         // תשלום חודשי - מתפרס על כל השבועות בחודש שהוא מכסה
-        const [coveredYear, coveredMonth] = getCoveredMonthKey(payment.date).split('-').map(Number);
+        const [coveredYear, coveredMonth] = getPaymentCoveredMonth(payment).split('-').map(Number);
         const paymentMonthStart = new Date(coveredYear, coveredMonth - 1, 1);
         const paymentMonthEnd = new Date(coveredYear, coveredMonth, 0);
         

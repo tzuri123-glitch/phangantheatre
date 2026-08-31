@@ -50,3 +50,22 @@ export function getPaymentDateRangeForMonth(monthKey: string): { start: string; 
   const end = `${y}-${String(m).padStart(2, '0')}-${PAYMENT_WINDOW_START_DAY - 1}`;
   return { start, end };
 }
+
+/**
+ * החודש שהתשלום מכסה — עדיפות לחודש שנבחר ידנית (coveredMonth),
+ * ואם אין, נגזר מתאריך התשלום לפי חלון התשלום.
+ */
+export function getPaymentCoveredMonth(payment: { date: string; coveredMonth?: string | null }): string {
+  return payment.coveredMonth || getCoveredMonthKey(payment.date);
+}
+
+/** רשימת חודשים לבחירה סביב תאריך נתון (yyyy-MM) */
+export function getMonthOptions(aroundISO: string, back = 6, forward = 6): string[] {
+  const [y, m] = aroundISO.slice(0, 10).split('-').map(Number);
+  const out: string[] = [];
+  for (let i = -back; i <= forward; i++) {
+    const d = new Date(y, m - 1 + i, 1);
+    out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  }
+  return out;
+}
