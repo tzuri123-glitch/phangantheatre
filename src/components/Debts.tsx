@@ -205,6 +205,16 @@ export default function Debts({ variant = 'tab', onPaymentApproved }: DebtsProps
     }
   };
 
+  const sendParentMessageWhatsApp = () => {
+    if (!openStudent) return;
+    if (!formatWhatsAppNumber(openStudent.parentPhone)) {
+      toast.error('אין מספר טלפון הורה בכרטיס התלמיד — אפשר להעתיק את ההודעה במקום');
+      return;
+    }
+    const ok = openWhatsAppWithMessage(openStudent.parentPhone, buildParentMessage(openStudent));
+    if (!ok) toast.error('מספר טלפון הורה לא תקין');
+  };
+
 
   const basePrice = useMemo(() => {
     if (!openStudent) return 0;
