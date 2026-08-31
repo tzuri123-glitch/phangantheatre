@@ -34,6 +34,7 @@ interface StudentDebt {
   lastName: string;
   className: string;
   isSibling: boolean;
+  customSinglePrice?: number;
   rows: DebtRow[];
   total: number;
 }
@@ -86,7 +87,7 @@ export default function Debts({ variant = 'tab', onPaymentApproved }: DebtsProps
     if (!user) return;
     const { data } = await supabase
       .from('pending_payments')
-      .select('*, students(name, last_name, is_sibling, class_name)')
+      .select('*, students(name, last_name, is_sibling, class_name, custom_single_price)')
       .eq('admin_user_id', user.id)
       .eq('status', 'pending')
       .order('created_at', { ascending: true });
@@ -111,6 +112,7 @@ export default function Debts({ variant = 'tab', onPaymentApproved }: DebtsProps
           lastName: s?.last_name || '',
           className: s?.class_name || '',
           isSibling: !!s?.is_sibling,
+          customSinglePrice: s?.custom_single_price != null ? Number(s.custom_single_price) : undefined,
           rows: [],
           total: 0,
         };
@@ -203,7 +205,7 @@ export default function Debts({ variant = 'tab', onPaymentApproved }: DebtsProps
   const basePrice = useMemo(() => {
     if (!openStudent) return 0;
     if (approveType === 'חודשי') return getMonthlyPrice(openStudent.isSibling, approveFrequency);
-    return selectedTotal || (openStudent.isSibling ? SIBLING_SINGLE_PRICE : SINGLE_PRICE);
+    return selectedTotal || (openStudent.customSinglePrice ?? (openStudent.isSibling ? SIBLING_SINGLE_PRICE : SINGLE_PRICE));
   }, [openStudent, approveType, approveFrequency, selectedTotal]);
 
   const expectedAfterDiscount = Math.max(0, basePrice - approveDiscount);
