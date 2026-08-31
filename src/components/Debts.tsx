@@ -13,6 +13,7 @@ import { formatILS } from '@/lib/utils';
 import { SINGLE_PRICE, SIBLING_SINGLE_PRICE, getMonthlyPrice, SubscriptionFrequency, FREQUENCY_LABELS } from '@/types';
 import { cancelMonthOneTimePendingDebts } from '@/lib/cancelPendingDebts';
 import { getCoveredMonthKey, getMonthOptions } from '@/lib/paymentMonth';
+import { openWhatsAppWithMessage, formatWhatsAppNumber } from '@/lib/whatsapp';
 
 const MONTH_NAMES = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 
@@ -35,6 +36,8 @@ interface StudentDebt {
   className: string;
   isSibling: boolean;
   customSinglePrice?: number;
+  parentPhone?: string | null;
+
   rows: DebtRow[];
   total: number;
 }
@@ -49,7 +52,7 @@ const toDateStr = (iso: string) => iso.slice(0, 10);
 export default function Debts({ variant = 'tab', onPaymentApproved }: DebtsProps) {
   const { user } = useAuth();
   const [rows, setRows] = useState<DebtRow[]>([]);
-  const [studentsMap, setStudentsMap] = useState<Record<string, { name: string; last_name: string | null; class_name: string; is_sibling: boolean; custom_single_price?: number | null }>>({});
+  const [studentsMap, setStudentsMap] = useState<Record<string, { name: string; last_name: string | null; class_name: string; is_sibling: boolean; custom_single_price?: number | null; parent_phone?: string | null; phone?: string | null }>>({});
   const [sortBy, setSortBy] = useState<'name' | 'amount'>('name');
   const [processing, setProcessing] = useState(false);
   const [viewingProof, setViewingProof] = useState<string | null>(null);
@@ -87,7 +90,7 @@ export default function Debts({ variant = 'tab', onPaymentApproved }: DebtsProps
     if (!user) return;
     const { data } = await supabase
       .from('pending_payments')
-      .select('*, students(name, last_name, is_sibling, class_name, custom_single_price)')
+      .select('*, students(name, last_name, is_sibling, class_name, custom_single_price, parent_phone, phone)')
       .eq('admin_user_id', user.id)
       .eq('status', 'pending')
       .order('created_at', { ascending: true });
@@ -113,6 +116,7 @@ export default function Debts({ variant = 'tab', onPaymentApproved }: DebtsProps
           className: s?.class_name || '',
           isSibling: !!s?.is_sibling,
           customSinglePrice: s?.custom_single_price != null ? Number(s.custom_single_price) : undefined,
+          parentPhone: s?.parent_phone ?? null,
           rows: [],
           total: 0,
         };
@@ -199,6 +203,16 @@ export default function Debts({ variant = 'tab', onPaymentApproved }: DebtsProps
       document.body.removeChild(ta);
       toast.success('ההודעה הועתקה — אפשר להדביק בווטסאפ');
     }
+  };
+
+  const sendParentMessageWhatsApp = () => {
+    if (!openStudent) return;
+    if (!formatWhatsAppNumber(openStudent.parentPhone)) {
+      toast.error('אין מספר טלפון הורה בכרטיס התלמיד — אפשר להעתיק את ההודעה במקום');
+      return;
+    }
+    const ok = openWhatsAppWithMessage(openStudent.parentPhone, buildParentMessage(openStudent));
+    if (!ok) toast.error('מספר טלפון הורה לא תקין');
   };
 
 
@@ -428,6 +442,17 @@ export default function Debts({ variant = 'tab', onPaymentApproved }: DebtsProps
                 <p className="text-xs text-muted-foreground">
                   נבחרו {selectedRows.length} מתוך {openStudent.rows.length} — {formatILS(selectedTotal)}
                 </p>
+                <Button
+                  type="button"
+                  className="w-full"
+                  onClick={sendParentMessageWhatsApp}
+                  disabled={!formatWhatsAppNumber(openStudent.parentPhone)}
+                >
+                  📲 שלח בווטסאפ להורה
+                </Button>
+                {!formatWhatsAppNumber(openStudent.parentPhone) && (
+                  <p className="text-xs text-muted-foreground">אין מספר טלפון הורה בכרטיס התלמיד</p>
+                )}
                 <Button type="button" variant="outline" className="w-full" onClick={copyParentMessage}>
                   📋 העתק הודעה להורים
                 </Button>
