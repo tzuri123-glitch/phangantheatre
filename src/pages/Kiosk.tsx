@@ -136,21 +136,35 @@ export default function Kiosk() {
   const handleMark = async (s: Student) => {
     if (!savedPin || !adminUserId || !currentClass) return;
     if (arrived.some(a => a.student_id === s.id)) return;
-    // Optimistic: show the student as arrived immediately
+    const tmpDebtId = `tmp-${s.id}`;
+    // Optimistic: mark arrived + expected one-time debt immediately (no waiting for the server)
     setArrived(prev => [...prev, { student_id: s.id, created_at: new Date().toISOString() }]);
+    const expected = Number(s.expected_debt || 0);
+    const alreadyHasDebt = debts.some(d => d.student_id === s.id);
+    if (expected > 0 && !alreadyHasDebt) {
+      setDebts(prev => [...prev, { id: tmpDebtId, student_id: s.id, amount: expected, created_at: new Date().toISOString() }]);
+    }
     const { data, error } = await supabase.functions.invoke('kiosk-mark-attendance', {
       body: { pin: savedPin, admin_user_id: adminUserId, class_name: currentClass, student_id: s.id },
     });
     if (error || !data?.ok) {
       // Roll back
       setArrived(prev => prev.filter(a => a.student_id !== s.id));
+      setDebts(prev => prev.filter(d => d.id !== tmpDebtId));
       toast.error('שגיאה ברישום נוכחות');
       return;
     }
-    if (data.createdDebt) {
-      setDebts(prev => [...prev, { id: `tmp-${s.id}`, student_id: s.id, amount: data.debtAmount || 0, created_at: new Date().toISOString() }]);
-    }
+    // Reconcile with the real server result
+    setDebts(prev => {
+      const withoutTmp = prev.filter(d => d.id !== tmpDebtId);
+      if (data.createdDebt && !withoutTmp.some(d => d.student_id === s.id)) {
+        return [...withoutTmp, { id: tmpDebtId, student_id: s.id, amount: data.debtAmount || expected, created_at: new Date().toISOString() }];
+      }
+      return withoutTmp;
+    });
   };
+
+
 
 
   const handleMarkPaid = async (s: Student) => {
