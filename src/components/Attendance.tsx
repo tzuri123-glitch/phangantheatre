@@ -218,6 +218,57 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
         ))}
       </div>
 
+      {/* Add student to session dialog */}
+      <Dialog open={!!addToSessionId} onOpenChange={(open) => { if (!open) setAddToSessionId(null); }}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>הוספת תלמיד לשיעור</DialogTitle>
+          </DialogHeader>
+          {addToSessionId && (() => {
+            const session = sessions.find(s => s.id === addToSessionId);
+            if (!session) return null;
+            const existing = new Set(session.students.map(st => st.studentId));
+            const query = addSearch.trim().toLowerCase();
+            const candidates = students
+              .filter(s => !existing.has(s.id))
+              .filter(s => s.className === session.className || query.length >= 2)
+              .filter(s => !query || `${s.name} ${s.lastName}`.toLowerCase().includes(query))
+              .sort((a, b) => a.name.localeCompare(b.name, 'he'));
+            return (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  {session.date} – {session.className}
+                </p>
+                <Input
+                  placeholder="חיפוש תלמיד..."
+                  value={addSearch}
+                  onChange={(e) => setAddSearch(e.target.value)}
+                />
+                <div className="max-h-72 overflow-y-auto space-y-1">
+                  {candidates.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">לא נמצאו תלמידים</p>
+                  )}
+                  {candidates.map(s => (
+                    <button
+                      key={s.id}
+                      className="w-full text-right p-2 rounded-lg hover:bg-accent flex items-center justify-between gap-2"
+                      onClick={() => {
+                        onAddStudentToSession?.(session.id, s.id);
+                        setAddToSessionId(null);
+                      }}
+                    >
+                      <span className="font-medium">{s.name} {s.lastName}</span>
+                      <span className="text-xs text-muted-foreground">{s.className}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+
       {/* QR Code Dialog */}
       <Dialog open={!!showQrDialog} onOpenChange={(open) => { if (!open) setShowQrDialog(null); }}>
         <DialogContent className="max-w-sm text-center" dir="rtl">
