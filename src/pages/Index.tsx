@@ -10,7 +10,7 @@ import Payments from '@/components/Payments';
 import Attendance from '@/components/Attendance';
 import AdminSettings from '@/components/AdminSettings';
 import KioskSettings from '@/components/KioskSettings';
-import PendingPayments from '@/components/PendingPayments';
+import Debts from '@/components/Debts';
 import PaymentHistory from '@/components/PaymentHistory';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getCoveredMonthKey, getMonthOptions } from '@/lib/paymentMonth';
@@ -301,7 +301,7 @@ export default function Index() {
       </header>
       <TabNavigation activeTab={tab} onTabChange={setTab} />
       <main className="container mx-auto px-2 sm:px-4">
-        <PendingPayments onPaymentApproved={loadData} />
+        <Debts variant="card" onPaymentApproved={loadData} />
         {tab === 'dashboard' && <Dashboard students={students} payments={payments} onAddStudent={() => { studentFormRef.current = { id: '', name: '', lastName: '', phone: '', birthDate: '', parentName: '', parentPhone: '', isSibling: false, siblingId: undefined, className: CLASS_OPTIONS[0], status: 'פעיל' }; setEditingStudent(studentFormRef.current); setShowStudentModal(true); }} />}
         {tab === 'students' && <Students 
           students={students}
@@ -468,6 +468,7 @@ export default function Index() {
             toast.success('תלמיד הוסר מהשיעור!');
           }}
         />}
+        {tab === 'debts' && <Debts variant="tab" onPaymentApproved={loadData} />}
         {tab === 'kiosk' && <KioskSettings />}
         {tab === 'settings' && <AdminSettings />}
       </main>
