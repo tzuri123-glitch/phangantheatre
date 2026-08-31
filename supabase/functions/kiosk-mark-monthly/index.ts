@@ -84,6 +84,7 @@ Deno.serve(async (req) => {
     const disc = Math.max(0, Math.min(base, Number(discount) || 0));
     const amount = base - disc;
 
+    const { year: year0, month: month0 } = coveredMonth(today);
     // רישום התשלום החודשי
     const { error: payErr } = await admin.from('payments').insert({
       user_id: admin_user_id,
@@ -94,12 +95,13 @@ Deno.serve(async (req) => {
       amount,
       discount: disc,
       subscription_frequency: freq,
+      covered_month: `${year0}-${String(month0).padStart(2, '0')}`,
       note: 'שולם בקיוסק',
     });
     if (payErr) return json({ error: 'insert-failed', detail: payErr.message }, 500);
 
     // ביטול חובות חד-פעמיים פתוחים שמיוחסים לאותו חודש מכוסה
-    const { year, month } = coveredMonth(today);
+    const year = year0, month = month0;
     const { start, end } = monthRange(year, month);
     const { data: cancelled } = await admin
       .from('pending_payments')

@@ -11,6 +11,9 @@ import { formatILS } from '@/lib/utils';
 import { SINGLE_PRICE, MONTHLY_PRICE, SIBLING_SINGLE_PRICE, SIBLING_MONTHLY_PRICE, MONTHLY_WEEKLY_PRICE, SIBLING_MONTHLY_WEEKLY_PRICE, getMonthlyPrice, SubscriptionFrequency, FREQUENCY_LABELS } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cancelMonthOneTimePendingDebts } from '@/lib/cancelPendingDebts';
+import { getCoveredMonthKey, getMonthOptions } from '@/lib/paymentMonth';
+
+const MONTH_NAMES = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 
 interface PendingPayment {
   id: string;
@@ -41,6 +44,7 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
   const [approveAmount, setApproveAmount] = useState(0);
   const [approveDiscount, setApproveDiscount] = useState(0);
   const [approveNote, setApproveNote] = useState('');
+  const [approveCoveredMonth, setApproveCoveredMonth] = useState(() => getCoveredMonthKey(new Date().toISOString().slice(0, 10)));
   const [viewingProof, setViewingProof] = useState<string | null>(null);
   const [oneTimePaidThisMonth, setOneTimePaidThisMonth] = useState(0);
 
@@ -146,6 +150,7 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
     setApproveAmount(payment.amount || expectedPrice);
     setApproveDiscount(0);
     setApproveNote('');
+    setApproveCoveredMonth(getCoveredMonthKey(new Date().toISOString().slice(0, 10)));
     setApproveDialog(payment);
   };
 
@@ -179,6 +184,7 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
           discount: approveDiscount,
           note: approveNote || (approveDiscount > 0 ? `אושר עם הנחה של ${formatILS(approveDiscount)}` : 'אושר מבקשת תלמיד'),
           subscription_frequency: approveType === 'חודשי' ? approveFrequency : null,
+          covered_month: approveType === 'חודשי' ? approveCoveredMonth : null,
         } as any);
 
       // אם זה תשלום חודשי — בטל חיובי 'חד פעמי' ממתינים שנוצרו אוטומטית באותו חודש
@@ -188,6 +194,7 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
           approveDialog.student_id,
           paymentDate,
           approveDialog.id,
+          approveCoveredMonth,
         );
       }
 
@@ -346,6 +353,22 @@ export default function PendingPayments({ onPaymentApproved }: PendingPaymentsPr
                 </Select>
               )}
             </div>
+
+            {approveType === 'חודשי' && (
+              <div className="space-y-2">
+                <Label>עבור חודש</Label>
+                <Select value={approveCoveredMonth} onValueChange={setApproveCoveredMonth}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {getMonthOptions(new Date().toISOString().slice(0, 10), 6, 12).map((mk) => {
+                      const [yy, mm] = mk.split('-');
+                      return <SelectItem key={mk} value={mk}>{MONTH_NAMES[Number(mm) - 1]} {yy}</SelectItem>;
+                    })}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">החודש שהמנוי מכסה — אפשר לאשר תשלום מראש על חודש עתידי</p>
+              </div>
+            )}
 
             {balanceInfo && (
               <div className="text-sm bg-muted rounded-lg px-3 py-2 space-y-1">

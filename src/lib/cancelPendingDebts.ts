@@ -10,9 +10,11 @@ export async function cancelMonthOneTimePendingDebts(
   studentId: string,
   monthDate: string,
   excludeId?: string,
+  coveredMonthKey?: string,
 ): Promise<number> {
-  const [y, m] = getCoveredMonthKey(monthDate).split('-').map(Number);
+  const [y, m] = (coveredMonthKey || getCoveredMonthKey(monthDate)).split('-').map(Number);
   if (!y || !m) return 0;
+
   const lastDay = new Date(y, m, 0).getDate();
   const start = `${y}-${String(m).padStart(2, '0')}-01T00:00:00`;
   const end = `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}T23:59:59`;

@@ -13,6 +13,9 @@ import KioskSettings from '@/components/KioskSettings';
 import PendingPayments from '@/components/PendingPayments';
 import PaymentHistory from '@/components/PaymentHistory';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { getCoveredMonthKey, getMonthOptions } from '@/lib/paymentMonth';
+
+const MONTH_NAMES = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -40,7 +43,7 @@ export default function Index() {
   
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
-  const [paymentForm, setPaymentForm] = useState<{ studentId: string; type: string; method: 'מזומן' | 'סקאן'; date: string; amount: number; note: string; discount: number; subscriptionFrequency: SubscriptionFrequency }>({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0, subscriptionFrequency: 'biweekly' });
+  const [paymentForm, setPaymentForm] = useState<{ studentId: string; type: string; method: 'מזומן' | 'סקאן'; date: string; amount: number; note: string; discount: number; subscriptionFrequency: SubscriptionFrequency; coveredMonth: string }>({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0, subscriptionFrequency: 'biweekly', coveredMonth: '' });
   const [openStudentCombobox, setOpenStudentCombobox] = useState(false);
   const [studentSearchValue, setStudentSearchValue] = useState('');
   
@@ -116,6 +119,7 @@ export default function Index() {
         note: p.note || '',
         discount: Number(p.discount) || 0,
         subscriptionFrequency: ((p as any).subscription_frequency as SubscriptionFrequency) || 'biweekly',
+        coveredMonth: ((p as any).covered_month as string) || undefined,
       })));
     }
     
@@ -334,7 +338,7 @@ export default function Index() {
           sessions={sessions}
           onAddPayment={() => {
             setEditingPayment(null);
-            setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0, subscriptionFrequency: 'biweekly' }); 
+            setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0, subscriptionFrequency: 'biweekly', coveredMonth: '' }); 
             setShowPaymentModal(true); 
           }}
           onEditPayment={(payment) => {
@@ -348,6 +352,7 @@ export default function Index() {
               note: payment.note,
               discount: payment.discount || 0,
               subscriptionFrequency: payment.subscriptionFrequency || 'biweekly',
+              coveredMonth: payment.coveredMonth || (payment.type === 'חודשי' ? getCoveredMonthKey(payment.date) : ''),
             });
             setShowPaymentModal(true);
           }}
@@ -654,6 +659,8 @@ export default function Index() {
                     note: '',
                     discount: 0,
                     subscriptionFrequency: 'biweekly',
+                    coveredMonth: '',
+
                   });
                   setShowPaymentModal(true);
                 }}
@@ -869,12 +876,13 @@ export default function Index() {
                   newType = 'חודשי';
                   newFreq = v.split('|')[1] as SubscriptionFrequency;
                 }
-                setPaymentForm({ ...paymentForm, type: newType, subscriptionFrequency: newFreq });
+                const newCovered = newType === 'חודשי' ? (paymentForm.coveredMonth || getCoveredMonthKey(paymentForm.date)) : '';
+                setPaymentForm({ ...paymentForm, type: newType, subscriptionFrequency: newFreq, coveredMonth: newCovered });
                 if (paymentForm.studentId) {
                   // recalc with new frequency synchronously via setTimeout (calcPayment reads paymentForm)
                   setTimeout(() => {
                     const calc = calcPayment(paymentForm.studentId, newType, paymentForm.date);
-                    setPaymentForm(prev => ({ ...prev, type: newType, subscriptionFrequency: newFreq, amount: calc.amount, note: calc.note }));
+                    setPaymentForm(prev => ({ ...prev, type: newType, subscriptionFrequency: newFreq, coveredMonth: newCovered, amount: calc.amount, note: calc.note }));
                   }, 0);
                 }
               }}><SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger><SelectContent>
@@ -896,6 +904,24 @@ export default function Index() {
                 <div className="text-xs text-primary font-medium bg-primary/10 rounded-lg px-3 py-1.5">👫 תלמיד אח/אחות — מחיר מוזל</div>
               ) : null;
             })()}
+            {paymentForm.type === 'חודשי' && (
+              <div className="space-y-2">
+                <Label>עבור חודש</Label>
+                <Select
+                  value={paymentForm.coveredMonth || getCoveredMonthKey(paymentForm.date)}
+                  onValueChange={(v) => setPaymentForm(prev => ({ ...prev, coveredMonth: v }))}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {getMonthOptions(paymentForm.date, 6, 12).map((mk) => {
+                      const [yy, mm] = mk.split('-');
+                      return <SelectItem key={mk} value={mk}>{MONTH_NAMES[Number(mm) - 1]} {yy}</SelectItem>;
+                    })}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">החודש שהתשלום מכסה — אפשר לשלם מראש על חודש עתידי</p>
+              </div>
+            )}
             <div className="space-y-2"><Label>אמצעי תשלום</Label><Select value={paymentForm.method} onValueChange={(v: 'מזומן' | 'סקאן') => setPaymentForm({ ...paymentForm, method: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="מזומן">מזומן</SelectItem><SelectItem value="סקאן">סקאן</SelectItem></SelectContent></Select></div>
             <div className="space-y-2"><Label>תאריך</Label><Input type="date" value={paymentForm.date} onChange={(e) => { 
               setPaymentForm({ ...paymentForm, date: e.target.value }); 
@@ -954,6 +980,7 @@ export default function Index() {
                     note: paymentForm.note,
                     discount: paymentForm.discount,
                     subscription_frequency: paymentForm.type === 'חודשי' ? paymentForm.subscriptionFrequency : null,
+                    covered_month: paymentForm.type === 'חודשי' ? (paymentForm.coveredMonth || getCoveredMonthKey(paymentForm.date)) : null,
                   })
                   .eq('id', editingPayment.id)
                   .eq('user_id', user.id);
@@ -965,7 +992,7 @@ export default function Index() {
                 
                 setPayments((prev) => prev.map(p => 
                   p.id === editingPayment.id 
-                    ? { ...p, type: paymentForm.type as Payment['type'], method: paymentForm.method, date: paymentForm.date, amount: paymentForm.amount, note: paymentForm.note, discount: paymentForm.discount, subscriptionFrequency: paymentForm.type === 'חודשי' ? paymentForm.subscriptionFrequency : undefined }
+                    ? { ...p, type: paymentForm.type as Payment['type'], method: paymentForm.method, date: paymentForm.date, amount: paymentForm.amount, note: paymentForm.note, discount: paymentForm.discount, subscriptionFrequency: paymentForm.type === 'חודשי' ? paymentForm.subscriptionFrequency : undefined, coveredMonth: paymentForm.type === 'חודשי' ? (paymentForm.coveredMonth || getCoveredMonthKey(paymentForm.date)) : undefined }
                     : p
                 ));
                 
@@ -984,6 +1011,7 @@ export default function Index() {
                     note: paymentForm.note,
                     discount: paymentForm.discount,
                     subscription_frequency: paymentForm.type === 'חודשי' ? paymentForm.subscriptionFrequency : null,
+                    covered_month: paymentForm.type === 'חודשי' ? (paymentForm.coveredMonth || getCoveredMonthKey(paymentForm.date)) : null,
                   })
                   .select()
                   .single();
@@ -1003,6 +1031,7 @@ export default function Index() {
                   note: paymentForm.note,
                   discount: paymentForm.discount,
                   subscriptionFrequency: paymentForm.type === 'חודשי' ? paymentForm.subscriptionFrequency : undefined,
+                  coveredMonth: paymentForm.type === 'חודשי' ? (paymentForm.coveredMonth || getCoveredMonthKey(paymentForm.date)) : undefined,
                 };
                 
                 setPayments((prev) => [...prev, newPayment]);
@@ -1010,7 +1039,7 @@ export default function Index() {
                 // אם זה תשלום חודשי — בטל אוטומטית חיובי 'חד פעמי' ממתינים שנוצרו בקיוסק באותו חודש
                 if (paymentForm.type === 'חודשי') {
                   const { cancelMonthOneTimePendingDebts } = await import('@/lib/cancelPendingDebts');
-                  const cancelled = await cancelMonthOneTimePendingDebts(paymentForm.studentId, paymentForm.date);
+                  const cancelled = await cancelMonthOneTimePendingDebts(paymentForm.studentId, paymentForm.date, undefined, paymentForm.coveredMonth || undefined);
                   if (cancelled > 0) {
                     toast.success(`בוטלו ${cancelled} חיובי חד-פעמי ממתינים באותו חודש`);
                   }
@@ -1040,7 +1069,7 @@ export default function Index() {
               
               setShowPaymentModal(false); 
               setEditingPayment(null);
-              setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0, subscriptionFrequency: 'biweekly' }); 
+              setPaymentForm({ studentId: '', type: '', method: 'מזומן', date: new Date().toISOString().slice(0, 10), amount: 0, note: '', discount: 0, subscriptionFrequency: 'biweekly', coveredMonth: '' }); 
             }}>אישור</Button><Button variant="outline" className="flex-1" onClick={() => { setShowPaymentModal(false); setEditingPayment(null); }}>ביטול</Button></div>
           </div>
         </DialogContent>
@@ -1178,6 +1207,7 @@ export default function Index() {
               note: payment.note,
               discount: payment.discount || 0,
               subscriptionFrequency: payment.subscriptionFrequency || 'biweekly',
+              coveredMonth: payment.coveredMonth || (payment.type === 'חודשי' ? getCoveredMonthKey(payment.date) : ''),
             });
             setShowPaymentModal(true);
           }}
