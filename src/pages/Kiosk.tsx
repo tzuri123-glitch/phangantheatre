@@ -13,6 +13,8 @@ type Student = {
   profile_photo_url: string | null;
   status?: string | null;
   is_sibling?: boolean | null;
+  has_monthly?: boolean;
+  expected_debt?: number;
 };
 
 const MONTHLY_PRICES = {
