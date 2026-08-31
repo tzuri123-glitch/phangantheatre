@@ -12,6 +12,8 @@ export interface Student {
   status: 'פעיל' | 'בהקפאה';
   linkedEmail?: string;
   profilePhotoUrl?: string;
+  /** מחיר חד פעמי קבוע לתלמיד (הנחה אישית) — עוקף את המחיר הרגיל */
+  customSinglePrice?: number;
 }
 
 export type SubscriptionFrequency = 'weekly' | 'biweekly';

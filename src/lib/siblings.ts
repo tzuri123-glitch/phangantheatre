@@ -1,4 +1,16 @@
-import { Student } from '@/types';
+import { Student, SINGLE_PRICE, SIBLING_SINGLE_PRICE } from '@/types';
+
+/**
+ * מחיר חד פעמי לתלמיד:
+ * 1. מחיר אישי קבוע (אם הוגדר לתלמיד)
+ * 2. מחיר אחים
+ * 3. מחיר רגיל
+ */
+export function getSinglePrice(students: Student[], studentId?: string): number {
+  const student = students.find(({ id }) => id === studentId);
+  if (student?.customSinglePrice != null) return Number(student.customSinglePrice);
+  return hasSiblingDiscount(students, studentId) ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
+}
 
 /**
  * תלמיד זכאי להנחת אחים אם:
