@@ -442,6 +442,17 @@ export default function Debts({ variant = 'tab', onPaymentApproved }: DebtsProps
                 <p className="text-xs text-muted-foreground">
                   נבחרו {selectedRows.length} מתוך {openStudent.rows.length} — {formatILS(selectedTotal)}
                 </p>
+                <Button
+                  type="button"
+                  className="w-full"
+                  onClick={sendParentMessageWhatsApp}
+                  disabled={!formatWhatsAppNumber(openStudent.parentPhone)}
+                >
+                  📲 שלח בווטסאפ להורה
+                </Button>
+                {!formatWhatsAppNumber(openStudent.parentPhone) && (
+                  <p className="text-xs text-muted-foreground">אין מספר טלפון הורה בכרטיס התלמיד</p>
+                )}
                 <Button type="button" variant="outline" className="w-full" onClick={copyParentMessage}>
                   📋 העתק הודעה להורים
                 </Button>
