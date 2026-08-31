@@ -468,6 +468,7 @@ export default function Index() {
             toast.success('תלמיד הוסר מהשיעור!');
           }}
         />}
+        {tab === 'debts' && <Debts variant="tab" onPaymentApproved={loadData} />}
         {tab === 'kiosk' && <KioskSettings />}
         {tab === 'settings' && <AdminSettings />}
       </main>
