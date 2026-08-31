@@ -160,6 +160,46 @@ export default function Debts({ variant = 'tab', onPaymentApproved }: DebtsProps
   const selectedRows = openStudent ? openStudent.rows.filter((r) => selectedIds.includes(r.id)) : [];
   const selectedTotal = selectedRows.reduce((s, r) => s + Number(r.amount || 0), 0);
 
+  const buildParentMessage = (g: StudentDebt) => {
+    const lines = g.rows.map((r) => {
+      const d = toDateStr(r.created_at);
+      const [y, m, day] = d.split('-');
+      const cls = sessionsByDate[d] ? ` (${sessionsByDate[d]})` : '';
+      return `• ${day}/${m}/${y}${cls} — ${formatILS(Number(r.amount || 0))}`;
+    });
+    return [
+      `היי, מצורף פירוט על השיעורים ש${g.name} ${g.lastName} הייתה החודש ועדיין לא הוסדר התשלום.`,
+      '',
+      'פירוט:',
+      ...lines,
+      '',
+      `סה״כ - ${formatILS(g.total)}`,
+      '',
+      'תודה מראש',
+      'דורון צור.',
+      '',
+      '(ההודעה נכתבה על ידי בוט)',
+    ].join('\n');
+  };
+
+  const copyParentMessage = async () => {
+    if (!openStudent) return;
+    const text = buildParentMessage(openStudent);
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success('ההודעה הועתקה — אפשר להדביק בווטסאפ');
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      toast.success('ההודעה הועתקה — אפשר להדביק בווטסאפ');
+    }
+  };
+
+
   const basePrice = useMemo(() => {
     if (!openStudent) return 0;
     if (approveType === 'חודשי') return getMonthlyPrice(openStudent.isSibling, approveFrequency);
