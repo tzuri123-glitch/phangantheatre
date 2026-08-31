@@ -36,6 +36,8 @@ interface StudentDebt {
   className: string;
   isSibling: boolean;
   customSinglePrice?: number;
+  parentPhone?: string | null;
+
   rows: DebtRow[];
   total: number;
 }
