@@ -116,6 +116,7 @@ export default function Debts({ variant = 'tab', onPaymentApproved }: DebtsProps
           className: s?.class_name || '',
           isSibling: !!s?.is_sibling,
           customSinglePrice: s?.custom_single_price != null ? Number(s.custom_single_price) : undefined,
+          parentPhone: s?.parent_phone ?? null,
           rows: [],
           total: 0,
         };
