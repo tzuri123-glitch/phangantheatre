@@ -659,6 +659,8 @@ export default function Index() {
                     note: '',
                     discount: 0,
                     subscriptionFrequency: 'biweekly',
+                    coveredMonth: '',
+
                   });
                   setShowPaymentModal(true);
                 }}
