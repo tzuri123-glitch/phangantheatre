@@ -136,13 +136,24 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
 
             {expandedSessions[session.id] && (
               <div className="p-4">
-                <div className="mb-4">
+                <div className="mb-4 flex gap-2">
                   <Input
                     placeholder="חיפוש תלמיד..."
                     value={sessionSearchQueries[session.id] || ''}
                     onChange={(e) => setSessionSearchQueries(prev => ({ ...prev, [session.id]: e.target.value }))}
                   />
+                  {onAddStudentToSession && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="shrink-0"
+                      onClick={() => { setAddSearch(''); setAddToSessionId(session.id); }}
+                    >
+                      ➕ הוסף תלמיד
+                    </Button>
+                  )}
                 </div>
+
                 <Table>
                   <TableHeader>
                     <TableRow>
