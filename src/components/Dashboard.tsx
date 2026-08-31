@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import Chart from 'chart.js/auto';
 import { formatILS } from '@/lib/utils';
 import { startOfWeek, endOfWeek, eachWeekOfInterval, subWeeks, format, parseISO, isWithinInterval } from 'date-fns';
-import { hasSiblingDiscount } from '@/lib/siblings';
+import { hasSiblingDiscount, getSinglePrice } from '@/lib/siblings';
 import { getCoveredMonthKey, getCalendarMonthKey, getPaymentCoveredMonth } from '@/lib/paymentMonth';
 import { he } from 'date-fns/locale';
 
@@ -53,7 +53,7 @@ export default function Dashboard({ students, payments, onAddStudent }: Dashboar
           totalExpected += Math.max(0, base - discount);
         } else if (payment.type === 'חד פעמי') {
           if (!monthsWithMonthly.has(getCalendarMonthKey(payment.date))) {
-            const base = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
+            const base = getSinglePrice(students, studentId);
             totalExpected += Math.max(0, base - discount);
           }
         }

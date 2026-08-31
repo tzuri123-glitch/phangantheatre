@@ -1,6 +1,6 @@
 import { Student, CLASS_OPTIONS, getMonthlyPrice, SubscriptionFrequency } from '@/types';
 import { format, isSameMonth, parseISO } from 'date-fns';
-import { hasSiblingDiscount } from '@/lib/siblings';
+import { hasSiblingDiscount, getSinglePrice } from '@/lib/siblings';
 import { getCoveredMonthKey, getCalendarMonthKey, getPaymentCoveredMonth } from '@/lib/paymentMonth';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -87,7 +87,7 @@ export default function Students({ students, payments, onAddStudent, onEditStude
         // תשלום חד-פעמי נספר רק אם החודש הקלנדרי שלו לא מכוסה במנוי חודשי
         const sessionMonth = getCalendarMonthKey(payment.date);
         if (!monthsWithMonthlyPayment.has(sessionMonth)) {
-          const singlePrice = hasSiblingDiscount(students, student.id) ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
+          const singlePrice = getSinglePrice(students, student.id);
           const priceAfterDiscount = Math.max(0, singlePrice - discount);
           totalExpected += priceAfterDiscount;
         }

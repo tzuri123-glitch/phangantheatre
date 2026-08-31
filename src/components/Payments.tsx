@@ -1,6 +1,6 @@
 import { Payment, Student, CLASS_OPTIONS, Session, getMonthlyPrice } from '@/types';
 import { format, parseISO } from 'date-fns';
-import { hasSiblingDiscount } from '@/lib/siblings';
+import { hasSiblingDiscount, getSinglePrice } from '@/lib/siblings';
 import { getCoveredMonthKey, getCalendarMonthKey, getPaymentCoveredMonth } from '@/lib/paymentMonth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,7 +79,7 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
           totalExpected += priceAfterDiscount;
         } else if (payment.type === 'חד פעמי') {
           if (!monthsWithMonthlyPayment.has(getCalendarMonthKey(payment.date))) {
-            const singlePrice = hasSiblingDiscount(students, student.id) ? 700 : 800;
+            const singlePrice = getSinglePrice(students, student.id);
             const priceAfterDiscount = Math.max(0, singlePrice - discount);
             totalExpected += priceAfterDiscount;
           }

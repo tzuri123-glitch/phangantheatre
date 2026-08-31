@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Student, Payment, Session, CLASS_OPTIONS, MONTHLY_PRICE, SIBLING_MONTHLY_PRICE, SINGLE_PRICE, SIBLING_SINGLE_PRICE, MONTHLY_WEEKLY_PRICE, SIBLING_MONTHLY_WEEKLY_PRICE, getMonthlyPrice, SubscriptionFrequency, FREQUENCY_LABELS } from '@/types';
-import { hasSiblingDiscount as hasSiblingDiscountShared } from '@/lib/siblings';
+import { hasSiblingDiscount as hasSiblingDiscountShared, getSinglePrice } from '@/lib/siblings';
 import { getPaymentStatusForSession, getStatusColor, getStatusBadge } from '@/lib/paymentStatus';
 import { Badge } from '@/components/ui/badge';
 import TabNavigation from '@/components/TabNavigation';
@@ -105,6 +105,7 @@ export default function Index() {
         status: (s.status === 'חדש' || s.status === 'לא פעיל' ? 'פעיל' : s.status) as Student['status'],
         linkedEmail: (s as any).auth_user_id ? emailMap[(s as any).auth_user_id] || '' : undefined,
         profilePhotoUrl: (s as any).profile_photo_url || undefined,
+        customSinglePrice: (s as any).custom_single_price != null ? Number((s as any).custom_single_price) : undefined,
       })).sort((a, b) => a.name.localeCompare(b.name, 'he')));
     }
     
@@ -213,7 +214,7 @@ export default function Index() {
         return;
       }
       const baseExpectedAmount = 
-        payment.type === 'חד פעמי' ? (isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE) :
+        payment.type === 'חד פעמי' ? getSinglePrice(students, studentId) :
         getMonthlyPrice(isSib, payment.subscriptionFrequency || 'biweekly');
       
       const discount = payment.discount || 0;
@@ -242,7 +243,7 @@ export default function Index() {
     }
     
     if (type === 'חד פעמי') {
-      baseAmount = isSib ? SIBLING_SINGLE_PRICE : SINGLE_PRICE;
+      baseAmount = getSinglePrice(students, studentId);
     } else if (type === 'חודשי') {
       const singles = payments.filter((p) => {
         if (p.studentId !== studentId) return false;
@@ -481,7 +482,7 @@ export default function Index() {
                 admin_user_id: user.id,
                 payment_type: 'חד פעמי',
                 payment_method: 'מזומן',
-                amount: isSibling ? SIBLING_SINGLE_PRICE : SINGLE_PRICE,
+                amount: getSinglePrice(students, studentId),
                 status: 'pending',
               });
               toast.success('התלמיד נוסף לשיעור ונוצר חוב חד פעמי');
