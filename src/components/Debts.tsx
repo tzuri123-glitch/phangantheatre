@@ -90,7 +90,7 @@ export default function Debts({ variant = 'tab', onPaymentApproved }: DebtsProps
     if (!user) return;
     const { data } = await supabase
       .from('pending_payments')
-      .select('*, students(name, last_name, is_sibling, class_name, custom_single_price)')
+      .select('*, students(name, last_name, is_sibling, class_name, custom_single_price, parent_phone, phone)')
       .eq('admin_user_id', user.id)
       .eq('status', 'pending')
       .order('created_at', { ascending: true });
