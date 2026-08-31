@@ -19,6 +19,16 @@ function getBangkokDate(): string {
   return `${get('year')}-${get('month')}-${get('day')}`;
 }
 
+function currentMonthRange(today: string): { start: string; end: string } {
+  const [y, m] = today.split('-').map(Number);
+  let py = y;
+  let pm = m - 1;
+  if (pm < 1) { pm = 12; py -= 1; }
+  const start = `${py}-${String(pm).padStart(2, '0')}-25`;
+  const end = `${y}-${String(m).padStart(2, '0')}-24`;
+  return { start, end };
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
@@ -82,6 +92,44 @@ Deno.serve(async (req) => {
           .eq('status', 'pending')
           .in('student_id', ids);
         openDebts = debts || [];
+
+        // Precompute per-student expected one-time charge so the kiosk can react instantly
+        const { start, end } = currentMonthRange(today);
+        const { data: monthlyPaid } = await admin
+          .from('payments')
+          .select('student_id')
+          .in('student_id', ids)
+          .eq('payment_type', 'חודשי')
+          .gte('payment_date', start)
+          .lte('payment_date', end);
+        const { data: monthlyPending } = await admin
+          .from('pending_payments')
+          .select('student_id')
+          .in('student_id', ids)
+          .eq('payment_type', 'חודשי')
+          .in('status', ['pending', 'approved'])
+          .gte('created_at', `${start}T00:00:00`);
+        const withMonthly = new Set([
+          ...(monthlyPaid || []).map((r: any) => r.student_id),
+          ...(monthlyPending || []).map((r: any) => r.student_id),
+        ]);
+        const { data: priceRows } = await admin
+          .from('students')
+          .select('id, is_sibling, custom_single_price, status')
+          .in('id', ids);
+        const priceById = new Map((priceRows || []).map((r: any) => [r.id, r]));
+        students = students.map((s: any) => {
+          const p = priceById.get(s.id);
+          const frozen = (p?.status || s.status) === 'בהקפאה';
+          const price = p?.custom_single_price != null
+            ? Number(p.custom_single_price)
+            : (p?.is_sibling ? 700 : 800);
+          return {
+            ...s,
+            has_monthly: withMonthly.has(s.id),
+            expected_debt: withMonthly.has(s.id) || frozen ? 0 : price,
+          };
+        });
       }
     }
 
