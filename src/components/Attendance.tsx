@@ -28,14 +28,18 @@ interface AttendanceProps {
   onDeleteSession: (sessionId: string) => void;
   onUpdateAttendance: (sessionId: string, studentId: string, status: 'נוכח' | 'לא הגיע' | 'לא באי' | 'עזב') => void;
   onRemoveStudentFromSession: (sessionId: string, studentId: string) => void;
+  onAddStudentToSession?: (sessionId: string, studentId: string) => void;
 }
 
-export default function Attendance({ sessions, students, payments, onCreateSession, onEditSession, onDeleteSession, onUpdateAttendance, onRemoveStudentFromSession }: AttendanceProps) {
+export default function Attendance({ sessions, students, payments, onCreateSession, onEditSession, onDeleteSession, onUpdateAttendance, onRemoveStudentFromSession, onAddStudentToSession }: AttendanceProps) {
   const { user } = useAuth();
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({});
   const [sessionSearchQueries, setSessionSearchQueries] = useState<Record<string, string>>({});
   const [showQrDialog, setShowQrDialog] = useState<string | null>(null);
+  const [addToSessionId, setAddToSessionId] = useState<string | null>(null);
+  const [addSearch, setAddSearch] = useState('');
   const subscriptions: any[] = [];
+
 
   const toggleSession = (sessionId: string) => {
     setExpandedSessions((prev) => ({
@@ -132,13 +136,24 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
 
             {expandedSessions[session.id] && (
               <div className="p-4">
-                <div className="mb-4">
+                <div className="mb-4 flex gap-2">
                   <Input
                     placeholder="חיפוש תלמיד..."
                     value={sessionSearchQueries[session.id] || ''}
                     onChange={(e) => setSessionSearchQueries(prev => ({ ...prev, [session.id]: e.target.value }))}
                   />
+                  {onAddStudentToSession && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="shrink-0"
+                      onClick={() => { setAddSearch(''); setAddToSessionId(session.id); }}
+                    >
+                      ➕ הוסף תלמיד
+                    </Button>
+                  )}
                 </div>
+
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -202,6 +217,57 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
           </Card>
         ))}
       </div>
+
+      {/* Add student to session dialog */}
+      <Dialog open={!!addToSessionId} onOpenChange={(open) => { if (!open) setAddToSessionId(null); }}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>הוספת תלמיד לשיעור</DialogTitle>
+          </DialogHeader>
+          {addToSessionId && (() => {
+            const session = sessions.find(s => s.id === addToSessionId);
+            if (!session) return null;
+            const existing = new Set(session.students.map(st => st.studentId));
+            const query = addSearch.trim().toLowerCase();
+            const candidates = students
+              .filter(s => !existing.has(s.id))
+              .filter(s => s.className === session.className || query.length >= 2)
+              .filter(s => !query || `${s.name} ${s.lastName}`.toLowerCase().includes(query))
+              .sort((a, b) => a.name.localeCompare(b.name, 'he'));
+            return (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  {session.date} – {session.className}
+                </p>
+                <Input
+                  placeholder="חיפוש תלמיד..."
+                  value={addSearch}
+                  onChange={(e) => setAddSearch(e.target.value)}
+                />
+                <div className="max-h-72 overflow-y-auto space-y-1">
+                  {candidates.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">לא נמצאו תלמידים</p>
+                  )}
+                  {candidates.map(s => (
+                    <button
+                      key={s.id}
+                      className="w-full text-right p-2 rounded-lg hover:bg-accent flex items-center justify-between gap-2"
+                      onClick={() => {
+                        onAddStudentToSession?.(session.id, s.id);
+                        setAddToSessionId(null);
+                      }}
+                    >
+                      <span className="font-medium">{s.name} {s.lastName}</span>
+                      <span className="text-xs text-muted-foreground">{s.className}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
 
       {/* QR Code Dialog */}
       <Dialog open={!!showQrDialog} onOpenChange={(open) => { if (!open) setShowQrDialog(null); }}>

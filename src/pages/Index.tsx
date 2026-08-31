@@ -444,7 +444,53 @@ export default function Index() {
             ));
             toast.success('נוכחות עודכנה!');
           }}
+          onAddStudentToSession={async (sessionId, studentId) => {
+            if (!user) return;
+            const session = sessions.find(s => s.id === sessionId);
+            const student = students.find(s => s.id === studentId);
+            if (!session || !student) return;
+
+            const { error } = await supabase.from('attendance').insert({
+              user_id: user.id,
+              session_id: sessionId,
+              student_id: studentId,
+              status: 'נוכח',
+            });
+            if (error) {
+              toast.error('שגיאה בהוספת תלמיד לשיעור');
+              return;
+            }
+
+            setSessions(prev => prev.map(s =>
+              s.id === sessionId
+                ? { ...s, students: [...s.students, { studentId, status: 'נוכח' as const }] }
+                : s
+            ));
+
+            // אם אין מנוי חודשי שמכסה את חודש השיעור — נוצר חוב חד פעמי
+            const sessionMonth = session.date.slice(0, 7);
+            const hasMonthly = payments.some(p =>
+              p.studentId === studentId &&
+              p.type === 'חודשי' &&
+              (p.coveredMonth || getCoveredMonthKey(p.date)) === sessionMonth
+            );
+            if (!hasMonthly && student.status !== 'בהקפאה') {
+              const isSibling = hasSiblingDiscountShared(students, studentId);
+              await supabase.from('pending_payments').insert({
+                student_id: studentId,
+                admin_user_id: user.id,
+                payment_type: 'חד פעמי',
+                payment_method: 'מזומן',
+                amount: isSibling ? SIBLING_SINGLE_PRICE : SINGLE_PRICE,
+                status: 'pending',
+              });
+              toast.success('התלמיד נוסף לשיעור ונוצר חוב חד פעמי');
+              return;
+            }
+            toast.success('התלמיד נוסף לשיעור!');
+          }}
           onRemoveStudentFromSession={async (sessionId, studentId) => {
+
             if (!user) return;
             if (!confirm('האם אתה בטוח שברצונך להסיר תלמיד זה מהשיעור?')) return;
             
