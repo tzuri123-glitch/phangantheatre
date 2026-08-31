@@ -998,7 +998,7 @@ export default function Index() {
               if (!selectedStudent) return null;
               const isSibling = hasSiblingDiscount(selectedStudent.id);
               const basePrice = paymentForm.type === 'חד פעמי'
-                ? (isSibling ? SIBLING_SINGLE_PRICE : SINGLE_PRICE)
+                ? getSinglePrice(students, selectedStudent.id)
                 : getMonthlyPrice(isSibling, paymentForm.subscriptionFrequency);
               const discountedPrice = Math.max(0, basePrice - (paymentForm.discount || 0));
               const diff = paymentForm.amount - discountedPrice;
