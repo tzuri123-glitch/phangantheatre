@@ -119,8 +119,123 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          variant={viewMode === 'sessions' ? 'default' : 'outline'}
+          onClick={() => setViewMode('sessions')}
+          className={viewMode === 'sessions' ? 'bg-magenta hover:bg-magenta-hover text-magenta-foreground' : ''}
+        >
+          לפי שיעורים
+        </Button>
+        <Button
+          size="sm"
+          variant={viewMode === 'student' ? 'default' : 'outline'}
+          onClick={() => setViewMode('student')}
+          className={viewMode === 'student' ? 'bg-magenta hover:bg-magenta-hover text-magenta-foreground' : ''}
+        >
+          לפי תלמיד
+        </Button>
+      </div>
+
+      {viewMode === 'student' && (
+        <div className="space-y-4">
+          <Card className="p-4 space-y-3">
+            <Input
+              placeholder="חיפוש תלמיד..."
+              value={studentSearch}
+              onChange={(e) => setStudentSearch(e.target.value)}
+            />
+            <div className="max-h-56 overflow-y-auto space-y-1">
+              {studentCandidates.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">לא נמצאו תלמידים</p>
+              )}
+              {studentCandidates.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => { setSelectedStudentId(s.id); setExpandedMonths({}); }}
+                  className={`w-full text-right p-2 rounded-lg flex items-center justify-between gap-2 transition-colors ${
+                    selectedStudentId === s.id ? 'bg-magenta/10 border border-magenta/40' : 'hover:bg-accent'
+                  }`}
+                >
+                  <span className="font-medium">{s.name} {s.lastName}</span>
+                  <span className="text-xs text-muted-foreground">{s.className}</span>
+                </button>
+              ))}
+            </div>
+          </Card>
+
+          {selectedStudentId && (() => {
+            const student = students.find(s => s.id === selectedStudentId);
+            if (!student) return null;
+            const months = getStudentAttendanceByMonth(selectedStudentId);
+            const total = months.reduce((sum, [, recs]) => sum + recs.length, 0);
+            return (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-foreground">
+                    {student.name} {student.lastName}
+                  </h3>
+                  <Badge variant="outline">סה״כ {total} שיעורים</Badge>
+                </div>
+
+                {months.length === 0 && (
+                  <Card className="p-6 text-center text-muted-foreground">אין רשומות נוכחות לתלמיד זה</Card>
+                )}
+
+                {months.map(([monthKey, recs]) => (
+                  <Card key={monthKey} className="overflow-hidden">
+                    <div
+                      className="p-4 bg-accent cursor-pointer hover:bg-accent/80 transition-colors flex justify-between items-center"
+                      onClick={() => setExpandedMonths(prev => ({ ...prev, [monthKey]: !prev[monthKey] }))}
+                    >
+                      <span className="font-semibold text-foreground">{monthLabel(monthKey)}</span>
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline">{recs.length} שיעורים</Badge>
+                        <span className="text-2xl">{expandedMonths[monthKey] ? '▴' : '▾'}</span>
+                      </div>
+                    </div>
+                    {expandedMonths[monthKey] && (
+                      <div className="p-4">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="text-right">תאריך</TableHead>
+                              <TableHead className="text-right">קבוצה</TableHead>
+                              <TableHead className="text-right">סטטוס תשלום</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {recs.map(({ session, status }) => {
+                              const paymentStatus = getPaymentStatusForSession(
+                                student, session, payments, subscriptions, status
+                              );
+                              const statusBadge = getStatusBadge(paymentStatus);
+                              return (
+                                <TableRow key={session.id} className={getStatusColor(paymentStatus)}>
+                                  <TableCell className="font-medium">{session.date}</TableCell>
+                                  <TableCell>{session.className}{session.trial && ' (ניסיון)'}</TableCell>
+                                  <TableCell>
+                                    {statusBadge && <Badge variant="outline">{statusBadge}</Badge>}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </Card>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      <div className={`space-y-4 ${viewMode === 'sessions' ? '' : 'hidden'}`}>
         {sessions.map((session) => (
+
           <Card key={session.id} className="overflow-hidden">
             <div
               className="p-4 bg-accent cursor-pointer hover:bg-accent/80 transition-colors flex justify-between items-center"
