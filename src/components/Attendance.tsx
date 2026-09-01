@@ -38,7 +38,40 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
   const [showQrDialog, setShowQrDialog] = useState<string | null>(null);
   const [addToSessionId, setAddToSessionId] = useState<string | null>(null);
   const [addSearch, setAddSearch] = useState('');
+  const [viewMode, setViewMode] = useState<'sessions' | 'student'>('sessions');
+  const [studentSearch, setStudentSearch] = useState('');
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
   const subscriptions: any[] = [];
+
+  const MONTH_NAMES = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+  const monthLabel = (key: string) => {
+    const [y, m] = key.split('-').map(Number);
+    return `${MONTH_NAMES[m - 1]} ${y}`;
+  };
+
+  const sortedStudents = [...students].sort((a, b) => a.name.localeCompare(b.name, 'he'));
+  const studentCandidates = studentSearch.trim()
+    ? sortedStudents.filter(s => `${s.name} ${s.lastName}`.toLowerCase().includes(studentSearch.trim().toLowerCase()))
+    : sortedStudents;
+
+  const getStudentAttendanceByMonth = (studentId: string) => {
+    const records = sessions
+      .filter(sess => sess.students.some(st => st.studentId === studentId))
+      .map(sess => ({
+        session: sess,
+        status: sess.students.find(st => st.studentId === studentId)!.status,
+      }))
+      .sort((a, b) => b.session.date.localeCompare(a.session.date));
+
+    const groups: Record<string, typeof records> = {};
+    records.forEach(r => {
+      const key = r.session.date.slice(0, 7);
+      (groups[key] ||= []).push(r);
+    });
+    return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
+  };
+
 
 
   const toggleSession = (sessionId: string) => {
