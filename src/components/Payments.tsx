@@ -15,6 +15,8 @@ import {
 import { Card } from '@/components/ui/card';
 import { useState } from 'react';
 import { formatILS } from '@/lib/utils';
+import PaymentHistory from '@/components/PaymentHistory';
+
 
 
 interface PaymentsProps {
