@@ -283,7 +283,9 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
                           💬 WhatsApp
                         </Button>
                       )}
+                      </div>
                     </div>
+
                   </Card>
                 ))}
                 {filterStudentsList(subscribers, subscribersSearch).length === 0 && (
