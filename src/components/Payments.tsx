@@ -338,6 +338,8 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
                           </div>
                         )}
                       </div>
+                      <div className="flex flex-col gap-2 items-end">
+                      <Button size="sm" variant="outline" onClick={() => setHistoryStudent(student)}>📜 היסטוריה</Button>
                       {(student.phone || student.parentPhone) && (
                         <Button
                           size="sm"
