@@ -181,6 +181,50 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
         </Button>
       </div>
 
+      {/* חיפוש היסטוריית תשלומים של תלמיד */}
+      <Card className="p-4">
+        <h3 className="font-semibold text-base sm:text-lg text-foreground mb-1">🔍 היסטוריית תשלומים של תלמיד</h3>
+        <p className="text-xs text-muted-foreground mb-3">חפשו שם תלמיד כדי לראות את כל התשלומים הקודמים, בקשות התשלום ויומן השינויים</p>
+        <Input
+          placeholder="הקלד שם תלמיד..."
+          value={historySearch}
+          onChange={(e) => setHistorySearch(e.target.value)}
+        />
+        {historySearch.trim().length > 0 && (
+          <div className="mt-3 space-y-2 max-h-64 overflow-y-auto">
+            {students
+              .filter(s => `${s.name} ${s.lastName || ''}`.toLowerCase().includes(historySearch.trim().toLowerCase()))
+              .sort((a, b) => a.name.localeCompare(b.name, 'he'))
+              .map(s => (
+                <button
+                  key={s.id}
+                  onClick={() => setHistoryStudent(s)}
+                  className="w-full text-right p-3 rounded-lg bg-muted hover:bg-muted/70 transition-colors flex justify-between items-center"
+                >
+                  <span className="font-medium text-sm text-foreground">{s.name} {s.lastName}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {payments.filter(p => p.studentId === s.id).length} תשלומים • {s.className}
+                  </span>
+                </button>
+              ))}
+            {students.filter(s => `${s.name} ${s.lastName || ''}`.toLowerCase().includes(historySearch.trim().toLowerCase())).length === 0 && (
+              <div className="text-center text-muted-foreground py-3 text-sm">אין תוצאות</div>
+            )}
+          </div>
+        )}
+      </Card>
+
+      {historyStudent && (
+        <PaymentHistory
+          student={historyStudent}
+          payments={payments}
+          open={!!historyStudent}
+          onClose={() => setHistoryStudent(null)}
+          onEditPayment={onEditPayment}
+          onDeletePayment={onDeletePayment}
+        />
+      )}
+
       {/* סקשן מנויים וחד פעמיים */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* מנויים */}
