@@ -36,6 +36,9 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
   const [expandedOneTime, setExpandedOneTime] = useState(false);
   const [subscribersSearch, setSubscribersSearch] = useState('');
   const [oneTimeSearch, setOneTimeSearch] = useState('');
+  const [historyStudent, setHistoryStudent] = useState<Student | null>(null);
+  const [historySearch, setHistorySearch] = useState('');
+
 
   const toggleClass = (className: string) => {
     setExpandedClasses((prev) => ({
