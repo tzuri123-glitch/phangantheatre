@@ -241,7 +241,7 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
           >
             <h3 className="font-semibold text-lg text-foreground mb-1">💎 מנויים חודשיים</h3>
             <p className="text-sm text-muted-foreground">
-              {subscribers.length} תלמידים עם מנוי
+              {subscribers.length} תלמידים עם מנוי בתוקף לחודש הנוכחי
             </p>
           </div>
 
@@ -312,7 +312,7 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
           >
             <h3 className="font-semibold text-lg text-foreground mb-1">🎯 תשלומים חד פעמיים</h3>
             <p className="text-sm text-muted-foreground">
-              {oneTimePayersOnly.length} תלמידים (פוטנציאל למנוי!)
+              {oneTimePayersOnly.length} תלמידים בלי מנוי החודש (פוטנציאל למנוי!)
             </p>
           </div>
 
