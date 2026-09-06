@@ -311,7 +311,7 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
           >
             <h3 className="font-semibold text-lg text-foreground mb-1">🎯 תשלומים חד פעמיים</h3>
             <p className="text-sm text-muted-foreground">
-              {oneTimePayersOnly.length} תלמידים בלי מנוי החודש (פוטנציאל למנוי!)
+              {oneTimePayersOnly.length} תלמידים ששילמו חד פעמי החודש (פוטנציאל למנוי!)
             </p>
           </div>
 
