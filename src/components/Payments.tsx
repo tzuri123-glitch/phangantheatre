@@ -124,24 +124,23 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
 
   // פונקציה לחלוקת תלמידים למנויים וחד פעמיים — לפי החודש הנוכחי בלבד
   const getSubscriptionCategories = () => {
-    // תלמידים עם לפחות תשלום אחד
-    const activeStudents = students.filter(student => 
-      payments.some(p => p.studentId === student.id)
-    );
-
     const subscribers: Student[] = [];
     const oneTimePayersOnly: Student[] = [];
 
-    activeStudents.forEach(student => {
+    students.forEach(student => {
       const studentPayments = payments.filter(p => p.studentId === student.id);
       // מנוי בתוקף = תשלום חודשי שמכסה את החודש הנוכחי
       const hasActiveMonthly = studentPayments.some(
         p => p.type === 'חודשי' && getPaymentCoveredMonth(p) === currentMonthKey
       );
+      // חד פעמי החודש = תשלום חד פעמי בחודש הקלנדרי הנוכחי
+      const hasSingleThisMonth = studentPayments.some(
+        p => p.type !== 'חודשי' && getCalendarMonthKey(p.date) === currentMonthKey
+      );
 
       if (hasActiveMonthly) {
         subscribers.push(student);
-      } else {
+      } else if (hasSingleThisMonth) {
         oneTimePayersOnly.push(student);
       }
     });
