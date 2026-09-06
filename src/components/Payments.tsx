@@ -119,7 +119,10 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
     });
   };
 
-  // פונקציה לחלוקת תלמידים למנויים וחד פעמיים
+  // חודש נוכחי (yyyy-MM)
+  const currentMonthKey = getCalendarMonthKey(format(new Date(), 'yyyy-MM-dd'));
+
+  // פונקציה לחלוקת תלמידים למנויים וחד פעמיים — לפי החודש הנוכחי בלבד
   const getSubscriptionCategories = () => {
     // תלמידים עם לפחות תשלום אחד
     const activeStudents = students.filter(student => 
@@ -131,9 +134,12 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
 
     activeStudents.forEach(student => {
       const studentPayments = payments.filter(p => p.studentId === student.id);
-      const hasMonthlyPayment = studentPayments.some(p => p.type === 'חודשי');
-      
-      if (hasMonthlyPayment) {
+      // מנוי בתוקף = תשלום חודשי שמכסה את החודש הנוכחי
+      const hasActiveMonthly = studentPayments.some(
+        p => p.type === 'חודשי' && getPaymentCoveredMonth(p) === currentMonthKey
+      );
+
+      if (hasActiveMonthly) {
         subscribers.push(student);
       } else {
         oneTimePayersOnly.push(student);
@@ -235,7 +241,7 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
           >
             <h3 className="font-semibold text-lg text-foreground mb-1">💎 מנויים חודשיים</h3>
             <p className="text-sm text-muted-foreground">
-              {subscribers.length} תלמידים עם מנוי
+              {subscribers.length} תלמידים עם מנוי בתוקף לחודש הנוכחי
             </p>
           </div>
 
@@ -306,7 +312,7 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
           >
             <h3 className="font-semibold text-lg text-foreground mb-1">🎯 תשלומים חד פעמיים</h3>
             <p className="text-sm text-muted-foreground">
-              {oneTimePayersOnly.length} תלמידים (פוטנציאל למנוי!)
+              {oneTimePayersOnly.length} תלמידים בלי מנוי החודש (פוטנציאל למנוי!)
             </p>
           </div>
 
