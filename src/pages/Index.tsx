@@ -685,7 +685,7 @@ export default function Index() {
                   // סימון הדדי: גם האח הקיים מסומן כאח ויקבל הנחת אחים + סנכרון פרטי הורה
                   if (editingStudent.siblingId) {
                     const siblingRecord = students.find(s => s.id === editingStudent.siblingId);
-                    const siblingUpdate: Record<string, unknown> = { is_sibling: true };
+                    const siblingUpdate: { is_sibling: boolean; parent_name?: string; parent_phone?: string; last_name?: string } = { is_sibling: true };
                     if (siblingRecord) {
                       if (!siblingRecord.parentName && editingStudent.parentName) siblingUpdate.parent_name = editingStudent.parentName;
                       if (!siblingRecord.parentPhone && editingStudent.parentPhone) siblingUpdate.parent_phone = editingStudent.parentPhone;
@@ -842,7 +842,7 @@ export default function Index() {
                   // סימון הדדי: גם האח הקיים מסומן כאח ויקבל הנחת אחים + סנכרון פרטי הורה
                   if (editingStudent.siblingId) {
                     const siblingRecord = students.find(s => s.id === editingStudent.siblingId);
-                    const siblingUpdate: Record<string, unknown> = { is_sibling: true };
+                    const siblingUpdate: { is_sibling: boolean; parent_name?: string; parent_phone?: string; last_name?: string } = { is_sibling: true };
                     if (siblingRecord) {
                       if (!siblingRecord.parentName && editingStudent.parentName) siblingUpdate.parent_name = editingStudent.parentName;
                       if (!siblingRecord.parentPhone && editingStudent.parentPhone) siblingUpdate.parent_phone = editingStudent.parentPhone;
