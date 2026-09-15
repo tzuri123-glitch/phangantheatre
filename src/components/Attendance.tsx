@@ -379,6 +379,7 @@ export default function Attendance({ sessions, students, payments, onCreateSessi
             const query = addSearch.trim().toLowerCase();
             const candidates = students
               .filter(s => !existing.has(s.id))
+              .filter(s => s.status !== 'בהקפאה')
               .filter(s => s.className === session.className || query.length >= 2)
               .filter(s => !query || `${s.name} ${s.lastName}`.toLowerCase().includes(query))
               .sort((a, b) => a.name.localeCompare(b.name, 'he'));

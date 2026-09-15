@@ -63,6 +63,7 @@ Deno.serve(async (req) => {
         .select('id, name, last_name, profile_photo_url, status, is_sibling, class_name')
         .eq('user_id', admin_user_id)
         .eq('class_name', class_name)
+        .neq('status', 'בהקפאה')
         .order('name');
       students = studs || [];
 
