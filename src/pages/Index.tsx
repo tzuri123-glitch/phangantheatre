@@ -681,7 +681,13 @@ export default function Index() {
                     setStudents((prev) => prev.map((s) => s.id === editingStudent.id ? editingStudent : s).sort((a, b) => a.name.localeCompare(b.name, 'he'))); 
                     toast.success('תלמיד עודכן!');
                   }
-                  
+
+                  // סימון הדדי: גם האח הקיים מסומן כאח ויקבל הנחת אחים
+                  if (editingStudent.siblingId) {
+                    await supabase.from('students').update({ is_sibling: true }).eq('id', editingStudent.siblingId);
+                    setStudents(prev => prev.map(s => s.id === editingStudent.siblingId ? { ...s, isSibling: true } : s));
+                  }
+
                   // Link student to auth user if email provided
                   if (editingStudent.linkedEmail) {
                     const { data: linkResult, error: linkError } = await supabase.functions.invoke('link-student', {
@@ -819,7 +825,13 @@ export default function Index() {
                     setStudents((prev) => prev.map((s) => s.id === editingStudent.id ? editingStudent : s)); 
                     toast.success('תלמיד עודכן!'); 
                   }
-                  
+
+                  // סימון הדדי: גם האח הקיים מסומן כאח ויקבל הנחת אחים
+                  if (editingStudent.siblingId) {
+                    await supabase.from('students').update({ is_sibling: true }).eq('id', editingStudent.siblingId);
+                    setStudents(prev => prev.map(s => s.id === editingStudent.siblingId ? { ...s, isSibling: true } : s));
+                  }
+
                   // Link student to auth user if email provided
                   const studentIdToLink = editingStudent.id || '';
                   if (editingStudent.linkedEmail && studentIdToLink) {

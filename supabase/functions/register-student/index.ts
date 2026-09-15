@@ -91,6 +91,11 @@ serve(async (req) => {
       });
     }
 
+    // סימון הדדי: גם האח הקיים מסומן כאח כדי שיקבל הנחת אחים
+    if (siblingId) {
+      await supabase.from('students').update({ is_sibling: true }).eq('id', siblingId);
+    }
+
     return new Response(JSON.stringify({ success: true, student }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
