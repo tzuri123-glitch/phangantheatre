@@ -91,9 +91,20 @@ serve(async (req) => {
       });
     }
 
-    // סימון הדדי: גם האח הקיים מסומן כאח כדי שיקבל הנחת אחים
+    // סימון הדדי: גם האח הקיים מסומן כאח + סנכרון פרטי הורה חסרים
     if (siblingId) {
-      await supabase.from('students').update({ is_sibling: true }).eq('id', siblingId);
+      const { data: sibling } = await supabase
+        .from('students')
+        .select('parent_name, parent_phone, last_name')
+        .eq('id', siblingId)
+        .single();
+      const siblingUpdate: Record<string, unknown> = { is_sibling: true };
+      if (sibling) {
+        if (!sibling.parent_name) siblingUpdate.parent_name = parentName + ' ' + parentLastName;
+        if (!sibling.parent_phone) siblingUpdate.parent_phone = parentPhone;
+        if (!sibling.last_name) siblingUpdate.last_name = parentLastName;
+      }
+      await supabase.from('students').update(siblingUpdate).eq('id', siblingId);
     }
 
     return new Response(JSON.stringify({ success: true, student }), {
