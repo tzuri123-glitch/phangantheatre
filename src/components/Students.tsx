@@ -265,7 +265,7 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                     <Table className="min-w-[640px]">
                      <TableHeader className="sticky top-0 bg-background z-10">
                        <TableRow>
-                        <TableHead className="text-right">שם פרטי</TableHead>
+                        <TableHead className="text-right sticky right-0 z-20 bg-background shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.15)]">שם פרטי</TableHead>
                         <TableHead className="text-right">שם משפחה</TableHead>
                         <TableHead className="text-right">סטטוס</TableHead>
                         <TableHead className="text-right">מצב תשלום</TableHead>
@@ -279,7 +279,7 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                         
                         return (
                           <TableRow key={student.id}>
-                            <TableCell className="font-medium">
+                            <TableCell className="font-medium sticky right-0 z-10 bg-background shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.15)]">
                               <div className="flex items-center gap-2">
                                 <Avatar
                                   className={`h-8 w-8 ${student.profilePhotoUrl ? 'cursor-pointer hover:ring-2 hover:ring-primary transition-all' : ''}`}
