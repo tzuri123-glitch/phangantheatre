@@ -1166,7 +1166,7 @@ export default function Index() {
           {!currentSession ? <div className="space-y-4">
             <div className="space-y-2"><Label>חוג</Label><Select value={sessionForm.className} onValueChange={(v) => setSessionForm({ ...sessionForm, className: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CLASS_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>תאריך</Label><Input type="date" value={sessionForm.date} onChange={(e) => setSessionForm({ ...sessionForm, date: e.target.value })} /></div>
-            <div className="flex gap-3"><Button className="flex-1" onClick={() => setCurrentSession({ id: '', className: sessionForm.className, date: sessionForm.date, trial: false, students: students.filter((s) => s.className === sessionForm.className).map((s) => ({ studentId: s.id, status: '' })) })}>המשך</Button><Button variant="outline" className="flex-1" onClick={() => setShowSessionForm(false)}>ביטול</Button></div>
+            <div className="flex gap-3"><Button className="flex-1" onClick={() => setCurrentSession({ id: '', className: sessionForm.className, date: sessionForm.date, trial: false, students: students.filter((s) => s.className === sessionForm.className && s.status !== 'בהקפאה').map((s) => ({ studentId: s.id, status: '' })) })}>המשך</Button><Button variant="outline" className="flex-1" onClick={() => setShowSessionForm(false)}>ביטול</Button></div>
           </div> : <div className="space-y-4">
             {currentSession.students.map((rec, idx) => {
               const student = students.find((s) => s.id === rec.studentId);
