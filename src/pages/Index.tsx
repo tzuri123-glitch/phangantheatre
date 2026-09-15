@@ -682,10 +682,23 @@ export default function Index() {
                     toast.success('תלמיד עודכן!');
                   }
 
-                  // סימון הדדי: גם האח הקיים מסומן כאח ויקבל הנחת אחים
+                  // סימון הדדי: גם האח הקיים מסומן כאח ויקבל הנחת אחים + סנכרון פרטי הורה
                   if (editingStudent.siblingId) {
-                    await supabase.from('students').update({ is_sibling: true }).eq('id', editingStudent.siblingId);
-                    setStudents(prev => prev.map(s => s.id === editingStudent.siblingId ? { ...s, isSibling: true } : s));
+                    const siblingRecord = students.find(s => s.id === editingStudent.siblingId);
+                    const siblingUpdate: Record<string, unknown> = { is_sibling: true };
+                    if (siblingRecord) {
+                      if (!siblingRecord.parentName && editingStudent.parentName) siblingUpdate.parent_name = editingStudent.parentName;
+                      if (!siblingRecord.parentPhone && editingStudent.parentPhone) siblingUpdate.parent_phone = editingStudent.parentPhone;
+                      if (!siblingRecord.lastName && editingStudent.lastName) siblingUpdate.last_name = editingStudent.lastName;
+                    }
+                    await supabase.from('students').update(siblingUpdate).eq('id', editingStudent.siblingId);
+                    setStudents(prev => prev.map(s => s.id === editingStudent.siblingId ? {
+                      ...s,
+                      isSibling: true,
+                      parentName: s.parentName || editingStudent.parentName,
+                      parentPhone: s.parentPhone || editingStudent.parentPhone,
+                      lastName: s.lastName || editingStudent.lastName,
+                    } : s));
                   }
 
                   // Link student to auth user if email provided
