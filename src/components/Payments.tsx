@@ -73,23 +73,33 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
       
       let totalExpected = 0;
       
+      // מחירים חודשיים תקפים (כולל מחירי אחים) — לזיהוי תשלום חודשי מלא
+      const VALID_MONTHLY = [4200, 3900, 3000, 2700];
+
       studentPaymentsList.forEach((payment) => {
         const discount = payment.discount || 0;
-        
+        const gross = payment.amount + discount;
+
         if (payment.type === 'סגירת יתרה') {
           // סגירת יתרה לא מייצרת צפי - הסכום הוא מה שהתקבל
         } else if (payment.type === 'חודשי') {
-          const monthlyPrice = getMonthlyPrice(hasSiblingDiscount(students, student.id), payment.subscriptionFrequency || 'biweekly');
+          // אם הסכום שהתקבל תואם למחיר מנוי תקף — זה המחיר הצפוי
+          const monthlyPrice = VALID_MONTHLY.includes(gross)
+            ? gross
+            : getMonthlyPrice(hasSiblingDiscount(students, student.id), payment.subscriptionFrequency || 'biweekly');
           const priceAfterDiscount = Math.max(0, monthlyPrice - discount);
           totalExpected += priceAfterDiscount;
         } else if (payment.type === 'חד פעמי') {
           if (!monthsWithMonthlyPayment.has(getCalendarMonthKey(payment.date))) {
             const singlePrice = getSinglePrice(students, student.id);
-            const priceAfterDiscount = Math.max(0, singlePrice - discount);
+            // תשלום חד פעמי יכול לכסות כמה שיעורים יחד
+            const lessons = Math.max(1, Math.round(gross / singlePrice));
+            const priceAfterDiscount = Math.max(0, singlePrice * lessons - discount);
             totalExpected += priceAfterDiscount;
           }
         }
       });
+
       
       const balance = totalPaid - totalExpected;
       
