@@ -34,6 +34,40 @@ export default function Students({ students, payments, onAddStudent, onEditStude
   const [expandedClasses, setExpandedClasses] = useState<Record<string, boolean>>({});
   const [classSearchQueries, setClassSearchQueries] = useState<Record<string, string>>({});
   const [viewingPhoto, setViewingPhoto] = useState<{ url: string; name: string } | null>(null);
+  const { user } = useAuth();
+  const [openDebts, setOpenDebts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!user) return;
+
+    const loadDebts = async () => {
+      const { data } = await supabase
+        .from('pending_payments')
+        .select('student_id, amount')
+        .eq('admin_user_id', user.id)
+        .eq('status', 'pending');
+
+      const map: Record<string, number> = {};
+      (data || []).forEach((r: { student_id: string; amount: number | null }) => {
+        map[r.student_id] = (map[r.student_id] || 0) + Number(r.amount || 0);
+      });
+      setOpenDebts(map);
+    };
+
+    loadDebts();
+
+    const channel = supabase
+      .channel('students-open-debts')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'pending_payments',
+        filter: `admin_user_id=eq.${user.id}`,
+      }, () => { loadDebts(); })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
 
   const toggleClass = (className: string) => {
     setExpandedClasses((prev) => ({
