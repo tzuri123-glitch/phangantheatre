@@ -275,7 +275,7 @@ export default function Students({ students, payments, onAddStudent, onEditStude
                     <TableBody>
                       {filterStudents(className, classStudents).map((student) => {
                         const studentPaymentCount = payments.filter(p => p.studentId === student.id).length;
-                        const balance = calculateStudentBalance(student.id, student);
+                        const balance = openDebts[student.id] || 0;
                         
                         return (
                           <TableRow key={student.id}>
