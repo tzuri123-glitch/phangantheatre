@@ -58,56 +58,15 @@ export default function Students({ students, payments, onAddStudent, onEditStude
     });
   };
 
-  const SINGLE_PRICE = 800;
-  const SIBLING_SINGLE_PRICE = 700;
-
-  const calculateStudentBalance = (studentId: string, student: Student) => {
-    const studentPayments = payments.filter(p => p.studentId === studentId);
-    
-    const totalPaid = studentPayments.reduce((sum, p) => sum + p.amount, 0);
-    
-    // קבוצת חודשים שמכוסים בתשלום חודשי (לפי החודש שהתשלום מכסה, לא תאריך הקבלה)
-    const monthsWithMonthlyPayment = new Set<string>();
-    studentPayments
-      .filter(p => p.type === 'חודשי')
-      .forEach(p => {
-        monthsWithMonthlyPayment.add(getPaymentCoveredMonth(p));
-      });
-    
-    let totalExpected = 0;
-    
-    studentPayments.forEach((payment) => {
-      const discount = payment.discount || 0;
-      
-      if (payment.type === 'חודשי') {
-        // תשלום חודשי לפי תדירות
-        const monthlyPrice = getMonthlyPrice(hasSiblingDiscount(students, student.id), payment.subscriptionFrequency || 'biweekly');
-        const priceAfterDiscount = Math.max(0, monthlyPrice - discount);
-        totalExpected += priceAfterDiscount;
-      } else if (payment.type === 'חד פעמי') {
-        // תשלום חד-פעמי נספר רק אם החודש הקלנדרי שלו לא מכוסה במנוי חודשי
-        const sessionMonth = getCalendarMonthKey(payment.date);
-        if (!monthsWithMonthlyPayment.has(sessionMonth)) {
-          const singlePrice = getSinglePrice(students, student.id);
-          const priceAfterDiscount = Math.max(0, singlePrice - discount);
-          totalExpected += priceAfterDiscount;
-        }
-        }
-    });
-    
-    return totalPaid - totalExpected;
+  // חוב אמיתי = החיובים הפתוחים בטאב "חובות" (pending_payments), ולא אומדן לפי תשלומים
+  const getBalanceColor = (debt: number) => {
+    if (debt > 0) return 'bg-red-100 text-red-800';
+    return 'bg-green-100 text-green-800';
   };
 
-  const getBalanceColor = (balance: number) => {
-    if (balance > 0) return 'bg-green-100 text-green-800'; // זכות
-    if (balance < 0) return 'bg-red-100 text-red-800'; // חוב
-    return 'bg-gray-100 text-gray-800'; // מאוזן
-  };
-
-  const getBalanceText = (balance: number) => {
-    if (balance > 0) return `זכות ₪${balance}`;
-    if (balance < 0) return `חוב ₪${Math.abs(balance)}`;
-    return 'מאוזן';
+  const getBalanceText = (debt: number) => {
+    if (debt > 0) return `חוב ₪${debt}`;
+    return 'שולם';
   };
 
   const formatWhatsAppNumber = (phone: string) => {
