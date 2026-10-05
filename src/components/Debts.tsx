@@ -250,13 +250,20 @@ export default function Debts({ variant = 'tab', onPaymentApproved }: DebtsProps
       const method = selectedRows[0]?.payment_method || openStudent.rows[0]?.payment_method || 'מזומן';
       const datesText = selectedRows.map((r) => toDateStr(r.created_at)).join(', ');
 
-      await supabase
-        .from('pending_payments')
-        .update({
-          status: 'approved',
-          resolved_at: new Date().toISOString(),
-        })
-        .in('id', selectedIds.length > 0 ? selectedIds : ['00000000-0000-0000-0000-000000000000']);
+      // במנוי חודשי — נסגרים רק חיובים מהחודש המכוסה; חובות מחודשים אחרים נשארים פתוחים
+      const idsToClose = approveType === 'חודשי'
+        ? selectedRows.filter((r) => toDateStr(r.created_at).slice(0, 7) === approveCoveredMonth).map((r) => r.id)
+        : selectedIds;
+
+      if (idsToClose.length > 0) {
+        await supabase
+          .from('pending_payments')
+          .update({
+            status: 'approved',
+            resolved_at: new Date().toISOString(),
+          })
+          .in('id', idsToClose);
+      }
 
       await supabase
         .from('payments')
