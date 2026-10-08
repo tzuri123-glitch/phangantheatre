@@ -90,12 +90,16 @@ export default function Payments({ payments, students, sessions, onAddPayment, o
           const priceAfterDiscount = Math.max(0, monthlyPrice - discount);
           totalExpected += priceAfterDiscount;
         } else if (payment.type === 'חד פעמי') {
-          if (!monthsWithMonthlyPayment.has(getCalendarMonthKey(payment.date))) {
+          if (monthsWithMonthlyPayment.has(getCalendarMonthKey(payment.date))) {
+            // תשלום חד פעמי בחודש עם מנוי = חלק מתשלום המנוי (השלמה) — לא יוצר זכות
+            totalExpected += payment.amount;
+          } else {
             const singlePrice = getSinglePrice(students, student.id);
             // תשלום חד פעמי יכול לכסות כמה שיעורים יחד
-            const lessons = Math.max(1, Math.round(gross / singlePrice));
+            const lessons = singlePrice > 0 ? Math.max(1, Math.round(gross / singlePrice)) : 1;
             const priceAfterDiscount = Math.max(0, singlePrice * lessons - discount);
-            totalExpected += priceAfterDiscount;
+            // תשלום חד פעמי לא יוצר זכות (למשל שולם לפני שנקבע מחיר מוזל)
+            totalExpected += Math.max(priceAfterDiscount, payment.amount);
           }
         }
       });
